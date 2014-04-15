@@ -1,0 +1,65 @@
+# coding=utf-8
+"""
+{name}Settings adds application specific information to the generic ApplicationSettings class.
+"""
+from {package}.utils.application_settings import ApplicationSettings
+from {package}.utils.find_directory import find_directory
+from {package}.utils.simple_logger import info
+
+__docformat__ = 'restructuredtext en'
+__all__ = ("{name}Settings",)
+
+
+class {name}Settings(ApplicationSettings):
+    """
+    Usage::
+
+        with {name}Settings() as settings:
+        try:
+            app.execute(self, settings)
+            exit(0)
+        except ArgumentError as ex:
+            error(str(ex))
+            exit(1)
+    """
+    HELP = {{
+        '{name}': "{description}",
+
+        'info_group': '',
+        'version': "Show {name}'s version.",
+        'longhelp': 'Long help about {name}.',
+
+        'output_group': 'Options that control generated output.',
+        'verbosity': 'Set verbosity level: 0=none, 1=errors, 2=info+errors, 3+=debug+info+errors (default=2).',
+        'logfile': 'File to log all messages (debug, info, warning, error, fatal) to.',
+    }}
+
+    def __init__(self):
+        super({name}Settings, self).__init__('{name}', '{package}', ['{name}'], self.HELP)
+
+    def _cli_options(self, parser):
+        """
+        Adds application specific arguments to the parser.
+
+        :param parser: the argument parser with --conf_file already added.
+        :type parser: argparse.ArgumentParser
+        """
+        info_group = parser.add_argument_group(title='Informational Commands', description=self._help['info_group'])
+        info_group.add_argument('--version', dest='version', action='store_true', help=self._help['version'])
+        info_group.add_argument('--longhelp', dest='longhelp', action='store_true', help=self._help['longhelp'])
+
+        output_group = parser.add_argument_group(title='Output Options', description=self._help['output_group'])
+        output_group.add_argument('--verbosity', dest='verbosity', default=2, type=int, metavar='INT',
+                                  help=self._help['verbosity'])
+        output_group.add_argument('--logfile', type=str, metavar='FILE', help=self._help['logfile'])
+
+    def _cli_validate(self, settings):
+        """
+        Verify we have required options for commands.
+
+        :param settings: the settings object returned by ArgumentParser.parse_args()
+        :type settings: argparse.Namespace
+        :return: the error message if any
+        :rtype: str or None
+        """
+        return None

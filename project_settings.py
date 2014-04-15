@@ -76,7 +76,9 @@ Project directories are accessed using a '_dir' suffix.  For example the 'docs' 
 with *Project.docs_dir*.
 
 """
+from configparser import ConfigParser, NoSectionError
 from pprint import pformat
+from herringlib.mkdir_p import mkdir_p
 
 __docformat__ = 'restructuredtext en'
 
@@ -189,16 +191,7 @@ class ProjectSettings(object):
     def __directory(self, relative_name):
         """return the full path from the given path relative to the herringfile directory"""
         directory_name = os.path.join(self.herringfile_dir, relative_name)
-        return self.__makedirs(directory_name)
-
-    def __makedirs(self, directory_name):
-        """mkdir -p"""
-        try:
-            os.makedirs(directory_name)
-        except OSError as err:
-            if err.errno != 17:
-                raise
-        return directory_name
+        return mkdir_p(directory_name)
 
     def required_files(self):
         """
@@ -214,27 +207,6 @@ class ProjectSettings(object):
         Note, be sure to escape curly brackets ('{', '}') with double curly brackets ('{{', '}}').
         """
         debug("requiredFiles")
-        template_dir = os.path.abspath(os.path.join(self.herringfile_dir, 'herringlib', 'templates'))
-
-        for root_dir, dirs, files in os.walk(template_dir):
-            for file_name in files:
-                template_filename = os.path.join(root_dir, file_name)
-                # info('template_filename: %s' % template_filename)
-                dest_filename = template_filename.replace('/herringlib/templates/', '/')
-                # info('dest_filename: %s' % dest_filename)
-                if os.path.isdir(template_filename):
-                    self.__makedirs(template_filename)
-                else:
-                    self.__makedirs(os.path.dirname(dest_filename))
-                    root, ext = os.path.splitext(dest_filename)
-                    # info('root: %s' % root)
-                    if ext == '.template':
-                        if not os.path.exists(root):
-                            self.__create_from_template(template_filename, root)
-                    else:
-                        if not os.path.exists(dest_filename):
-                            shutil.copyfile(template_filename, dest_filename)
-
         requirements_filename = os.path.join(Project.herringfile_dir, 'requirements.txt')
         needed = find_missing_requirements(requirements_filename)
         debug("needed: %s" % repr(needed))
@@ -247,34 +219,119 @@ class ProjectSettings(object):
                 warning("Can not add the following to the requirements.txt file: {needed}\n{err}".format(
                     needed=repr(needed), err=str(ex)))
 
-    def __create_from_template(self, src_filename, dest_filename):
-        """
-        render the destination file from the source template file
-
-        :param src_filename: the template file
-        :param dest_filename: the rendered file
-        """
-        name = self.__getattribute__('name')
-        package = self.__getattribute__('package')
-        author = self.__getattribute__('author')
-        author_email = self.__getattribute__('author_email')
-        description = self.__getattribute__('description')
-        with open(src_filename, "r") as in_file:
-            template = in_file.read()
-            with open(dest_filename, 'w') as out_file:
-                try:
-                    out_file.write(template.format(name=name,
-                                                   package=package,
-                                                   author=author,
-                                                   author_email=author_email,
-                                                   description=description))
-                # catching all exceptions
-                # pylint: disable=W0703
-                except Exception as ex:
-                    error(ex)
-
-
 Project = ProjectSettings()
+
+
+def __create_from_template(src_filename, dest_filename, **kwargs):
+    """
+    render the destination file from the source template file
+
+    :param src_filename: the template file
+    :param dest_filename: the rendered file
+    """
+    info("creating {dest} from {src} with options: {options}".format(dest=dest_filename,
+                                                                      src=src_filename,
+                                                                      options=repr(kwargs)))
+    with open(src_filename, "r") as in_file:
+        template = in_file.read()
+
+    try:
+        rendered = template.format(name=kwargs['name'],
+                                   package=kwargs['package'],
+                                   author=kwargs['author'],
+                                   author_email=kwargs['author_email'],
+                                   description=kwargs['description'])
+        with open(dest_filename, 'w') as out_file:
+            try:
+                out_file.write(rendered)
+            # catching all exceptions
+            # pylint: disable=W0703
+            except Exception as ex:
+                error(ex)
+    except Exception as ex:
+        error("Error rendering template ({file}) - {err}".format(file=src_filename, err=str(ex)))
+
+
+@task(namespace='project', help='Available options: --name, --package, --author, --author_email, --description')
+def init():
+    """
+    Initialize a new python project with default files.  Default values from herring.conf and directory name.
+    """
+    defaults = {
+        'package': os.path.basename(os.path.abspath(os.curdir)),
+        'name': os.path.basename(os.path.abspath(os.curdir)).capitalize(),
+        'description': 'The greatest project there ever was or will be!',
+        'author': 'author'
+    }
+    if 'USER' in os.environ:
+        defaults['author'] = os.environ['USER']
+    defaults['author_email'] = '{author}@example.com'.format(author=defaults['author'])
+
+    # override defaults from any config files
+    settings = HerringFile.settings
+    if settings is not None:
+        config = ConfigParser()
+        config.read(settings.config_files)
+        for section in ['project']:
+            try:
+                defaults.update(dict(config.items(section)))
+            except NoSectionError:
+                pass
+
+    # override defaults from kwargs
+    for key in task.kwargs:
+        defaults[key] = task.kwargs[key]
+
+    for template_dir in [os.path.abspath(os.path.join(herringlib, 'herringlib', 'templates'))
+                         for herringlib in HerringFile.herringlib_paths]:
+
+        info("template directory: %s" % template_dir)
+
+        for root_dir, dirs, files in os.walk(template_dir):
+            for file_name in files:
+                template_filename = os.path.join(root_dir, file_name)
+                info('template_filename: %s' % template_filename)
+                dest_filename = resolve_template_dir(template_filename.replace(template_dir, '.'),
+                                                     defaults['package'])
+                info('dest_filename: %s' % dest_filename)
+                if os.path.isdir(template_filename):
+                    mkdir_p(template_filename)
+                else:
+                    mkdir_p(os.path.dirname(dest_filename))
+                    template_root, template_ext = os.path.splitext(template_filename)
+                    if template_ext == '.template':
+                        if not os.path.isdir(dest_filename):
+                            if not os.path.isfile(dest_filename) or os.path.getsize(dest_filename) == 0:
+                                __create_from_template(template_filename, dest_filename, **defaults)
+                    else:
+                        if not os.path.isfile(dest_filename):
+                            shutil.copyfile(template_filename, dest_filename)
+
+
+def resolve_template_dir(original_path, package_name):
+    new_parts = []
+    for part in split_all(original_path):
+        if part.endswith('.template'):
+            part = part.replace('.template', '')
+            part = part.replace('package', package_name)
+        new_parts.append(part)
+    return os.path.join(*new_parts)
+
+
+def split_all(path):
+    all_parts = []
+    while 1:
+        parts = os.path.split(path)
+        if parts[0] == path:  # sentinel for absolute paths
+            all_parts.insert(0, parts[0])
+            break
+        elif parts[1] == path:  # sentinel for relative paths
+            all_parts.insert(0, parts[1])
+            break
+        else:
+            path = parts[0]
+            all_parts.insert(0, parts[1])
+    return all_parts
 
 
 def get_module_docstring(file_path):
@@ -340,7 +397,7 @@ def get_requirements(doc_string):
 # noinspection PyArgumentEqualDefault
 @task()
 def check_requirements():
-    """Checks that herringfile and herringlib/* required packages are in requirements.txt file"""
+    """ Checks that herringfile and herringlib/* required packages are in requirements.txt file """
     requirements_filename = os.path.join(Project.herringfile_dir, 'requirements.txt')
     needed = find_missing_requirements(requirements_filename)
     if needed:
@@ -391,36 +448,40 @@ def find_missing_requirements(requirements_filename):
 
 def packages_required(package_names):
     """
-    Check that the give packages are installed.
+    Check that the given packages are installed.
 
     :param package_names: the package names
     :type package_names: list
     :return: asserted if all the packages are installed
     :rtype: bool
     """
-    result = True
+    # noinspection PyBroadException
+    try:
+        result = True
 
-    # idiotic python setup tools creates empty egg directory in project that then causes pip to blow up.
-    # Wonderful python tools in action!
-    # so lets remove the stupid egg directory so we can use pip to get a listing of installed packages.
-    egg_info_dir = "{name}.egg-info".format(name=Project.name)
-    if os.path.exists(egg_info_dir):
-        shutil.rmtree(egg_info_dir)
+        # idiotic python setup tools creates empty egg directory in project that then causes pip to blow up.
+        # Wonderful python tools in action!
+        # so lets remove the stupid egg directory so we can use pip to get a listing of installed packages.
+        egg_info_dir = "{name}.egg-info".format(name=Project.name)
+        if os.path.exists(egg_info_dir):
+            shutil.rmtree(egg_info_dir)
 
-    with LocalShell() as local:
-        pip_list_output = local.run('pip list')
-        debug(pip_list_output)
-        lines = pip_list_output.split("\n")
-        names = [line.split(" ")[0].lower() for line in lines if line.strip()]
-        debug(names)
-        for pkg_name in package_names:
-            if pkg_name.lower() not in names:
-                try:
-                    __import__(pkg_name)
-                except ImportError:
-                    info(pkg_name + " not installed!")
-                    result = False
-    return result
+        with LocalShell() as local:
+            pip_list_output = local.run('pip list')
+            debug(pip_list_output)
+            lines = pip_list_output.split("\n")
+            names = [line.split(" ")[0].lower() for line in lines if line.strip()]
+            debug(names)
+            for pkg_name in package_names:
+                if pkg_name.lower() not in names:
+                    try:
+                        __import__(pkg_name)
+                    except ImportError:
+                        info(pkg_name + " not installed!")
+                        result = False
+        return result
+    except:
+        return False
 
 
 @task()

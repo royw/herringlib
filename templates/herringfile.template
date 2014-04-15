@@ -1,0 +1,38 @@
+"""
+{description}
+
+Add the following to your *requirements.txt* file:
+
+* argparse if sys.version_info < (3, 2)
+
+"""
+import os
+import re
+
+# noinspection PyUnresolvedReferences
+from herring.herring_app import task, namespace
+# noinspection PyUnresolvedReferences
+from herringlib.project_settings import Project
+
+# Define our project environment.  Used by generic tasks in herringlib/
+
+herringfile_dir = os.path.dirname(__file__)
+Project.herringfile_dir = herringfile_dir
+
+Project.metadata(
+    {{
+        'name': '{name}',
+        'package': '{package}',
+        'author': '{author}',
+        'author_email': '{author_email}',
+        'description': '{description}',
+    }}
+)
+
+Project.required_files()
+
+
+@task(depends=['build', 'doc', 'test'])
+def default():
+    """ The default task(s) to run when none are specified """
+    pass

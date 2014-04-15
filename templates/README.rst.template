@@ -1,0 +1,22 @@
+
+{name}
+========
+
+{description}
+
+Usage
+-----
+
+.. code-block: bash
+
+    ➤ {package} --help
+
+Installation
+------------
+
+To install from PyPI:
+
+.. code-block: bash
+
+    ➤ pip install {name}
+
