@@ -75,13 +75,11 @@ Tasks may access the project attributes with:
 Project directories are accessed using a '_dir' suffix.  For example the 'docs' directory would be accessed
 with *Project.docs_dir*.
 
+    Add the following to your *requirements.txt* file:
+
+    * configparser
+
 """
-from configparser import ConfigParser, NoSectionError
-from pprint import pformat
-from herringlib.mkdir_p import mkdir_p
-
-__docformat__ = 'restructuredtext en'
-
 import fnmatch
 import os
 import re
@@ -91,16 +89,20 @@ import shutil
 # noinspection PyUnresolvedReferences
 import sys
 
-# noinspection PyUnresolvedReferences
-from herring.herring_app import task
-# noinspection PyUnresolvedReferences
-from herring.herring_file import HerringFile
+from configparser import ConfigParser, NoSectionError
+from pprint import pformat
 
+# noinspection PyUnresolvedReferences
+from herring.herring_app import task, HerringFile, task_execute
+
+from herringlib.mkdir_p import mkdir_p
+from herringlib.split_all import split_all
 from herringlib.simple_logger import debug, info, error, warning
 from herringlib.local_shell import LocalShell
 from herringlib.list_helper import compress_list, unique_list
 
 
+__docformat__ = 'restructuredtext en'
 __author__ = 'wrighroy'
 
 installed_packages = None
@@ -229,9 +231,9 @@ def __create_from_template(src_filename, dest_filename, **kwargs):
     :param src_filename: the template file
     :param dest_filename: the rendered file
     """
-    info("creating {dest} from {src} with options: {options}".format(dest=dest_filename,
-                                                                      src=src_filename,
-                                                                      options=repr(kwargs)))
+    # info("creating {dest} from {src} with options: {options}".format(dest=dest_filename,
+    #                                                                  src=src_filename,
+    #                                                                  options=repr(kwargs)))
     with open(src_filename, "r") as in_file:
         template = in_file.read()
 
@@ -290,10 +292,10 @@ def init():
         for root_dir, dirs, files in os.walk(template_dir):
             for file_name in files:
                 template_filename = os.path.join(root_dir, file_name)
-                info('template_filename: %s' % template_filename)
+                # info('template_filename: %s' % template_filename)
                 dest_filename = resolve_template_dir(template_filename.replace(template_dir, '.'),
                                                      defaults['package'])
-                info('dest_filename: %s' % dest_filename)
+                # info('dest_filename: %s' % dest_filename)
                 if os.path.isdir(template_filename):
                     mkdir_p(template_filename)
                 else:
@@ -316,22 +318,6 @@ def resolve_template_dir(original_path, package_name):
             part = part.replace('package', package_name)
         new_parts.append(part)
     return os.path.join(*new_parts)
-
-
-def split_all(path):
-    all_parts = []
-    while 1:
-        parts = os.path.split(path)
-        if parts[0] == path:  # sentinel for absolute paths
-            all_parts.insert(0, parts[0])
-            break
-        elif parts[1] == path:  # sentinel for relative paths
-            all_parts.insert(0, parts[1])
-            break
-        else:
-            path = parts[0]
-            all_parts.insert(0, parts[1])
-    return all_parts
 
 
 def get_module_docstring(file_path):

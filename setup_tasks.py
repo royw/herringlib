@@ -16,11 +16,12 @@ from glob import glob
 from getpass import getpass
 
 # noinspection PyUnresolvedReferences
-from herring.herring_app import task, namespace
+from herring.herring_app import task, HerringFile, task_execute, namespace
+from pprint import pformat
 from herringlib.version import bump, get_project_version
 from herringlib.project_settings import Project
 from herringlib.local_shell import LocalShell
-from herringlib.simple_logger import error
+from herringlib.simple_logger import error, info
 from herringlib.query import query_yes_no
 
 __docformat__ = 'restructuredtext en'
@@ -100,26 +101,13 @@ def build():
     """
     if Project.version == '0.0.0':
         bump()
-    with LocalShell() as local:
-        local.run('bash -c "export WORKON_HOME=$HOME/.venv ;'
-                  'export PROJECT_HOME=$HOME/projects ;'
-                  'export VIRTUALENVWRAPPER_LOG_DIR=$WORKON_HOME ;'
-                  'export VIRTUALENVWRAPPER_HOOK_DIR=$WORKON_HOME ;'
-                  'source /usr/local/bin/virtualenvwrapper.sh ;'
-                  'workon herring{ver} ;'
-                  'python setup.py sdist"'.format(ver=Project.sdist_python_version), verbose=True)
-        for ver in Project.wheel_python_versions:
-            local.run('bash -c "export WORKON_HOME=$HOME/.venv ;'
-                      'export PROJECT_HOME=$HOME/projects ;'
-                      'export VIRTUALENVWRAPPER_LOG_DIR=$WORKON_HOME ;'
-                      'export VIRTUALENVWRAPPER_HOOK_DIR=$WORKON_HOME ;'
-                      'source /usr/local/bin/virtualenvwrapper.sh ;'
-                      'workon herring{ver} ;'
-                      'herring build::wheel --python-tag py{ver}"'.format(ver=ver), verbose=True)
+    task_execute('build::sdist')
+    task_execute('build::wheels')
 
 
 with namespace('build'):
-    @task(help='You must deactivate an virtualenv before running this command!')
+
+    @task()
     def wheels():
         """ build wheels (deactivate virtualenv before running)
 
@@ -127,15 +115,30 @@ with namespace('build'):
             [wheel]
             universal=0
         """
+        if Project.wheel_python_versions is None or not Project.wheel_python_versions:
+            info("To build wheels, in your herringfile you must set Project.wheel_python_versions to a list"
+                 "of compact version, for example: ['27', '33', '34'] will build wheels for python 2.7, 3.3, and 3.4")
+            return
+
+        # strip out the virtualenvwrapper stuff from the os environment for use when building the wheels in each
+        # of the virtual environments.
+        new_parts = []
+        for part in os.environ['PATH'].split(':'):
+            if ".venv" not in part:
+                new_parts.append(str(part))
+        new_path = ':'.join(new_parts)
+        new_env = os.environ.copy()
+        if 'VIRTUAL_ENV' in new_env:
+            del new_env['VIRTUAL_ENV']
+        new_env['PATH'] = new_path
+
         with LocalShell() as local:
             for ver in Project.wheel_python_versions:
-                local.run('bash -c "export WORKON_HOME=$HOME/.venv ;'
-                          'export PROJECT_HOME=$HOME/projects ;'
-                          'export VIRTUALENVWRAPPER_LOG_DIR=$WORKON_HOME ;'
-                          'export VIRTUALENVWRAPPER_HOOK_DIR=$WORKON_HOME ;'
-                          'source /usr/local/bin/virtualenvwrapper.sh ;'
-                          'workon herring{ver} ;'
-                          'herring build::wheel --python-tag py{ver}"'.format(ver=ver), verbose=True)
+                local.run('/bin/bash -c "source /usr/local/bin/virtualenvwrapper.sh ;'
+                          'workon {package}{ver} ;'
+                          'herring build::wheel --python-tag py{ver}"'.format(package=Project.package, ver=ver),
+                          verbose=True,
+                          env=new_env)
 
     @task()
     def sdist():
