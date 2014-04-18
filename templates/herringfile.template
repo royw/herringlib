@@ -10,7 +10,9 @@ import os
 import re
 
 # noinspection PyUnresolvedReferences
-from herring.herring_app import task, namespace
+from herring.herring_app import task, namespace, HerringFile, task_execute
+from herring.support.simple_logger import info
+
 # noinspection PyUnresolvedReferences
 from herringlib.project_settings import Project
 
@@ -26,6 +28,12 @@ Project.metadata(
         'author': '{author}',
         'author_email': '{author_email}',
         'description': '{description}',
+
+        # python version to build source distribution with
+        'sdist_python_version': '34',
+
+        # python versions to build wheels for
+        'wheel_python_versions': ('34', '33', '27', '26'),
     }}
 )
 

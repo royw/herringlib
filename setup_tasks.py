@@ -17,7 +17,6 @@ from getpass import getpass
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, HerringFile, task_execute, namespace
-from pprint import pformat
 from herringlib.version import bump, get_project_version
 from herringlib.project_settings import Project
 from herringlib.local_shell import LocalShell
@@ -91,7 +90,7 @@ except:
 
 # cleaning is necessary to remove stale .pyc files, particularly after
 # refactoring.
-@task(depends=['doc::post_clean'], help='You must deactivate an virtualenv before running this command!')
+@task(depends=['doc::post_clean'])
 def build():
     """ build the project as a source distribution (deactivate virtualenv before running).
 

@@ -75,10 +75,6 @@ Tasks may access the project attributes with:
 Project directories are accessed using a '_dir' suffix.  For example the 'docs' directory would be accessed
 with *Project.docs_dir*.
 
-    Add the following to your *requirements.txt* file:
-
-    * configparser
-
 """
 import fnmatch
 import os
@@ -89,7 +85,15 @@ import shutil
 # noinspection PyUnresolvedReferences
 import sys
 
-from configparser import ConfigParser, NoSectionError
+try:
+    # python3
+    # noinspection PyUnresolvedReferences
+    from configparser import ConfigParser, NoSectionError
+except ImportError:
+    # python2
+    # noinspection PyUnresolvedReferences
+    from ConfigParser import ConfigParser, NoSectionError
+
 from pprint import pformat
 
 # noinspection PyUnresolvedReferences
@@ -209,11 +213,11 @@ class ProjectSettings(object):
         Note, be sure to escape curly brackets ('{', '}') with double curly brackets ('{{', '}}').
         """
         debug("requiredFiles")
-        requirements_filename = os.path.join(Project.herringfile_dir, 'requirements.txt')
-        needed = find_missing_requirements(requirements_filename)
+        needed = find_missing_requirements()
         debug("needed: %s" % repr(needed))
         if needed:
             try:
+                requirements_filename = os.path.join(Project.herringfile_dir, 'requirements.txt')
                 with open(requirements_filename, 'a') as req_file:
                     for need in needed:
                         req_file.write(need + "\n")
@@ -381,11 +385,11 @@ def get_requirements(doc_string):
 
 
 # noinspection PyArgumentEqualDefault
-@task()
+@task(namespace='project',)
 def check_requirements():
     """ Checks that herringfile and herringlib/* required packages are in requirements.txt file """
     requirements_filename = os.path.join(Project.herringfile_dir, 'requirements.txt')
-    needed = find_missing_requirements(requirements_filename)
+    needed = find_missing_requirements()
     if needed:
         info("Please add the following to your %s:\n" % requirements_filename)
         info("\n".join(needed))
@@ -393,7 +397,7 @@ def check_requirements():
         info("Your %s includes all known herringlib task requirements" % requirements_filename)
 
 
-def find_missing_requirements(requirements_filename):
+def find_missing_requirements():
     lib_files = []
     debug("HerringFile.herringlib_paths: %s" % repr(HerringFile.herringlib_paths))
     for herringlib_path in [os.path.join(path_, 'herringlib') for path_ in HerringFile.herringlib_paths]:
@@ -470,7 +474,7 @@ def packages_required(package_names):
         return False
 
 
-@task()
-def project():
+@task(namespace='project')
+def show():
     """Show project settings"""
     info(str(Project))

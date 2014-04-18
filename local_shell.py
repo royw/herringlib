@@ -187,7 +187,7 @@ class LocalShell(AShell):
         self.display("run_process(%s, %s)\n\n" % (cmd_args, env), out_stream=out_stream, verbose=verbose)
         sub_env = os.environ.copy()
         if env:
-            for key, value in env.iteritems():
+            for key, value in env.items():
                 sub_env[key] = value
 
         timeout_seconds = timeout

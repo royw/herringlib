@@ -19,15 +19,23 @@ This base class adds the following features to ArgumentParser:
 """
 from {package}.utils.terminalsize import get_terminal_size
 
-__docformat__ = 'restructuredtext en'
-
 import os
 import re
-import configparser
 import argparse
+
+try:
+    # python3
+    # noinspection PyUnresolvedReferences
+    from configparser import ConfigParser, NoSectionError
+except ImportError:
+    # python2
+    # noinspection PyUnresolvedReferences
+    from ConfigParser import ConfigParser, NoSectionError
+
 import {package}
 from {package}.utils.simple_logger import info
 
+__docformat__ = 'restructuredtext en'
 __all__ = ("ApplicationSettings",)
 
 
@@ -78,6 +86,7 @@ class ApplicationSettings(object):
         self.__config_sections = config_sections
         self._parser = None
         self._settings = None
+        self._remaining_argv = None
 
         default_help = {{
             'version': "Show the application's version.  (default: %(default)s)",
@@ -104,7 +113,7 @@ class ApplicationSettings(object):
         if args.conf_file:
             config_files.insert(0, args.conf_file)
 
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(config_files)
         defaults = {{}}
         for section in self.__config_sections:
@@ -127,9 +136,10 @@ class ApplicationSettings(object):
         parser.set_defaults(**defaults)
 
         self._cli_options(parser)
-        settings = parser.parse_args(remaining_argv)
+        settings, leftover_argv = parser.parse_known_args(remaining_argv)
+        settings.config_files = config_files
 
-        return parser, settings
+        return parser, settings, leftover_argv
 
     def _config_files(self):
         """
@@ -141,8 +151,10 @@ class ApplicationSettings(object):
         :return: the set of config file locations
         :rtype: list
         """
-        rc_name = ".{package}rc".format(name=self.__app_package)
-        return [rc_name, os.path.expanduser("~/{package}".format(name=rc_name))]
+        rc_name = ".{{pkg}}rc".format(pkg=self.__app_package)
+        conf_name = os.path.expanduser("~/.{{pkg}}/{{pkg}}.conf".format(pkg=self.__app_package))
+        home_rc_name = os.path.expanduser("~/.{{pkg}}rc".format(pkg=self.__app_package))
+        return [rc_name, conf_name, home_rc_name]
 
     def _cli_options(self, parser):
         """
@@ -180,7 +192,7 @@ class ApplicationSettings(object):
         :return: the settings namespace
         :rtype: argparse.Namespace
         """
-        self._parser, self._settings = self.parse()
+        self._parser, self._settings, self._remaining_argv = self.parse()
 
         # Logger.set_verbose(not self._settings.quiet)
         # Logger.set_debug(self._settings.debug)
@@ -231,6 +243,7 @@ class ApplicationSettings(object):
         # trying __init__.py first
         try:
             file_name = os.path.join(path, '../__init__.py')
+            # noinspection PyArgumentEqualDefault
             with open(file_name, 'r') as in_file:
                 for line in in_file.readlines():
                     match = re.match(self.VERSION_REGEX, line)
@@ -243,6 +256,7 @@ class ApplicationSettings(object):
         try:
             # noinspection PyUnresolvedReferences
             file_name = os.path.join(path, 'VERSION.txt')
+            # noinspection PyArgumentEqualDefault
             with open(file_name, 'r') as in_file:
                 return in_file.read().strip()
         except IOError:
