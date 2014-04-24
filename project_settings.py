@@ -129,6 +129,22 @@ class ProjectSettings(object):
             'pylintrc': os.path.join(HerringFile.directory, 'pylint.rc'),
             'pythonPath': ".:%s" % HerringFile.directory,
 
+            'changelog_file': "CHANGES.rst",
+            'readme_file': "README.rst",
+            'usage_file': 'usage.rst',
+            'todo_file': 'todo.rst',
+            'install_file': 'install.rst',
+            'design_file': 'design.rst',
+
+            'design_header': """\
+                The application is a non-interactive CLI utility.
+
+                A common pattern used is for a class to have an **execute()** method.  The class is initialized,
+                set up, then the **execute()** method is invoked once and the class's primary function is performed.
+                The instance may then be queried for results before destruction.  I'll refer to this pattern as the
+                execute pattern.
+            """,
+
             'quality_dir': 'quality',
             'docs_dir': 'docs',
             'uml_dir': 'docs/_src/uml',
@@ -191,7 +207,7 @@ class ProjectSettings(object):
         from herringlib.version import get_project_version
 
         self.__setattr__('version', get_project_version(project_package=self.package))
-        info("version: %s" % self.version)
+        info("{name} version: {version}".format(name=getattr(self, 'name', ''), version=self.version))
         # Project.version = version
 
     def __directory(self, relative_name):
