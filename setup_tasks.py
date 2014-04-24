@@ -114,7 +114,7 @@ with namespace('build'):
             [wheel]
             universal=0
         """
-        if Project.wheel_python_versions is None or not Project.wheel_python_versions:
+        if getattr(Project, 'wheel_python_versions', None) is None or not Project.wheel_python_versions:
             info("To build wheels, in your herringfile you must set Project.wheel_python_versions to a list"
                  "of compact version, for example: ['27', '33', '34'] will build wheels for python 2.7, 3.3, and 3.4")
             return
@@ -156,22 +156,24 @@ with namespace('build'):
                     kwargs.append("--{key} {value}".format(key=key, value=task.kwargs[key]))
                 local.system("python setup.py bdist_wheel {kwargs}".format(kwargs=" ".join(kwargs)))
 
-    @task(depends=['build'])
-    def install():
-        """ install the project """
-        with LocalShell() as local:
-            local.system("python setup.py install --record install.record")
 
-    @task()
-    def uninstall():
-        """ uninstall the project"""
-        with LocalShell() as local:
-            if os.path.exists('install.record'):
-                local.system("cat install.record | xargs rm -rf")
-                os.remove('install.record')
-            else:
-                # try uninstalling with pip
-                local.run(['pip', 'uninstall', Project.herringfile_dir.split(os.path.sep)[-1]])
+@task(namespace='build', depends=['build'])
+def install():
+    """ install the project """
+    with LocalShell() as local:
+        local.system("python setup.py install --record install.record")
+
+
+@task(namespace='build')
+def uninstall():
+    """ uninstall the project"""
+    with LocalShell() as local:
+        if os.path.exists('install.record'):
+            local.system("cat install.record | xargs rm -rf")
+            os.remove('install.record')
+        else:
+            # try uninstalling with pip
+            local.run(['pip', 'uninstall', Project.herringfile_dir.split(os.path.sep)[-1]])
 
 with namespace('release'):
     @task()
