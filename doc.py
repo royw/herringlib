@@ -26,6 +26,7 @@ import os
 import re
 import shutil
 import fnmatch
+from textwrap import dedent
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace
@@ -175,7 +176,7 @@ if packages_required(required_packages):
                     out_file.write(".. inheritance-diagram:: %s\n" % value)
                 out_file.write("\n\n")
 
-        @task(depends=['clean', 'update_readme'])
+        @task(depends=['clean'])
         def api():
             """Generate API sphinx source files from code"""
             with cd(Project.docs_dir):
@@ -267,7 +268,7 @@ if packages_required(required_packages):
                 _create_module_diagrams(path)
                 _create_class_diagrams(path)
 
-        @task(depends=['api', 'diagrams', 'logo::create'])
+        @task(depends=['api', 'diagrams', 'logo::create', 'update'])
         def sphinx():
             """Generate sphinx API documents"""
             _customize_doc_src_files()
@@ -301,16 +302,6 @@ if packages_required(required_packages):
         def post_clean():
             """Generate docs then clean up afterwards"""
             clean()
-
-        @task()
-        def update_readme():
-            """Update the README.txt from the application's --longhelp output"""
-            with LocalShell() as local:
-                text = local.system("%s --longhelp" % os.path.join(Project.herringfile_dir,
-                                                                   Project.package, Project.main))
-                if text:
-                    with open("README.rst", 'w') as readme_file:
-                        readme_file.write(text)
 
         @task(depends=['clean'])
         def rstlint():
@@ -399,3 +390,103 @@ if packages_required(required_packages):
                 quick_edit(os.path.join(Project.docs_dir, 'conf.py'),
                            {r'(\s*html_logo\s*=\s*\".*?\").*':
                             ["html_logo = \"{logo}\"".format(logo=logo_file)]})
+
+        with namespace('update'):
+            @task()
+            def changelog():
+                """rewrite the changelog to CHANGES.rst"""
+                with open(Project.changelog_file, 'w') as changelog_file:
+                    changelog_file.write("Change Log\n")
+                    changelog_file.write("==========\n\n")
+                    changelog_file.write("::\n\n")
+                    with LocalShell() as local:
+                        output = local.run("git log --pretty=%s --graph")
+                        for line in output.strip().split("\n"):
+                            changelog_file.write("    {line}\n".format(line=line))
+
+            @task()
+            def todo():
+                """rewrite the TODO.rst file"""
+                with open(Project.todo_file, 'w') as todo_file:
+                    todo_file.write("TODO\n")
+                    todo_file.write("====\n\n")
+                    with LocalShell(verbose=False) as local:
+                        output = local.run("find {dir} -name \"*.py\" -exec "
+                                           "egrep -o \"TODO:?\s+(.+)\s*\" '{{}}' \\;".format(dir=Project.package))
+                        for line in output.strip().split("\n"):
+                            todo_file.write("* ")
+                            todo_file.write(line.strip())
+                            todo_file.write("\n")
+                        todo_file.write("\n")
+
+            @task()
+            def design():
+                """Update the design.rst from the source module's docstrings"""
+                with LocalShell(verbose=False) as local:
+                    py_files = [py_file for py_file in os.listdir(Project.package)
+                                if py_file.endswith('.py') and py_file != '__init__.py']
+                    with open(Project.design_file, 'w') as design_file:
+                        design_file.write("Design\n")
+                        design_file.write("======\n\n")
+                        design_file.write(Project.design_header.strip())
+                        design_file.write("\n\n")
+                        for py_file in py_files:
+                            py_path = "{pkg}.{file}".format(pkg=Project.package, file=os.path.splitext(py_file)[0])
+                            output = local.run("python -c \"import {path}; "
+                                               "print({path}.__doc__)\"".format(path=py_path))
+                            design_file.write(py_file)
+                            design_file.write("\n")
+                            design_file.write('-' * len(py_file))
+                            design_file.write("\n\n")
+                            design_file.write(output.strip())
+                            design_file.write("\n\n")
+
+            @task()
+            def usage():
+                """Update the usage.rst from the application's --help output"""
+                with LocalShell(verbose=False) as local:
+                    text = local.run("%s --help" % os.path.join(Project.herringfile_dir,
+                                                                Project.package, Project.main))
+                    with open(Project.usage_file, 'w') as usage_file:
+                        if text:
+                            usage_file.write("\n\n")
+                            usage_file.write("Usage\n")
+                            usage_file.write("=====\n\n")
+                            usage_file.write("::\n\n")
+                            usage_file.write("    ➤ harvester/harvester_main.py --sigkb3_creds_file.sigkb3.creds \\\n")
+                            usage_file.write("    --use_test_repo \\\n")
+                            usage_file.write("    --test_svn_creds_file.test_svn.creds \\\n")
+                            usage_file.write("    --script_dir ../../malware-dv-feed/malware_dv_feed\n\n")
+                            usage_file.write("    ➤ harvester - -help")
+                            for line in text.split("\n"):
+                                usage_file.write("    {line}\n".format(line=line))
+
+            @task()
+            def readme():
+                """Update the README.rst from the application's --longhelp output"""
+                with LocalShell(verbose=False) as local:
+                    text = local.run("%s --longhelp" % os.path.join(Project.herringfile_dir,
+                                                                    Project.package, Project.main))
+                    if text:
+                        with open(Project.readme_file, 'w') as readme_file:
+                            readme_file.write(text)
+
+            @task()
+            def install():
+                """Update the install.rst"""
+                with open(Project.install_file, 'w') as install_file:
+                    install_file.write(dedent("""\
+                        Installation
+                        ============
+
+                        To install from local PyPI::
+
+                            ➤ pip install --index-url {url} {name}
+
+                    """.format(url="http://{host}/pypi/simple/".format(host=Project.dist_host), name=Project.name)))
+
+        @task(depends=['update::readme', 'update::changelog', 'update::todo',
+                       'update::usage', 'update::design', 'update::install'])
+        def update():
+            """Update generated document files"""
+            pass
