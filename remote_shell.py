@@ -200,9 +200,9 @@ if packages_required(required_packages):
             self.ssh.prompt(timeout=.1)     # clear out any pending prompts
             self.ssh.sendline(command_line)
             self.ssh.prompt(timeout=timeout)
-            buf = [self.ssh.before]
+            buf = [self.ssh.before.decode('utf-8')]
             if self.ssh.after:
-                buf.append(str(self.ssh.after))
+                buf.append(self.ssh.after.decode('utf-8'))
             return ''.join(buf)
 
         def put(self, files, remote_path=None, out_stream=sys.stdout, verbose=False):
