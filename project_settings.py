@@ -196,8 +196,9 @@ class ProjectSettings(object):
             'egg_dir': "{name}.egg-info".format(name=self.name),
             'script': self.package,
             'main': '{name}_main.py'.format(name=self.package),
-            'dist_host': self._env('LOCAL_PYPI_HOST'),
-            'pypi_path': self._env('LOCAL_PYPI_PATH'),
+            'dist_host': self._env('LOCAL_PYPI_HOST', default_value='http://localhost'),
+            'pypi_path': self._env('LOCAL_PYPI_PATH', default_value='/var/pypi/dev'),
+            'docs_path': self._env('LOCAL_DOCS_PATH', default_value='/var/www/docs'),
             'bin_dir': '~/bin',
         }
         for key in required:

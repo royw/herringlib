@@ -30,6 +30,30 @@ __docformat__ = 'restructuredtext en'
 try:
     from herringlib.remote_shell import RemoteShell
 
+    @task(namespace='doc')
+    def publish():
+        """ copy latest docs to the server """
+        project_version_name = "{name}-{version}".format(name=Project.name, version=Project.version)
+        project_latest_name = "{name}-latest".format(name=Project.name)
+        doc_version = '{dir}/{file}'.format(dir=Project.docs_path, file=project_version_name)
+        doc_latest = '{dir}/{file}'.format(dir=Project.docs_path, file=project_latest_name)
+
+        docs_html_dir = '{dir}'.format(dir=Project.docs_html_dir)
+
+        password = Project.password or getpass("password for {user}@{host}: ".format(user=Project.user,
+                                                                                     host=Project.dist_host))
+        Project.password = password
+
+        with RemoteShell(user=Project.user, password=password, host=Project.dist_host, verbose=True) as remote:
+            remote.run('mkdir -p {dir}'.format(dir=Project.docs_path))
+            remote.run('rm -rf {path}'.format(path=doc_latest))
+            remote.run('rm -rf {path}'.format(path=doc_version))
+            remote.run('mkdir -p {dir}'.format(dir=doc_version))
+            remote.put(docs_html_dir, doc_version)
+            remote.run('ln -s {src} {dest}'.format(src=doc_version, dest=doc_latest))
+            remote.run('sudo chown -R www-data:users {dest}'.format(dest=doc_version),
+                       accept_defaults=True, timeout=10)
+
     @task()
     def deploy():
         """ copy latest sdist tar ball to server """
