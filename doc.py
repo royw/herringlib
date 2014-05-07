@@ -496,8 +496,9 @@ if packages_required(required_packages):
                 """Update the README.rst from the application's --longhelp output"""
                 if Project.main is not None:
                     with LocalShell(verbose=False) as local:
-                        text = local.run("%s --longhelp" % os.path.join(Project.herringfile_dir,
-                                                                        Project.package, Project.main))
+                        text = local.system("%s --longhelp" % os.path.join(Project.herringfile_dir,
+                                                                           Project.package, Project.main),
+                                            verbose=False)
                         if text:
                             with open(Project.readme_file, 'w') as readme_file:
                                 readme_file.write(text)
