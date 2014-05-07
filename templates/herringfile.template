@@ -29,6 +29,16 @@ Project.metadata(
         'author_email': '{author_email}',
         'description': '{description}',
 
+        # if you want to include a design section in the documentation, you can either
+        # add the design info as a string to 'design_header', or create an RST file
+        # and add the path to the file to 'design_header_file'.
+        # Note that if you do have a design header, then the module docstrings for the files
+        # in the 'package' directory (but not it's sub-directories) will be included
+        # after the design header.
+
+        'design_header': '',
+        'design_header_file': None,
+
         # python version to build source distribution with
         'sdist_python_version': '34',
 

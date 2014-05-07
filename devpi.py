@@ -16,7 +16,7 @@ from herringlib.local_shell import LocalShell
 from herringlib.project_settings import packages_required, Project
 
 required_packages = [
-    'devpi',
+    # 'devpi',
 ]
 
 if packages_required(required_packages):

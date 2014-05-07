@@ -30,6 +30,7 @@ from textwrap import dedent
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace
+from herringlib.mkdir_p import mkdir_p
 from herringlib.simple_logger import info, warning
 from herringlib.project_settings import Project, packages_required
 from herringlib.local_shell import LocalShell
@@ -84,6 +85,7 @@ if packages_required(required_packages):
 
         def _package_line(module_name):
             """create the package figure lines for the given module"""
+            info("_package_line(%s)" % module_name)
             line = ''
             package_image = "uml/packages_{name}.svg".format(name=module_name.split('.')[-1])
             classes_image = "uml/classes_{name}.svg".format(name=module_name.split('.')[-1])
@@ -102,6 +104,7 @@ if packages_required(required_packages):
 
         def _class_line(module_name, class_name):
             """create the class figure lines for the given module and class"""
+            info("_class_line(%s, %s)" % (module_name, class_name))
             line = ''
             classes_image = "uml/classes_{module}.{name}.png".format(module=module_name, name=class_name)
             image_path = os.path.join(Project.docs_dir, '_src', classes_image)
@@ -152,6 +155,7 @@ if packages_required(required_packages):
                 for line in in_file.readlines():
                     match = re.match(r':mod:`(.+)`(.*)', line)
                     if match:
+                        info("matched :mod:")
                         key = match.group(1)
                         if key in name_dict:
                             value = name_dict[key]
@@ -159,13 +163,27 @@ if packages_required(required_packages):
                         line_length = len(line)
                         package = re.search(r':mod:.+Package', line)
                         class_name = key
-                    elif re.match(r'[=\-\.][=\-\.][=\-\.]+', line):
+                    match = re.match(r'(.+)\s+module\s*', line)
+                    if match:
+                        info("matched module")
+                        class_name = match.group(1).split('.')[-1]
+                        package = False
+                    match = re.match(r'Module contents', line)
+                    if match:
+                        package = True
+                        class_name = '__init__'
+                    if re.match(r'[=\-\.][=\-\.][=\-\.]+', line):
+                        info("matched [=\-\.][=\-\.][=\-\.]+")
                         if line_length > 0:
                             line = "%s\n" % (line[0] * line_length)
-                            if package:
-                                line += _package_line(module_name)
-                            else:
-                                line += _class_line(module_name, class_name)
+                        if package:
+                            line += _package_line(module_name)
+                        if class_name:
+                            line += _class_line(module_name, class_name)
+                    match = re.match(r'\s*:members:', line)
+                    if match:
+                        line += "    :special-members:\n"
+                        line += "    :exclude-members: __dict__,__weakref__,__module__\n"
                     out_file.write(line)
 
                 out_file.write("\n\n")
@@ -264,6 +282,7 @@ if packages_required(required_packages):
         def diagrams():
             """Create UML diagrams"""
             path = os.path.join(Project.herringfile_dir, Project.package)
+            mkdir_p(Project.uml_dir)
             with cd(Project.uml_dir):
                 _create_module_diagrams(path)
                 _create_class_diagrams(path)
@@ -422,54 +441,66 @@ if packages_required(required_packages):
             @task()
             def design():
                 """Update the design.rst from the source module's docstrings"""
-                with LocalShell(verbose=False) as local:
-                    py_files = [py_file for py_file in os.listdir(Project.package)
-                                if py_file.endswith('.py') and py_file != '__init__.py']
+                design_header = Project.design_header.strip()
+                if design_header:
+                    with LocalShell(verbose=False) as local:
+                        py_files = [py_file for py_file in os.listdir(Project.package)
+                                    if py_file.endswith('.py') and py_file != '__init__.py']
+                        with open(Project.design_file, 'w') as design_file:
+                            design_file.write("Design\n")
+                            design_file.write("======\n\n")
+                            design_file.write(design_header)
+                            design_file.write("\n\n")
+                            for py_file in py_files:
+                                py_path = "{pkg}.{file}".format(pkg=Project.package, file=os.path.splitext(py_file)[0])
+                                output = local.run("python -c \"import {path}; "
+                                                   "print({path}.__doc__)\"".format(path=py_path))
+                                design_file.write(py_file)
+                                design_file.write("\n")
+                                design_file.write('-' * len(py_file))
+                                design_file.write("\n\n")
+                                design_file.write(output.strip())
+                                design_file.write("\n\n")
+                else:
+                    # truncate file
                     with open(Project.design_file, 'w') as design_file:
-                        design_file.write("Design\n")
-                        design_file.write("======\n\n")
-                        design_file.write(Project.design_header.strip())
-                        design_file.write("\n\n")
-                        for py_file in py_files:
-                            py_path = "{pkg}.{file}".format(pkg=Project.package, file=os.path.splitext(py_file)[0])
-                            output = local.run("python -c \"import {path}; "
-                                               "print({path}.__doc__)\"".format(path=py_path))
-                            design_file.write(py_file)
-                            design_file.write("\n")
-                            design_file.write('-' * len(py_file))
-                            design_file.write("\n\n")
-                            design_file.write(output.strip())
-                            design_file.write("\n\n")
+                        pass
 
             @task()
             def usage():
                 """Update the usage.rst from the application's --help output"""
-                with LocalShell(verbose=False) as local:
-                    text = local.run("%s --help" % os.path.join(Project.herringfile_dir,
-                                                                Project.package, Project.main))
-                    with open(Project.usage_file, 'w') as usage_file:
-                        if text:
-                            usage_file.write("\n\n")
-                            usage_file.write("Usage\n")
-                            usage_file.write("=====\n\n")
-                            usage_file.write("::\n\n")
-                            usage_file.write("    ➤ harvester/harvester_main.py --sigkb3_creds_file.sigkb3.creds \\\n")
-                            usage_file.write("    --use_test_repo \\\n")
-                            usage_file.write("    --test_svn_creds_file.test_svn.creds \\\n")
-                            usage_file.write("    --script_dir ../../malware-dv-feed/malware_dv_feed\n\n")
-                            usage_file.write("    ➤ harvester - -help")
-                            for line in text.split("\n"):
-                                usage_file.write("    {line}\n".format(line=line))
+                with open('setup.py') as setup_file:
+                    setup_str = setup_file.read()
+                    match = re.search(r"\s*entry_points\s*=\s*(\{.+?\})",
+                                      setup_str.replace('\n', ' '), re.MULTILINE)
+                    if match:
+                        entry_points = eval(match.group(1))
+                        console_scripts = [line.split('=')[1].split(':')[0].strip()
+                                           for line in entry_points['console_scripts']]
+                        info(repr(console_scripts))
+                        with LocalShell(verbose=False) as local:
+                            with open(Project.usage_file, 'w') as usage_file:
+                                usage_file.write("\n\n")
+                                usage_file.write("Usage\n")
+                                usage_file.write("=====\n\n")
+                                usage_file.write("::\n\n")
+                                for script in console_scripts:
+                                    text = local.run("python -m %s --help" % script)
+                                    if text:
+                                        usage_file.write("    ➤ {app} --help\n".format(app=script))
+                                        for line in text.split("\n"):
+                                            usage_file.write("    {line}\n".format(line=line))
 
             @task()
             def readme():
                 """Update the README.rst from the application's --longhelp output"""
-                with LocalShell(verbose=False) as local:
-                    text = local.run("%s --longhelp" % os.path.join(Project.herringfile_dir,
-                                                                    Project.package, Project.main))
-                    if text:
-                        with open(Project.readme_file, 'w') as readme_file:
-                            readme_file.write(text)
+                if Project.main is not None:
+                    with LocalShell(verbose=False) as local:
+                        text = local.run("%s --longhelp" % os.path.join(Project.herringfile_dir,
+                                                                        Project.package, Project.main))
+                        if text:
+                            with open(Project.readme_file, 'w') as readme_file:
+                                readme_file.write(text)
 
             @task()
             def install():

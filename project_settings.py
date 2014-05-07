@@ -129,12 +129,15 @@ class ProjectSettings(object):
             'pylintrc': os.path.join(HerringFile.directory, 'pylint.rc'),
             'pythonPath': ".:%s" % HerringFile.directory,
 
-            'changelog_file': "CHANGES.rst",
             'readme_file': "README.rst",
-            'usage_file': 'usage.rst',
-            'todo_file': 'todo.rst',
-            'install_file': 'install.rst',
-            'design_file': 'design.rst',
+            'design_file': 'docs/design.rst',
+            'install_file': 'docs/install.rst',
+            'usage_file': 'docs/usage.rst',
+            'todo_file': 'docs/todo.rst',
+            'license_file': 'docs/license.rst',
+            'faq_file': 'docs/faq.rst',
+            'news_file': 'docs/news.rst',
+            'changelog_file': "docs/CHANGES.rst",
 
             'design_header': """\
                 The application is a non-interactive CLI utility.
@@ -144,6 +147,7 @@ class ProjectSettings(object):
                 The instance may then be queried for results before destruction.  I'll refer to this pattern as the
                 execute pattern.
             """,
+            'design_header_file': None,
 
             'quality_dir': 'quality',
             'docs_dir': 'docs',
@@ -210,6 +214,15 @@ class ProjectSettings(object):
         self.__setattr__('version', get_project_version(project_package=self.package))
         info("{name} version: {version}".format(name=getattr(self, 'name', ''), version=self.version))
         # Project.version = version
+
+        # load design header from file if available
+        # noinspection PyBroadException
+        try:
+            with open(self.design_header_file) as in_file:
+                # noinspection PyAttributeOutsideInit
+                self.design_header = in_file.read()
+        except:
+            pass
 
     def __directory(self, relative_name):
         """return the full path from the given path relative to the herringfile directory"""
