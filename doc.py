@@ -289,12 +289,22 @@ if packages_required(required_packages):
 
         @task(depends=['api', 'diagrams', 'logo::create', 'update'])
         def sphinx():
-            """Generate sphinx API documents"""
+            """Generate sphinx HTML API documents"""
             _customize_doc_src_files()
             with cd(Project.docs_dir):
                 os.system('PYTHONPATH={pythonpath} sphinx-build -b html -d _build/doctrees -w docs.log '
                           '-a -E -n . ../{htmldir}'.format(pythonpath=Project.pythonPath,
                                                            htmldir=Project.docs_html_dir))
+                clean_doc_log('docs.log')
+
+        @task(depends=['api', 'diagrams', 'logo::create', 'update'])
+        def pdf():
+            """Generate PDF API documents"""
+            _customize_doc_src_files()
+            with cd(Project.docs_dir):
+                os.system('PYTHONPATH={pythonpath} sphinx-build -b pdf -d _build/doctrees -w docs.log '
+                          '-a -E -n . ../{pdfdir}'.format(pythonpath=Project.pythonPath,
+                                                          pdfdir=Project.docs_pdf_dir))
                 clean_doc_log('docs.log')
 
         @task()

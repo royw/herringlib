@@ -108,8 +108,8 @@ try:
                            accept_defaults=True, timeout=10)
                 remote.run('sudo chmod 777 {dest}'.format(dest=dist_wheel),
                            accept_defaults=True, timeout=10)
-except:
-    pass
+except Exception as ex:
+    error(ex)
 
 
 # cleaning is necessary to remove stale .pyc files, particularly after

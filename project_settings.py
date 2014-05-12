@@ -155,6 +155,7 @@ class ProjectSettings(object):
             'api_dir': 'docs/api',
             'templates_dir': 'docs/_templates',
             'docs_html_dir': 'build/docs',
+            'docs_pdf_dir': 'build/pdf      ',
             'report_dir': 'report',
             'tests_dir': 'tests',
             'dist_dir': 'dist',

@@ -8,7 +8,7 @@ Add the following to your *requirements.txt* file:
 * pexpect
 
 """
-from herringlib.simple_logger import error
+from herringlib.simple_logger import error, info
 
 __docformat__ = 'restructuredtext en'
 
