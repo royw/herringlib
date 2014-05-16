@@ -84,6 +84,7 @@ import shutil
 # used in requirement conditions
 # noinspection PyUnresolvedReferences
 import sys
+import site
 
 try:
     # python3
@@ -121,6 +122,13 @@ class ProjectSettings(object):
     """
 
     def __init__(self):
+        site_packages = []
+        try:
+            site_packages = site.getsitepackages()
+        except AttributeError:
+            # virtualenv uses site.py from python2.6 instead of python2.7 where getsitepackages() was introduced.
+            pass
+
         defaults = {
             'user': self._env('USER'),
             'password': None,
@@ -128,6 +136,7 @@ class ProjectSettings(object):
             'version': None,
             'pylintrc': os.path.join(HerringFile.directory, 'pylint.rc'),
             'pythonPath': ".:%s" % HerringFile.directory,
+            'site_packages': site_packages,
 
             'readme_file': "README.rst",
             'design_file': 'docs/design.rst',

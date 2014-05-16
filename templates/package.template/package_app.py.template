@@ -7,7 +7,7 @@ from {package}.utils.graceful_interrupt_handler import GracefulInterruptHandler
 from {package}.utils.simple_logger import Logger, info, error, FileLogger, debug
 
 __docformat__ = 'restructuredtext en'
-__all__ = ("HarvesterApp",)
+__all__ = ("{name}App",)
 
 
 class {name}App(object):
