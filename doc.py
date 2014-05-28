@@ -293,7 +293,7 @@ if packages_required(required_packages):
             _customize_doc_src_files()
             with cd(Project.docs_dir):
                 os.system('PYTHONPATH={pythonpath} sphinx-build -b html -d _build/doctrees -w docs.log '
-                          '-v -v -v -v -a -E . ../{htmldir}'.format(pythonpath=Project.pythonPath,
+                          '-v -a -E . ../{htmldir}'.format(pythonpath=Project.pythonPath,
                                                         htmldir=Project.docs_html_dir))
                 clean_doc_log('docs.log')
 
