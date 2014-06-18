@@ -223,6 +223,13 @@ class ProjectSettings(object):
 
         self.__setattr__('version', get_project_version(project_package=self.package))
         info("{name} version: {version}".format(name=getattr(self, 'name', ''), version=self.version))
+
+        if Project.package is None:
+            Project.main = None
+
+        if Project.logo_name is None:
+            Project.logo_name = Project.name
+
         # Project.version = version
 
         # load design header from file if available
@@ -497,14 +504,23 @@ def packages_required(package_names):
             shutil.rmtree(egg_info_dir)
 
         with LocalShell() as local:
-            pip_list_output = local.run('pip list')
-            debug(pip_list_output)
+            pip = 'pip'
+            # if 'VIRTUAL_ENV' in os.environ:
+            #     pip = os.path.join(os.environ['VIRTUAL_ENV'], 'bin', 'pip')
+            # info("PATH={path}".format(path=os.environ['PATH']))
+            # info(pip)
+            pip = local.system('which pip', verbose=False).strip()
+            # info(pip)
+            # info("pip version: {ver}".format(ver=local.system('{pip} --version'.format(pip=pip))))
+            pip_list_output = local.run('{pip} list'.format(pip=pip))
+            # info(pip_list_output)
             lines = pip_list_output.split("\n")
             names = [line.split(" ")[0].lower() for line in lines if line.strip()]
-            debug(names)
+            # info(names)
             for pkg_name in package_names:
                 if pkg_name.lower() not in names:
                     try:
+                        # info('__import__({name})'.format(name=pkg_name))
                         __import__(pkg_name)
                     except ImportError:
                         info(pkg_name + " not installed!")

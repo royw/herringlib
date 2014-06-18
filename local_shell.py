@@ -8,6 +8,7 @@ Add the following to your *requirements.txt* file:
 * pexpect
 
 """
+from pprint import pformat
 from herringlib.simple_logger import error, info
 
 __docformat__ = 'restructuredtext en'
@@ -193,6 +194,8 @@ class LocalShell(AShell):
         timeout_seconds = timeout
         with GracefulInterruptHandler() as handler:
             try:
+                # info("PATH={path}".format(path=pformat(sub_env['PATH'].split(':'))))
+                # info("sys.path={path}".format(path=pformat(sys.path)))
                 process = subprocess.Popen(cmd_args,
                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                            env=sub_env)

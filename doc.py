@@ -197,10 +197,11 @@ if packages_required(required_packages):
         @task(depends=['clean'])
         def api():
             """Generate API sphinx source files from code"""
-            with cd(Project.docs_dir):
-                cmd_line = "sphinx-apidoc -d 6 -o _src ../%s" % Project.package
-                print(cmd_line)
-                os.system(cmd_line)
+            if Project.package is not None:
+                with cd(Project.docs_dir):
+                    cmd_line = "sphinx-apidoc -d 6 -o _src ../%s" % Project.package
+                    print(cmd_line)
+                    os.system(cmd_line)
 
         def _customize_doc_src_files():
             """change the auto-api generated sphinx src files to be more what we want"""
@@ -281,11 +282,12 @@ if packages_required(required_packages):
         @task(depends=['api'])
         def diagrams():
             """Create UML diagrams"""
-            path = os.path.join(Project.herringfile_dir, Project.package)
-            mkdir_p(Project.uml_dir)
-            with cd(Project.uml_dir):
-                _create_module_diagrams(path)
-                _create_class_diagrams(path)
+            if Project.package is not None:
+                path = os.path.join(Project.herringfile_dir, Project.package)
+                mkdir_p(Project.uml_dir)
+                with cd(Project.uml_dir):
+                    _create_module_diagrams(path)
+                    _create_class_diagrams(path)
 
         @task(depends=['api', 'diagrams', 'logo::create', 'update'])
         def sphinx():
@@ -294,7 +296,7 @@ if packages_required(required_packages):
             with cd(Project.docs_dir):
                 os.system('PYTHONPATH={pythonpath} sphinx-build -b html -d _build/doctrees -w docs.log '
                           '-v -a -E . ../{htmldir}'.format(pythonpath=Project.pythonPath,
-                                                        htmldir=Project.docs_html_dir))
+                                                           htmldir=Project.docs_html_dir))
                 clean_doc_log('docs.log')
 
         @task(depends=['api', 'diagrams', 'logo::create', 'update'])
@@ -356,6 +358,7 @@ if packages_required(required_packages):
         with namespace('logo'):
 
             def _neon(text):
+                file_name = text.replace(' ', '_').replace('\n', '_')
                 pre = """\
                     -size 500x200 \
                     xc:lightblue \
@@ -379,34 +382,34 @@ if packages_required(required_packages):
                     {post} \
                     \( +clone -blur 0x25 -level 0%,50% \) \
                     -compose screen -composite \
-                    {text}_on.png
-                """.format(text=text, pre=pre, post=post)
+                    {file}_on.png
+                """.format(text=text, file=file_name, pre=pre, post=post)
 
                 off = """convert \
                     {pre} \
                     -fill grey12 \
                     -annotate +0+0 '{text}' \
                     {post} \
-                     {text}_off.png
-                """.format(text=text, pre=pre, post=post)
+                     {file}_off.png
+                """.format(text=text, file=file_name, pre=pre, post=post)
 
                 animated = """convert \
-                    -adjoin -delay 100 {text}_on.png {text}_off.png {text}_animated.gif
-                """.format(text=text)
+                    -adjoin -delay 100 {file}_on.png {file}_off.png {file}_animated.gif
+                """.format(file=file_name)
 
                 # noinspection PyArgumentEqualDefault
                 with LocalShell(verbose=False) as local:
                     local.run(on)
                     local.run(off)
                     local.run(animated)
-                    local.run('bash -c "rm -f {text}_on.png {text}_off.png"'.format(text=text))
+                    local.run('bash -c "rm -f {file}_on.png {file}_off.png"'.format(file=file_name))
 
-                return "{text}_animated.gif".format(text=text)
+                return "{file}_animated.gif".format(file=file_name)
 
             @task()
             def display():
                 """display project logo"""
-                logo_file = _neon(Project.name)
+                logo_file = _neon(Project.logo_name)
                 # noinspection PyArgumentEqualDefault
                 with LocalShell(verbose=False) as local:
                     local.run('bash -c "display {logo_file} &"'.format(logo_file=logo_file))
@@ -414,7 +417,7 @@ if packages_required(required_packages):
             @task()
             def create():
                 """create the logo used in the sphinx documentation"""
-                logo_file = _neon(Project.name)
+                logo_file = _neon(Project.logo_name)
                 shutil.copyfile(logo_file, os.path.join(Project.docs_dir, '_static', logo_file))
                 quick_edit(os.path.join(Project.docs_dir, 'conf.py'),
                            {r'(\s*html_logo\s*=\s*\".*?\").*':
@@ -441,7 +444,7 @@ if packages_required(required_packages):
                     todo_file.write("====\n\n")
                     with LocalShell(verbose=False) as local:
                         output = local.run("find {dir} -name \"*.py\" -exec "
-                                           "egrep -o \"TODO:?\s+(.+)\s*\" '{{}}' \\;".format(dir=Project.package))
+                                           "egrep -H -o \"TODO:?\s+(.+)\s*\" '{{}}' \\;".format(dir=Project.package))
                         for line in output.strip().split("\n"):
                             todo_file.write("* ")
                             todo_file.write(line.strip())
@@ -479,39 +482,47 @@ if packages_required(required_packages):
             @task()
             def usage():
                 """Update the usage.rst from the application's --help output"""
-                with open('setup.py') as setup_file:
-                    setup_str = setup_file.read()
-                    match = re.search(r"\s*entry_points\s*=\s*(\{.+?\})",
-                                      setup_str.replace('\n', ' '), re.MULTILINE)
-                    if match:
-                        entry_points = eval(match.group(1))
-                        console_scripts = [line.split('=')[1].split(':')[0].strip()
-                                           for line in entry_points['console_scripts']]
-                        info(repr(console_scripts))
-                        with LocalShell(verbose=False) as local:
-                            with open(Project.usage_file, 'w') as usage_file:
-                                usage_file.write("\n\n")
-                                usage_file.write("Usage\n")
-                                usage_file.write("=====\n\n")
-                                usage_file.write("::\n\n")
-                                for script in console_scripts:
-                                    text = local.run("python -m %s --help" % script)
-                                    if text:
-                                        usage_file.write("    ➤ {app} --help\n".format(app=script))
-                                        for line in text.split("\n"):
-                                            usage_file.write("    {line}\n".format(line=line))
+                # noinspection PyBroadException
+                try:
+                    with open('setup.py') as setup_file:
+                        setup_str = setup_file.read()
+                        match = re.search(r"\s*entry_points\s*=\s*(\{.+?\})",
+                                          setup_str.replace('\n', ' '), re.MULTILINE)
+                        if match:
+                            entry_points = eval(match.group(1))
+                            console_scripts = [line.split('=')[1].split(':')[0].strip()
+                                               for line in entry_points['console_scripts']]
+                            info(repr(console_scripts))
+                            with LocalShell(verbose=False) as local:
+                                with open(Project.usage_file, 'w') as usage_file:
+                                    usage_file.write("\n\n")
+                                    usage_file.write("Usage\n")
+                                    usage_file.write("=====\n\n")
+                                    usage_file.write("::\n\n")
+                                    for script in console_scripts:
+                                        text = local.run("python -m %s --help" % script)
+                                        if text:
+                                            usage_file.write("    ➤ {app} --help\n".format(app=script))
+                                            for line in text.split("\n"):
+                                                usage_file.write("    {line}\n".format(line=line))
+                except:
+                    pass
 
             @task()
             def readme():
                 """Update the README.rst from the application's --longhelp output"""
-                if Project.main is not None:
-                    with LocalShell(verbose=False) as local:
-                        text = local.system("%s --longhelp" % os.path.join(Project.herringfile_dir,
-                                                                           Project.package, Project.main),
-                                            verbose=False)
-                        if text:
-                            with open(Project.readme_file, 'w') as readme_file:
-                                readme_file.write(text)
+                # noinspection PyBroadException
+                try:
+                    if Project.main is not None:
+                        with LocalShell(verbose=False) as local:
+                            text = local.system("%s --longhelp" % os.path.join(Project.herringfile_dir,
+                                                                               Project.package, Project.main),
+                                                verbose=False)
+                            if text:
+                                with open(Project.readme_file, 'w') as readme_file:
+                                    readme_file.write(text)
+                except:
+                    pass
 
             @task()
             def install():

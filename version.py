@@ -112,7 +112,13 @@ def get_project_version(project_package=None):
         with open(file_name, 'r') as in_file:
             return in_file.read().strip()
     except IOError:
-        pass
+        try:
+            file_name = _file_spec('VERSION.txt', Project.herringfile_dir)
+            info("version_file => %s" % file_name)
+            with open(file_name, 'r') as in_file:
+                return in_file.read().strip()
+        except IOError:
+            pass
 
     # no joy again, so set to initial version and try again
     set_project_version('0.0.1', project_package)
@@ -160,8 +166,17 @@ def set_project_version(version_str, project_package=None):
     except IOError as ex:
         error(ex)
         file_name = _file_spec('VERSION.txt', project_package)
-        with open(file_name, 'w') as version_file:
-            version_file.write(version_str)
+        try:
+            with open(file_name, 'w') as version_file:
+                version_file.write(version_str)
+        except IOError as ex2:
+            error(ex2)
+            file_name = _file_spec('VERSION.txt', Project.herringfile_dir)
+            try:
+                with open(file_name, 'w') as version_file:
+                    version_file.write(version_str)
+            except IOError as ex2:
+                error(ex2)
 
 
 with namespace('version'):
