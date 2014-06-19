@@ -44,12 +44,15 @@ try:
                                                                                      host=Project.dist_host))
         Project.password = password
 
+        info("Publishing to {user}@{host}".format(user=Project.user, host=Project.dist_host))
+
         with RemoteShell(user=Project.user, password=password, host=Project.dist_host, verbose=True) as remote:
             remote.run('mkdir -p \"{dir}\"'.format(dir=Project.docs_path))
             remote.run('rm -rf \"{path}\"'.format(path=doc_latest))
             remote.run('rm -rf \"{path}\"'.format(path=doc_version))
             remote.run('mkdir -p \"{dir}\"'.format(dir=doc_version))
-            remote.put(docs_html_dir, doc_version)
+            for file_ in [os.path.join(docs_html_dir, file_) for file_ in os.listdir(docs_html_dir)]:
+                remote.put(file_, doc_version)
             remote.run('ln -s \"{src}\" \"{dest}\"'.format(src=doc_version, dest=doc_latest))
             remote.run('sudo chown -R www-data:users \"{dest}\"'.format(dest=doc_version),
                        accept_defaults=True, timeout=10)

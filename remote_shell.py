@@ -227,11 +227,14 @@ if packages_required(required_packages):
             scp = SCPClient(ssh.get_transport())
             # scp = SCPClient(self.ssh.get_transport())
             try:
-                info("files: %s" % repr(files))
+                info("\nfiles: %s" % repr(files))
                 info("remote_path: %s" % remote_path)
                 output = scp.put(files, '"{dest}"'.format(dest=remote_path), recursive=True) or ''
             except Exception as ex:
-                output = str(ex)
+                try:
+                    output = scp.put(files, remote_path, recursive=True) or ''
+                except Exception as ex:
+                    output = str(ex)
             self.display("\n" + output, out_stream=out_stream, verbose=verbose)
             return output
 

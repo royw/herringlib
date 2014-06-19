@@ -214,6 +214,7 @@ class ProjectSettings(object):
             'pypi_path': self._env('LOCAL_PYPI_PATH', default_value='/var/pypi/dev'),
             'docs_path': self._env('LOCAL_DOCS_PATH', default_value='/var/www/docs'),
             'bin_dir': '~/bin',
+            'logo_name': None,
         }
         for key in required:
             if key not in self.__dict__:
