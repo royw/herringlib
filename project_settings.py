@@ -215,6 +215,7 @@ class ProjectSettings(object):
             'docs_path': self._env('LOCAL_DOCS_PATH', default_value='/var/www/docs'),
             'bin_dir': '~/bin',
             'logo_name': None,
+            'design_levels': 1,
         }
         for key in required:
             if key not in self.__dict__:

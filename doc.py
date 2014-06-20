@@ -22,6 +22,7 @@ Add the following to your *requirements.txt* file:
 * scp
 
 """
+import ast
 import os
 import re
 import shutil
@@ -231,15 +232,16 @@ if packages_required(required_packages):
             :param file_name: log file name
              :type file_name: str
             """
-            with safe_edit(file_name) as files:
-                in_file = files['in']
-                out_file = files['out']
-                for line in in_file.readlines():
-                    match = re.search(r'WARNING: py:class reference target not found: (\S+)', line)
-                    if match:
-                        if match.group(1) in ['object', 'exceptions.Exception', 'type', 'tuple']:
-                            continue
-                    out_file.write(line)
+            if os.path.isfile(file_name):
+                with safe_edit(file_name) as files:
+                    in_file = files['in']
+                    out_file = files['out']
+                    for line in in_file.readlines():
+                        match = re.search(r'WARNING: py:class reference target not found: (\S+)', line)
+                        if match:
+                            if match.group(1) in ['object', 'exceptions.Exception', 'type', 'tuple']:
+                                continue
+                        out_file.write(line)
 
         def _create_module_diagrams(path):
             """
@@ -293,7 +295,8 @@ if packages_required(required_packages):
         def sphinx():
             """Generate sphinx HTML API documents"""
             _customize_doc_src_files()
-            shutil.rmtree(Project.docs_html_dir)
+            if os.path.isdir(Project.docs_html_dir):
+                shutil.rmtree(Project.docs_html_dir)
             with cd(Project.docs_dir):
                 os.system('PYTHONPATH={pythonpath} sphinx-build -b html -d _build/doctrees -w docs.log '
                           '-v -a -E . ../{htmldir}'.format(pythonpath=Project.pythonPath,
@@ -458,23 +461,42 @@ if packages_required(required_packages):
                 design_header = Project.design_header.strip()
                 if design_header:
                     with LocalShell(verbose=False) as local:
-                        py_files = [py_file for py_file in os.listdir(Project.package)
-                                    if py_file.endswith('.py') and py_file != '__init__.py']
+                        py_files = []
+                        for root, dirs, files in os.walk(Project.package, topdown=True):
+                            depth = root.count(os.path.sep) + 1
+                            # print('depth={depth}  root={root}'.format(depth=depth, root=root))
+                            if depth > Project.design_levels:
+                                continue
+                            py_files.extend([os.path.join(root, file_) for file_ in files
+                                             if file_.endswith('.py') and file_ != '__init__.py'])
+
                         with open(Project.design_file, 'w') as design_file:
                             design_file.write("Design\n")
                             design_file.write("======\n\n")
                             design_file.write(design_header)
                             design_file.write("\n\n")
-                            for py_file in py_files:
-                                py_path = "{pkg}.{file}".format(pkg=Project.package, file=os.path.splitext(py_file)[0])
-                                output = local.run("python -c \"import {path}; "
-                                                   "print({path}.__doc__)\"".format(path=py_path))
+                            for py_file in sorted(py_files):
+                                tree = ast.parse(''.join(open(py_file)))
+                                docstring = (ast.get_docstring(tree, clean=True) or '').strip()
+                                functions = [node.name for node in tree.body if type(node) == ast.FunctionDef]
+                                classes = [node.name for node in tree.body if type(node) == ast.ClassDef]
                                 design_file.write(py_file)
                                 design_file.write("\n")
                                 design_file.write('-' * len(py_file))
                                 design_file.write("\n\n")
-                                design_file.write(output.strip())
+                                design_file.write(docstring)
                                 design_file.write("\n\n")
+                                if functions:
+                                    design_file.write("Functions:\n\n")
+                                    for function in functions:
+                                        design_file.write("* {name}\n".format(name=function))
+                                    design_file.write("\n\n")
+                                if classes:
+                                    design_file.write("Classes:\n\n")
+                                    for class_ in classes:
+                                        design_file.write("* {name}\n".format(name=class_))
+                                    design_file.write("\n\n")
+
                 else:
                     # truncate file
                     with open(Project.design_file, 'w') as design_file:
