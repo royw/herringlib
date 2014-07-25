@@ -17,6 +17,7 @@ from getpass import getpass
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, HerringFile, task_execute, namespace
+from herringlib.env import _env
 from herringlib.version import bump, get_project_version
 from herringlib.project_settings import Project
 from herringlib.local_shell import LocalShell
@@ -164,9 +165,27 @@ if Project.package:
 
             with LocalShell() as local:
                 for ver in Project.wheel_python_versions:
-                    local.run('/bin/bash -c "source /usr/local/bin/virtualenvwrapper.sh ;'
-                              'workon {package}{ver} ;'
-                              'herring build::wheel --python-tag py{ver}"'.format(package=Project.package, ver=ver),
+                    venv_script = Project.virtualenvwrapper_script
+                    venv = '{package}{ver}'.format(package=Project.package, ver=ver)
+                    python = '/usr/bin/python{v}'.format(v='.'.join(list(ver)))
+                    venvs = local.run('/bin/bash -c "source {venv_script} ;'
+                                      'lsvirtualenv -b"'.format(venv_script=venv_script),
+                                      verbose=True,
+                                      env=new_env).strip().split("\n")
+                    if venv not in venvs:
+                        local.run('/bin/bash -c "source {venv_script} ; '
+                                  'mkvirtualenv -p {python} {venv}"'.format(venv_script=venv_script,
+                                                                            python=python,
+                                                                            venv=venv),
+                                  verbose=True,
+                                  env=new_env)
+                    current_venv = os.path.relpath(_env('VIRTUAL_ENV'), _env('HOME'))
+                    local.run('/bin/bash -c "source {venv_script} ; python --version ; echo "{current_venv}" ; '
+                              'workon {venv} ;'
+                              'herring build::wheel --python-tag py{ver}"'.format(venv_script=venv_script,
+                                                                                  current_venv=current_venv,
+                                                                                  venv=venv,
+                                                                                  ver=ver),
                               verbose=True,
                               env=new_env)
 
@@ -246,7 +265,7 @@ if Project.package:
                 # If not, then here's the manual steps
                 # we zip the docs then the user must manually upload
                 # zip_name = '../{name}-docs-{ver}.zip'.format(
-                #     name=Project.package,
+                # name=Project.package,
                 #     ver=get_project_version(Project.package))
                 # with cd(Project.docs_html_dir):
                 #     with LocalShell() as local:

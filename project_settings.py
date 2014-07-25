@@ -85,6 +85,7 @@ import shutil
 # noinspection PyUnresolvedReferences
 import sys
 import site
+from herringlib.env import _env
 
 try:
     # python3
@@ -130,7 +131,7 @@ class ProjectSettings(object):
             pass
 
         defaults = {
-            'user': self._env('USER'),
+            'user': _env('USER'),
             'password': None,
             'port': 22,
             'version': None,
@@ -147,6 +148,9 @@ class ProjectSettings(object):
             'faq_file': 'docs/faq.rst',
             'news_file': 'docs/news.rst',
             'changelog_file': "docs/CHANGES.rst",
+
+            'virtualenvwrapper_script': _env(name='VIRTUALENVWRAPPER_SCRIPT',
+                                             default_value='/usr/share/virtualenvwrapper/virtualenvwrapper.sh'),
 
             'design_header': """\
                 The application is a non-interactive CLI utility.
@@ -177,17 +181,6 @@ class ProjectSettings(object):
     def __str__(self):
         return pformat(self.__dict__)
 
-    def _env(self, name, default_value=None):
-        """
-        Safely get value from environment variable, get default value if not defined in environment
-        :param name: The environment variable name
-        :param default_value:  the value to return if the variable is not in the environment
-        """
-        if name in os.environ:
-            return os.environ[name]
-        warning("The \"{name}\" environment variable is not set".format(name=name))
-        return default_value
-
     def metadata(self, data_dict):
         """
         Set the project's environment attributes
@@ -210,9 +203,9 @@ class ProjectSettings(object):
             'egg_dir': "{name}.egg-info".format(name=self.name),
             'script': self.package,
             'main': '{name}_main.py'.format(name=self.package),
-            'dist_host': self._env('LOCAL_PYPI_HOST', default_value='http://localhost'),
-            'pypi_path': self._env('LOCAL_PYPI_PATH', default_value='/var/pypi/dev'),
-            'docs_path': self._env('LOCAL_DOCS_PATH', default_value='/var/www/docs'),
+            'dist_host': _env('LOCAL_PYPI_HOST', default_value='http://localhost'),
+            'pypi_path': _env('LOCAL_PYPI_PATH', default_value='/var/pypi/dev'),
+            'docs_path': _env('LOCAL_DOCS_PATH', default_value='/var/www/docs'),
             'bin_dir': '~/bin',
             'logo_name': None,
             'design_levels': 1,
