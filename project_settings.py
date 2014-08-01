@@ -85,7 +85,7 @@ import shutil
 # noinspection PyUnresolvedReferences
 import sys
 import site
-from herringlib.env import _env
+from herringlib.env import env_value
 
 try:
     # python3
@@ -113,6 +113,180 @@ __author__ = 'wrighroy'
 
 installed_packages = None
 
+site_packages = []
+try:
+    site_packages = site.getsitepackages()
+except AttributeError:
+    # virtualenv uses site.py from python2.6 instead of python2.7 where getsitepackages() was introduced.
+    pass
+
+ATTRIBUTES = {
+    'api_dir': {
+        'default': 'docs/api',
+        'help': 'The directory where the API docs are placed relative to the herringfile_dir.'},
+    'author': {
+        'required': True,
+        'help': 'The primary author name.'},
+    'author_email': {
+        'required': True,
+        'help': "The primary author's email address."},
+    'bin_dir': {
+        'default': '~/bin',
+        'help': "The path to the user's bin directory."},
+    'build_dir': {
+        'default': 'build',
+        'help': 'The directory to build into relative to the herringfile_dir.'},
+    'changelog_file': {
+        'default': "docs/CHANGES.rst",
+        'help': 'The change log filespec.'},
+    'description': {
+        'required': True,
+        'help': 'A short description of this project.'},
+    'design_file': {
+        'default': 'docs/design.rst',
+        'help': 'The design documentation file relative to the herringfile_dir.'},
+    'design_header': {
+        'default': """\
+                The application is a non-interactive CLI utility.
+
+                A common pattern used is for a class to have an **execute()** method.  The class is initialized,
+                set up, then the **execute()** method is invoked once and the class's primary function is performed.
+                The instance may then be queried for results before destruction.  I'll refer to this pattern as the
+                execute pattern.
+            """,
+        'help': 'A string containing the header for the design_file.  Blank to not use.'},
+    'design_header_file': {
+        'default': None,
+        'help': 'A file containing the header for the design file.  Use None if no file.  Relative to the '
+                'herringfile_dir'},
+    'design_levels': {
+        'default': 1,
+        'help': 'The number of package levels to include in the design file.'},
+    'dist_dir': {
+        'default': 'dist',
+        'help': 'The directory where the distribution files are placed relative to the herringfile_dir.'},
+    'dist_host': {
+        'default': env_value('LOCAL_PYPI_HOST', default_value='http://localhost'),
+        'help': 'A host name to deploy the distribution files to.'},
+    'docs_dir': {
+        'default': 'docs',
+        'help': 'The documentation directory relative to the herringfile_dir.'},
+    'docs_html_dir': {
+        'default': 'build/docs',
+        'help': 'The directory to write HTML documentation to.'},
+    'docs_path': {
+        'default': env_value('LOCAL_DOCS_PATH', default_value='/var/www/docs'),
+        'help': 'The path on dist_host to place the documentation files.'},
+    'docs_pdf_dir': {
+        'default': 'build/pdf',
+        'help': 'The directory to write PDF documentation to relative to the herringfile_dir.'},
+    'egg_dir': {
+        'help': "The project's egg filename."},
+    'faq_file': {
+        'default': 'docs/faq.rst',
+        'help': 'The frequently asked question file.'},
+    'features_dir': {
+        'default': 'features',
+        'help': 'The directory for lettuce features relative to the herringfile_dir.'},
+    'herringfile_dir': {
+        'help': 'The directory where the herringfile is located.'},
+    'install_file': {
+        'default': 'docs/install.rst',
+        'help': 'The installation documentation file relative to the herringfile_dir.'},
+    'license_file': {
+        'default': 'docs/license.rst',
+        'help': 'The license documentation file relative to the herringfile_dir.'},
+    'logo_name': {
+        'default': None,
+        'help': 'The name used in the generated documentation logo image.'},
+    'main': {
+        'help': 'The source file with the main entry point.'},
+    'name': {
+        'required': True,
+        'help': "The project's name"},
+    'news_file': {
+        'default': 'docs/news.rst',
+        'help': 'The news documentation file relative to the herringfile_dir.'},
+    'package': {
+        'default': None,
+        'required': True,
+        'help': 'The package name relative to the herringfile_dir.  Set to None for document only projects.'},
+    'password': {
+        'default': None,
+        'help': 'The password for logging into the dist_host.'},
+    'port': {
+        'default': 22,
+        'help': 'The SSH port for transferring files to the dist_host.'},
+    'pylintrc': {
+        'default': os.path.join(HerringFile.directory, 'pylint.rc'),
+        'help': 'Full pathspec to the pylintrc file to use.'},
+    'pypi_path': {
+        'default': env_value('LOCAL_PYPI_PATH', default_value='/var/pypi/dev'),
+        'help': 'The path on dist_host to place the distribution files.'},
+    'pypiserver': {
+        'help': 'When uploading to a pypyserver, the alias in the ~/.pypirc file to use.'},
+    'pythonPath': {
+        'default': ".:%s" % HerringFile.directory,
+        'help': 'The pythonpath to use.'},
+    'quality_dir': {
+        'default': 'quality',
+        'help': 'The directory to place quality reports relative to the herringfile_dir.'},
+    'readme_file': {
+        'default': "README.rst",
+        'help': 'The README documentation file relative to the herringfile_dir.'},
+    'report_dir': {
+        'default': 'report',
+        'help': 'The directory to place the reports in relative to the herringfile_dir'},
+    'script': {
+        'help': 'tptqa'},
+    'sdist_python_version': {
+        'help': 'The short python version (ex: 33 means python 3.3) to use to create source distribution.'},
+    'site_packages': {
+        'default': site_packages,
+        'help': "A list of paths to the project's site packages."},
+    'templates_dir': {
+        'default': 'docs/_templates',
+        'help': 'The documentation templates directory relative to the herringfile_dir.'},
+    'tests_dir': {
+        'default': 'tests',
+        'help': 'The unit tests directory relative to the herringfile_dir.'},
+    'todo_file': {
+        'default': 'docs/todo.rst',
+        'help': 'The TODO documentation file relative to the herringfile_dir.'},
+    'uml_dir': {
+        'default': 'docs/_src/uml',
+        'help': 'The directory where documentation UML files are written relative to the herringfile_dir.'},
+    'usage_file': {
+        'default': 'docs/usage.rst',
+        'help': 'The usage documentation file relative to the herringfile_dir.'},
+    'user': {
+        'default': env_value('USER'),
+        'help': 'The dist_host user.'},
+    'version': {
+        'default': None,
+        'help': 'The projects current version.'},
+    'versioned_requirements_file_format': {
+        'default': 'requirements-py{ver}.txt',
+        'help': 'When creating multiple virtual environments, the format string for the per'
+                'version requirements.txt file (ex: requirements-py{ver}.txt).'},
+    'virtualenvwrapper_script': {
+        'default': env_value(name='VIRTUALENVWRAPPER_SCRIPT',
+                             default_value='/usr/share/virtualenvwrapper/virtualenvwrapper.sh'),
+        'help': 'The absolute path to the virtualenvwrapper script.'},
+    'wheel_python_versions': {
+        'help': "A tuple containing short python versions (ex: ('34', '33', '27', '26') ) used to build "
+                "wheel distributions."},
+}
+
+
+class WheelInfo(object):
+    """Container for information about wheel environment"""
+
+    def __init__(self, ver):
+        self.ver = ver
+        self.venv = '{package}{ver}'.format(package=Project.package, ver=ver)
+        self.python = '/usr/bin/python{v}'.format(v='.'.join(list(ver)))
+
 
 # noinspection PyMethodMayBeStatic,PyArgumentEqualDefault
 class ProjectSettings(object):
@@ -123,60 +297,10 @@ class ProjectSettings(object):
     """
 
     def __init__(self):
-        site_packages = []
-        try:
-            site_packages = site.getsitepackages()
-        except AttributeError:
-            # virtualenv uses site.py from python2.6 instead of python2.7 where getsitepackages() was introduced.
-            pass
-
-        defaults = {
-            'user': _env('USER'),
-            'password': None,
-            'port': 22,
-            'version': None,
-            'pylintrc': os.path.join(HerringFile.directory, 'pylint.rc'),
-            'pythonPath': ".:%s" % HerringFile.directory,
-            'site_packages': site_packages,
-
-            'readme_file': "README.rst",
-            'design_file': 'docs/design.rst',
-            'install_file': 'docs/install.rst',
-            'usage_file': 'docs/usage.rst',
-            'todo_file': 'docs/todo.rst',
-            'license_file': 'docs/license.rst',
-            'faq_file': 'docs/faq.rst',
-            'news_file': 'docs/news.rst',
-            'changelog_file': "docs/CHANGES.rst",
-
-            'virtualenvwrapper_script': _env(name='VIRTUALENVWRAPPER_SCRIPT',
-                                             default_value='/usr/share/virtualenvwrapper/virtualenvwrapper.sh'),
-
-            'design_header': """\
-                The application is a non-interactive CLI utility.
-
-                A common pattern used is for a class to have an **execute()** method.  The class is initialized,
-                set up, then the **execute()** method is invoked once and the class's primary function is performed.
-                The instance may then be queried for results before destruction.  I'll refer to this pattern as the
-                execute pattern.
-            """,
-            'design_header_file': None,
-
-            'quality_dir': 'quality',
-            'docs_dir': 'docs',
-            'uml_dir': 'docs/_src/uml',
-            'api_dir': 'docs/api',
-            'templates_dir': 'docs/_templates',
-            'docs_html_dir': 'build/docs',
-            'docs_pdf_dir': 'build/pdf      ',
-            'report_dir': 'report',
-            'tests_dir': 'tests',
-            'dist_dir': 'dist',
-            'build_dir': 'build',
-            'features_dir': 'features',
-        }
-        for key in defaults:
-            self.__setattr__(key, defaults[key])
+        for key in ATTRIBUTES.keys():
+            attrs = ATTRIBUTES[key]
+            if 'default' in attrs:
+                self.__setattr__(key, attrs['default'])
 
     def __str__(self):
         return pformat(self.__dict__)
@@ -186,7 +310,7 @@ class ProjectSettings(object):
         Set the project's environment attributes
 
         :param data_dict: the project's attributes
-         :type data_dict: dict
+        :type data_dict: dict
         """
         debug("metadata(%s)" % repr(data_dict))
         for key, value in data_dict.items():
@@ -194,25 +318,11 @@ class ProjectSettings(object):
             if key.endswith('_dir'):
                 self.__directory(value)
 
-        required = {
-            'name': 'ProjectName',
-            'package': 'package',
-            'author': 'Author Name',
-            'author_email': 'author@example.com',
-            'description': 'Describe the project here.',
-            'egg_dir': "{name}.egg-info".format(name=self.name),
-            'script': self.package,
-            'main': '{name}_main.py'.format(name=self.package),
-            'dist_host': _env('LOCAL_PYPI_HOST', default_value='http://localhost'),
-            'pypi_path': _env('LOCAL_PYPI_PATH', default_value='/var/pypi/dev'),
-            'docs_path': _env('LOCAL_DOCS_PATH', default_value='/var/www/docs'),
-            'bin_dir': '~/bin',
-            'logo_name': None,
-            'design_levels': 1,
-        }
-        for key in required:
-            if key not in self.__dict__:
-                self.__setattr__(key, required[key])
+        missing_keys = self.__missing_required_attributes()
+        for missing_key in missing_keys:
+            error("Missing required '{key}' in Project.metadata call in the herringfile.".format(key=missing_key))
+        if missing_keys:
+            raise Exception('The herringfiles has missing required keys.  Please correct and try again.')
 
         from herringlib.version import get_project_version
 
@@ -221,11 +331,17 @@ class ProjectSettings(object):
 
         if Project.package is None:
             Project.main = None
+        else:
+            if 'script' not in self.__dict__:
+                self.__setattr__('script', Project.package)
+            if 'main' not in self.__dict__:
+                self.__setattr__('main', '{name}_main.py'.format(name=Project.package))
 
-        if Project.logo_name is None:
-            Project.logo_name = Project.name
-
-        # Project.version = version
+        if Project.name is not None:
+            if Project.logo_name is None:
+                Project.logo_name = Project.name
+            if 'egg_dir' not in self.__dict__:
+                self.__setattr__('egg_dir', "{name}.egg-info".format(name=Project.name))
 
         # load design header from file if available
         # noinspection PyBroadException
@@ -236,9 +352,24 @@ class ProjectSettings(object):
         except:
             pass
 
+    def __missing_required_attributes(self):
+        missing_keys = []
+        for key in sorted(ATTRIBUTES.keys()):
+            attrs = ATTRIBUTES[key]
+            if 'required' in attrs:
+                if attrs['required']:
+                    if key not in self.__dict__:
+                        missing_keys.append(key)
+        return missing_keys
+
     def __directory(self, relative_name):
         """return the full path from the given path relative to the herringfile directory"""
-        directory_name = os.path.join(self.herringfile_dir, relative_name)
+        if relative_name.startswith('~'):
+            directory_name = os.path.expanduser(relative_name)
+        elif relative_name.startswith('/'):
+            directory_name = os.path.abspath(relative_name)
+        else:
+            directory_name = os.path.join(self.herringfile_dir, relative_name)
         return mkdir_p(directory_name)
 
     def required_files(self):
@@ -267,6 +398,34 @@ class ProjectSettings(object):
                 warning("Can not add the following to the requirements.txt file: {needed}\n{err}".format(
                     needed=repr(needed), err=str(ex)))
 
+    def env_without_virtualenvwrapper(self):
+        """
+        Strip out the virtualenvwrapper stuff from the os environment for use when building the wheels in each
+        of the virtual environments.
+
+        :returns: a modified copy of env
+        :rtype: dict
+        """
+        hook_dir = env_value('VIRTUALENVWRAPPER_HOOK_DIR', None)
+        new_parts = []
+        for part in os.environ['PATH'].split(':'):
+            if hook_dir is not None and hook_dir not in part:
+                new_parts.append(str(part))
+        new_path = ':'.join(new_parts)
+        new_env = os.environ.copy()
+        if 'VIRTUAL_ENV' in new_env:
+            del new_env['VIRTUAL_ENV']
+        new_env['PATH'] = new_path
+        return new_env
+
+    def wheel_infos(self):
+        """
+        :returns: the WheelInfos for the project
+        :rtype: list[WheelInfo]
+        """
+        return [WheelInfo(ver) for ver in self.wheel_python_versions]
+
+
 Project = ProjectSettings()
 
 
@@ -278,9 +437,9 @@ def __create_from_template(src_filename, dest_filename, **kwargs):
     :param dest_filename: the rendered file
     """
     # info("creating {dest} from {src} with options: {options}".format(dest=dest_filename,
-    #                                                                  src=src_filename,
-    #                                                                  options=repr(kwargs)))
-    with open(src_filename, "r") as in_file:
+    # src=src_filename,
+    # options=repr(kwargs)))
+    with open(src_filename) as in_file:
         template = in_file.read()
 
     try:
@@ -353,10 +512,22 @@ def init():
                                 __create_from_template(template_filename, dest_filename, **defaults)
                     else:
                         if not os.path.isfile(dest_filename):
-                            shutil.copyfile(template_filename, dest_filename)
+                            if os.path.join(template_dir, '__init__.py') != template_filename and os.path.join(
+                                    template_dir, 'bin', '__init__.py') != template_filename:
+                                shutil.copyfile(template_filename, dest_filename)
 
 
 def resolve_template_dir(original_path, package_name):
+    """
+    Remote '.template' from original_path and replace 'package' with package_name.
+
+    :param original_path:  Path to a template file.
+    :type original_path: str
+    :param package_name: The project's package name.
+    :type package_name: str
+    :return:  resolved path
+    :rtype: str
+    """
     new_parts = []
     for part in split_all(original_path):
         if part.endswith('.template'):
@@ -427,7 +598,7 @@ def get_requirements(doc_string):
 
 
 # noinspection PyArgumentEqualDefault
-@task(namespace='project',)
+@task(namespace='project', )
 def check_requirements():
     """ Checks that herringfile and herringlib/* required packages are in requirements.txt file """
     requirements_filename = os.path.join(Project.herringfile_dir, 'requirements.txt')
@@ -440,6 +611,12 @@ def check_requirements():
 
 
 def find_missing_requirements():
+    """
+    Find the required packages that are not in the requirements.txt file.
+
+    :return: set of missing packages.
+    :rtype: set[str]
+    """
     lib_files = []
     debug("HerringFile.herringlib_paths: %s" % repr(HerringFile.herringlib_paths))
     for herringlib_path in [os.path.join(path_, 'herringlib') for path_ in HerringFile.herringlib_paths]:
@@ -463,7 +640,7 @@ def find_missing_requirements():
         info("Missing: " + requirements_filename)
         return set(needed)
 
-    with open(requirements_filename, 'r') as in_file:
+    with open(requirements_filename) as in_file:
         requirements = []
         for line in [line.strip() for line in in_file.readlines()]:
             if line and not line.startswith('#'):
@@ -499,9 +676,8 @@ def packages_required(package_names):
             shutil.rmtree(egg_info_dir)
 
         with LocalShell() as local:
-            pip = 'pip'
             # if 'VIRTUAL_ENV' in os.environ:
-            #     pip = os.path.join(os.environ['VIRTUAL_ENV'], 'bin', 'pip')
+            # pip = os.path.join(os.environ['VIRTUAL_ENV'], 'bin', 'pip')
             # info("PATH={path}".format(path=os.environ['PATH']))
             # info(pip)
             pip = local.system('which pip', verbose=False).strip()
@@ -527,5 +703,74 @@ def packages_required(package_names):
 
 @task(namespace='project')
 def show():
-    """Show project settings"""
+    """Show all project settings"""
     info(str(Project))
+
+
+@task(namespace='project')
+def describe():
+    """Show all project settings with descriptions"""
+    keys = Project.__dict__.keys()
+    for key in sorted(keys):
+        value = Project.__dict__[key]
+        if key in ATTRIBUTES:
+            attrs = ATTRIBUTES[key]
+            required = ''
+            if 'required' in attrs:
+                if attrs['required']:
+                    required = 'REQUIRED - '
+            if 'help' in attrs:
+                info("'{key}' - {required}{description}\n    current value: '{value}'".format(key=key,
+                                                                                              required=required,
+                                                                                              description=attrs['help'],
+                                                                                              value=value))
+        else:
+            info("'{key}': '{value}'".format(key=key, value=value))
+
+
+@task(namespace='project')
+def mkvenvs():
+    """Make virturalenvs used for wheel building.  Requires Project.wheel_python_versions and virtualenvwrapper."""
+
+    if getattr(Project, 'wheel_python_versions', None) is None or not Project.wheel_python_versions:
+        info("To build with wheels, in your herringfile you must set Project.wheel_python_versions to a list"
+             "of compact version, for example: ['27', '33', '34'] will build wheels for "
+             "python 2.7, 3.3, and 3.4")
+        return
+
+    if env_value('VIRTUAL_ENV', None) is not None:
+        warning('You are currently in a virtualenv, please deactivate and try the command again.')
+        return
+
+    new_env = Project.env_without_virtualenvwrapper()
+
+    with LocalShell() as local:
+        venv_script = Project.virtualenvwrapper_script
+        for wheel_info in Project.wheel_infos():
+            requirement_file = 'requirements.txt'
+            versioned_requirement_file = Project.versioned_requirements_file_format.format(ver=wheel_info.ver)
+            if os.path.isfile(versioned_requirement_file):
+                requirement_file = versioned_requirement_file
+
+            venvs = local.run('/bin/bash -c "source {venv_script} ;'
+                              'lsvirtualenv -b"'.format(venv_script=venv_script),
+                              verbose=True,
+                              env=new_env).strip().split("\n")
+            if wheel_info.venv not in venvs:
+                local.run('/bin/bash -c "source {venv_script} ; '
+                          'mkvirtualenv -p {python} {venv}"'.format(venv_script=venv_script,
+                                                                    python=wheel_info.python,
+                                                                    venv=wheel_info.venv),
+                          verbose=True,
+                          env=new_env)
+
+                local.run('/bin/bash -c "source {venv_script} ; '
+                          'workon {venv} ; python --version ; echo "$VIRTUAL_ENV" ; '
+                          'pip install numpy ; '
+                          'pip install matplotlib ; '
+                          'pip install -r {requirement_file}"'.format(venv_script=venv_script,
+                                                                      venv=wheel_info.venv,
+                                                                      ver=wheel_info.ver,
+                                                                      requirement_file=requirement_file),
+                          verbose=True,
+                          env=new_env)

@@ -17,11 +17,12 @@ from getpass import getpass
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, HerringFile, task_execute, namespace
-from herringlib.env import _env
+from herringlib.env import env_value
+from herringlib.setup_cfg import setup_cfg_value
 from herringlib.version import bump, get_project_version
 from herringlib.project_settings import Project
 from herringlib.local_shell import LocalShell
-from herringlib.simple_logger import error, info
+from herringlib.simple_logger import error, info, warning
 from herringlib.query import query_yes_no
 
 __docformat__ = 'restructuredtext en'
@@ -122,7 +123,8 @@ except Exception as ex:
 if Project.package:
     # cleaning is necessary to remove stale .pyc files, particularly after
     # refactoring.
-    @task(depends=['doc::post_clean'])
+    # @task(depends=['doc::post_clean'])
+    @task()
     def build():
         """ build the project as a source distribution (deactivate virtualenv before running).
 
@@ -139,59 +141,49 @@ if Project.package:
 
         @task()
         def wheels():
-            """ build wheels (deactivate virtualenv before running)
-
-            Note, you must disable universal in setup.cfg::
-                [wheel]
-                universal=0
-            """
+            """ build wheels (deactivate virtualenv before running) """
+            info('')
+            info("=" * 70)
+            info('building wheels')
             if getattr(Project, 'wheel_python_versions', None) is None or not Project.wheel_python_versions:
                 info("To build wheels, in your herringfile you must set Project.wheel_python_versions to a list"
                      "of compact version, for example: ['27', '33', '34'] will build wheels for "
                      "python 2.7, 3.3, and 3.4")
                 return
 
-            # strip out the virtualenvwrapper stuff from the os environment for use when building the wheels in each
-            # of the virtual environments.
-            new_parts = []
-            for part in os.environ['PATH'].split(':'):
-                if ".venv" not in part:
-                    new_parts.append(str(part))
-            new_path = ':'.join(new_parts)
-            new_env = os.environ.copy()
-            if 'VIRTUAL_ENV' in new_env:
-                del new_env['VIRTUAL_ENV']
-            new_env['PATH'] = new_path
+            if env_value('VIRTUAL_ENV', None) is not None:
+                warning('You are currently in a virtualenv, please deactivate and try the build again.')
+                return
+
+            value = setup_cfg_value(section='wheel', key='universal')
+            if value is None or value != '0':
+                warning('To use wheels, you must disable universal in setup.cfg:\n    [wheel]\n    universal=0\n')
+                return
+
+            new_env = Project.env_without_virtualenvwrapper()
 
             with LocalShell() as local:
-                for ver in Project.wheel_python_versions:
-                    venv_script = Project.virtualenvwrapper_script
-                    venv = '{package}{ver}'.format(package=Project.package, ver=ver)
-                    python = '/usr/bin/python{v}'.format(v='.'.join(list(ver)))
+                venv_script = Project.virtualenvwrapper_script
+                for wheel_info in Project.wheel_infos():
                     venvs = local.run('/bin/bash -c "source {venv_script} ;'
                                       'lsvirtualenv -b"'.format(venv_script=venv_script),
                                       verbose=True,
                                       env=new_env).strip().split("\n")
-                    if venv not in venvs:
+                    if wheel_info.venv in venvs:
                         local.run('/bin/bash -c "source {venv_script} ; '
-                                  'mkvirtualenv -p {python} {venv}"'.format(venv_script=venv_script,
-                                                                            python=python,
-                                                                            venv=venv),
+                                  'workon {venv} ; python --version ; echo "$VIRTUAL_ENV" ; '
+                                  'herring build::wheel --python-tag py{ver}"'.format(venv_script=venv_script,
+                                                                                      venv=wheel_info.venv,
+                                                                                      ver=wheel_info.ver),
                                   verbose=True,
                                   env=new_env)
-                    current_venv = os.path.relpath(_env('VIRTUAL_ENV'), _env('HOME'))
-                    local.run('/bin/bash -c "source {venv_script} ; python --version ; echo "{current_venv}" ; '
-                              'workon {venv} ;'
-                              'herring build::wheel --python-tag py{ver}"'.format(venv_script=venv_script,
-                                                                                  current_venv=current_venv,
-                                                                                  venv=venv,
-                                                                                  ver=ver),
-                              verbose=True,
-                              env=new_env)
 
         @task()
         def sdist():
             """ build source distribution """
+            info('')
+            info("=" * 70)
+            info('building source distribution')
             with LocalShell() as local:
                 # builds source distribution
                 local.system("python setup.py sdist")
@@ -199,6 +191,9 @@ if Project.package:
         @task()
         def wheel():
             """ build wheel distribution """
+            info('')
+            info("=" * 70)
+            info('building wheel distribution')
             if os.path.isfile('setup.cfg'):
                 with LocalShell() as local:
                     kwargs = []
