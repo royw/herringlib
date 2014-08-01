@@ -20,6 +20,7 @@ Add the following to your *requirements.txt* file:
 * sphinxcontrib-seqdiag
 * paramiko
 * scp
+* rst2pdf
 
 """
 import ast

@@ -14,7 +14,7 @@ HELP = {
                  "Please install from http://www.andypatterns.com/index.php/products/pynsource/",
     'pyreverse': 'pyreverse generates package and class UML diagrams and is part of pylint.  Please install pylint.',
     'rstlint': 'rstlint checks the RST in the given file.  '
-               'Please install from http://svn.python.org/projects/python/trunk/Doc/tools/'
+               'Please install from http://svn.python.org/projects/python/trunk/Doc/tools/',
 }
 
 
