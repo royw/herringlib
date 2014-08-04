@@ -1,19 +1,19 @@
-# coding=utf-8
+# =*- coding: utf-8 -*-
 
 """
 Safely edit a file by creating a backup which will be restored on any error.
 """
+import re
+
 __docformat__ = 'restructuredtext en'
 
-import re
 import os
 import shutil
 from tempfile import NamedTemporaryFile
 from contextlib import contextmanager
 
-__all__ = ('safe_edit', 'quick_edit')
 
-
+# noinspection PyArgumentEqualDefault
 @contextmanager
 def safe_edit(file_name):
     """
@@ -34,10 +34,20 @@ def safe_edit(file_name):
     backup_name = file_name + '~'
 
     in_file = None
-    tmp_file = NamedTemporaryFile(delete=False)
-    tf_name = tmp_file.name
+    tf_name = None
+    tmp_file = None
     try:
-        in_file = open(file_name, 'r')
+        if os.path.isfile(file_name):
+            try:
+                in_file = open(file_name, mode='r', encoding='utf-8')
+            except TypeError:
+                in_file = open(file_name, mode='r')
+        try:
+            # noinspection PyArgumentList
+            tmp_file = NamedTemporaryFile(mode='w', delete=False, encoding='utf-8')
+        except TypeError:
+            tmp_file = NamedTemporaryFile(mode='w', delete=False)
+        tf_name = tmp_file.name
         yield {'in': in_file, 'out': tmp_file}
 
     # intentionally catching any exceptions
@@ -68,7 +78,8 @@ def safe_edit(file_name):
             # Note, shutil.move will safely move even across file systems
 
             # backup source file
-            shutil.move(file_name, backup_name)
+            if os.path.isfile(file_name):
+                shutil.move(file_name, backup_name)
 
             # put new file in place
             # noinspection PyTypeChecker
