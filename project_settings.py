@@ -85,7 +85,6 @@ import shutil
 # noinspection PyUnresolvedReferences
 import sys
 import site
-from herringlib.env import env_value
 
 try:
     # python3
@@ -106,6 +105,7 @@ from herringlib.split_all import split_all
 from herringlib.simple_logger import debug, info, error, warning
 from herringlib.local_shell import LocalShell
 from herringlib.list_helper import compress_list, unique_list
+from herringlib.env import env_value
 
 
 __docformat__ = 'restructuredtext en'
@@ -279,13 +279,13 @@ ATTRIBUTES = {
 }
 
 
-class WheelInfo(object):
-    """Container for information about wheel environment"""
-
-    def __init__(self, ver):
-        self.ver = ver
-        self.venv = '{package}{ver}'.format(package=Project.package, ver=ver)
-        self.python = '/usr/bin/python{v}'.format(v='.'.join(list(ver)))
+# class WheelInfo(object):
+#     """Container for information about wheel environment"""
+#
+#     def __init__(self, ver):
+#         self.ver = ver
+#         self.venv = '{package}{ver}'.format(package=Project.package, ver=ver)
+#         self.python = '/usr/bin/python{v}'.format(v='.'.join(list(ver)))
 
 
 # noinspection PyMethodMayBeStatic,PyArgumentEqualDefault
@@ -418,12 +418,13 @@ class ProjectSettings(object):
         new_env['PATH'] = new_path
         return new_env
 
-    def wheel_infos(self):
+    @property
+    def base_name(self):
         """
-        :returns: the WheelInfos for the project
-        :rtype: list[WheelInfo]
+        :returns: the normalized name attribute (hyphens and spaces converted to underscores).
+        :rtype: str
         """
-        return [WheelInfo(ver) for ver in self.wheel_python_versions]
+        return self.name.replace(' ', '_').replace('-', '_')
 
 
 Project = ProjectSettings()
@@ -498,7 +499,7 @@ def init():
             for file_name in files:
                 template_filename = os.path.join(root_dir, file_name)
                 # info('template_filename: %s' % template_filename)
-                dest_filename = resolve_template_dir(template_filename.replace(template_dir, '.'),
+                dest_filename = resolve_template_dir(str(template_filename.replace(template_dir, '.')),
                                                      defaults['package'])
                 # info('dest_filename: %s' % dest_filename)
                 if os.path.isdir(template_filename):
@@ -728,49 +729,3 @@ def describe():
             info("'{key}': '{value}'".format(key=key, value=value))
 
 
-@task(namespace='project')
-def mkvenvs():
-    """Make virturalenvs used for wheel building.  Requires Project.wheel_python_versions and virtualenvwrapper."""
-
-    if getattr(Project, 'wheel_python_versions', None) is None or not Project.wheel_python_versions:
-        info("To build with wheels, in your herringfile you must set Project.wheel_python_versions to a list"
-             "of compact version, for example: ['27', '33', '34'] will build wheels for "
-             "python 2.7, 3.3, and 3.4")
-        return
-
-    if env_value('VIRTUAL_ENV', None) is not None:
-        warning('You are currently in a virtualenv, please deactivate and try the command again.')
-        return
-
-    new_env = Project.env_without_virtualenvwrapper()
-
-    with LocalShell() as local:
-        venv_script = Project.virtualenvwrapper_script
-        for wheel_info in Project.wheel_infos():
-            requirement_file = 'requirements.txt'
-            versioned_requirement_file = Project.versioned_requirements_file_format.format(ver=wheel_info.ver)
-            if os.path.isfile(versioned_requirement_file):
-                requirement_file = versioned_requirement_file
-
-            venvs = local.run('/bin/bash -c "source {venv_script} ;'
-                              'lsvirtualenv -b"'.format(venv_script=venv_script),
-                              verbose=True,
-                              env=new_env).strip().split("\n")
-            if wheel_info.venv not in venvs:
-                local.run('/bin/bash -c "source {venv_script} ; '
-                          'mkvirtualenv -p {python} {venv}"'.format(venv_script=venv_script,
-                                                                    python=wheel_info.python,
-                                                                    venv=wheel_info.venv),
-                          verbose=True,
-                          env=new_env)
-
-                local.run('/bin/bash -c "source {venv_script} ; '
-                          'workon {venv} ; python --version ; echo "$VIRTUAL_ENV" ; '
-                          'pip install numpy ; '
-                          'pip install matplotlib ; '
-                          'pip install -r {requirement_file}"'.format(venv_script=venv_script,
-                                                                      venv=wheel_info.venv,
-                                                                      ver=wheel_info.ver,
-                                                                      requirement_file=requirement_file),
-                          verbose=True,
-                          env=new_env)

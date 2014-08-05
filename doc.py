@@ -31,11 +31,12 @@ import fnmatch
 from textwrap import dedent
 
 # noinspection PyUnresolvedReferences
-from herring.herring_app import task, namespace
+from herring.herring_app import task, namespace, task_execute
 from herringlib.mkdir_p import mkdir_p
 from herringlib.simple_logger import info, warning
 from herringlib.project_settings import Project, packages_required
 from herringlib.local_shell import LocalShell
+from herringlib.venv import VirtualenvInfo
 
 __docformat__ = 'restructuredtext en'
 
@@ -51,6 +52,7 @@ required_packages = [
     'sphinxcontrib-nwdiag',
     'sphinxcontrib-seqdiag']
 
+
 if packages_required(required_packages):
     from herringlib.cd import cd
     from herringlib.clean import clean
@@ -58,10 +60,17 @@ if packages_required(required_packages):
     from herringlib.recursively_remove import recursively_remove
     from herringlib.safe_edit import safe_edit, quick_edit
 
-    @task(depends=['doc::generate'])
+    @task()
     def doc():
         """generate project documentation"""
-        pass
+
+        venvs = VirtualenvInfo('doc_python_version')
+        if venvs.defined:
+            for venv_info in venvs.infos():
+                venv_info.run('herring doc::generate --python-tag py{ver}'.format(ver=venv_info.ver))
+        else:
+            info('Generating documentation using the current python environment')
+            task_execute('doc::generate')
 
     with namespace('doc'):
         @task(depends=['clean'])
@@ -362,8 +371,7 @@ if packages_required(required_packages):
 
         with namespace('logo'):
 
-            def _neon(text):
-                file_name = text.replace(' ', '_').replace('\n', '_')
+            def _neon(text, file_name):
                 pre = """\
                     -size 500x200 \
                     xc:lightblue \
@@ -414,7 +422,7 @@ if packages_required(required_packages):
             @task()
             def display():
                 """display project logo"""
-                logo_file = _neon(Project.logo_name)
+                logo_file = _neon(Project.logo_name, Project.base_name)
                 # noinspection PyArgumentEqualDefault
                 with LocalShell(verbose=False) as local:
                     local.run('bash -c "display {logo_file} &"'.format(logo_file=logo_file))
@@ -422,7 +430,7 @@ if packages_required(required_packages):
             @task()
             def create():
                 """create the logo used in the sphinx documentation"""
-                logo_file = _neon(Project.logo_name)
+                logo_file = _neon(Project.logo_name, Project.base_name)
                 shutil.copyfile(logo_file, os.path.join(Project.docs_dir, '_static', logo_file))
                 quick_edit(os.path.join(Project.docs_dir, 'conf.py'),
                            {r'(\s*html_logo\s*=\s*\".*?\").*':
@@ -461,46 +469,45 @@ if packages_required(required_packages):
                 """Update the design.rst from the source module's docstrings"""
                 design_header = Project.design_header.strip()
                 if design_header:
-                    with LocalShell(verbose=False) as local:
-                        py_files = []
-                        for root, dirs, files in os.walk(Project.package, topdown=True):
-                            depth = root.count(os.path.sep) + 1
-                            # print('depth={depth}  root={root}'.format(depth=depth, root=root))
-                            if depth > Project.design_levels:
-                                continue
-                            py_files.extend([os.path.join(root, file_) for file_ in files
-                                             if file_.endswith('.py') and file_ != '__init__.py'])
+                    py_files = []
+                    for root, dirs, files in os.walk(Project.package, topdown=True):
+                        depth = root.count(os.path.sep) + 1
+                        # print('depth={depth}  root={root}'.format(depth=depth, root=root))
+                        if depth > Project.design_levels:
+                            continue
+                        py_files.extend([os.path.join(root, file_) for file_ in files
+                                         if file_.endswith('.py') and file_ != '__init__.py'])
 
-                        with open(Project.design_file, 'w') as design_file:
-                            design_file.write("Design\n")
-                            design_file.write("======\n\n")
-                            design_file.write(design_header)
+                    with open(Project.design_file, 'w') as design_file:
+                        design_file.write("Design\n")
+                        design_file.write("======\n\n")
+                        design_file.write(design_header)
+                        design_file.write("\n\n")
+                        for py_file in sorted(py_files):
+                            tree = ast.parse(''.join(open(py_file)))
+                            docstring = (ast.get_docstring(tree, clean=True) or '').strip()
+                            functions = [node.name for node in tree.body if type(node) == ast.FunctionDef]
+                            classes = [node.name for node in tree.body if type(node) == ast.ClassDef]
+                            design_file.write(py_file)
+                            design_file.write("\n")
+                            design_file.write('-' * len(py_file))
                             design_file.write("\n\n")
-                            for py_file in sorted(py_files):
-                                tree = ast.parse(''.join(open(py_file)))
-                                docstring = (ast.get_docstring(tree, clean=True) or '').strip()
-                                functions = [node.name for node in tree.body if type(node) == ast.FunctionDef]
-                                classes = [node.name for node in tree.body if type(node) == ast.ClassDef]
-                                design_file.write(py_file)
-                                design_file.write("\n")
-                                design_file.write('-' * len(py_file))
+                            design_file.write(docstring)
+                            design_file.write("\n\n")
+                            if functions:
+                                design_file.write("Functions:\n\n")
+                                for function in functions:
+                                    design_file.write("* {name}\n".format(name=function))
                                 design_file.write("\n\n")
-                                design_file.write(docstring)
+                            if classes:
+                                design_file.write("Classes:\n\n")
+                                for class_ in classes:
+                                    design_file.write("* {name}\n".format(name=class_))
                                 design_file.write("\n\n")
-                                if functions:
-                                    design_file.write("Functions:\n\n")
-                                    for function in functions:
-                                        design_file.write("* {name}\n".format(name=function))
-                                    design_file.write("\n\n")
-                                if classes:
-                                    design_file.write("Classes:\n\n")
-                                    for class_ in classes:
-                                        design_file.write("* {name}\n".format(name=class_))
-                                    design_file.write("\n\n")
 
                 else:
                     # truncate file
-                    with open(Project.design_file, 'w') as design_file:
+                    with open(Project.design_file, 'w'):
                         pass
 
             @task()

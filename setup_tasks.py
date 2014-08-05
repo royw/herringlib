@@ -17,8 +17,8 @@ from getpass import getpass
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, HerringFile, task_execute, namespace
-from herringlib.env import env_value
 from herringlib.setup_cfg import setup_cfg_value
+from herringlib.venv import VirtualenvInfo
 from herringlib.version import bump, get_project_version
 from herringlib.project_settings import Project
 from herringlib.local_shell import LocalShell
@@ -35,8 +35,8 @@ try:
     @task(namespace='doc')
     def publish():
         """ copy latest docs to the server """
-        project_version_name = "{name}-{version}".format(name=Project.name, version=Project.version)
-        project_latest_name = "{name}-latest".format(name=Project.name)
+        project_version_name = "{name}-{version}".format(name=Project.base_name, version=Project.version)
+        project_latest_name = "{name}-latest".format(name=Project.base_name)
         doc_version = '{dir}/{file}'.format(dir=Project.docs_path, file=project_version_name)
         doc_latest = '{dir}/{file}'.format(dir=Project.docs_path, file=project_latest_name)
 
@@ -62,23 +62,23 @@ try:
     @task()
     def deploy():
         """ copy latest sdist tar ball to server """
-        if Project.pypiserver:
+        if getattr(Project, 'pypiserver', None) is not None and Project.pypiserver:
             with LocalShell() as local:
                 local.run("python setup.py sdist upload -r {server}".format(server=Project.pypiserver), verbose=True)
         else:
             version = Project.version
-            project_version_name = "{name}-{version}.tar.gz".format(name=Project.name, version=version)
-            project_latest_name = "{name}-latest.tar.gz".format(name=Project.name)
+            project_version_name = "{name}-{version}.tar.gz".format(name=Project.base_name, version=version)
+            project_latest_name = "{name}-latest.tar.gz".format(name=Project.base_name)
 
             pypi_dir = Project.pypi_path
             dist_host = Project.dist_host
-            dist_dir = '{dir}/{name}'.format(dir=pypi_dir, name=Project.name)
+            dist_dir = '{dir}/{name}'.format(dir=pypi_dir, name=Project.base_name)
             # dist_url = '{host}:{path}/'.format(host=dist_host, path=dist_dir)
             dist_version = '{dir}/{file}'.format(dir=dist_dir, file=project_version_name)
             dist_latest = '{dir}/{file}'.format(dir=dist_dir, file=project_latest_name)
             dist_file = os.path.join(Project.herringfile_dir, 'dist', project_version_name)
 
-            pattern = "{name}-{version}-*.whl".format(name=Project.name, version=version)
+            pattern = "{name}-{version}-*.whl".format(name=Project.base_name, version=version)
             project_wheel_names = [os.path.basename(path) for path in glob(os.path.join(Project.herringfile_dir,
                                                                                         'dist', pattern))]
             dist_wheels = []
@@ -145,38 +145,20 @@ if Project.package:
             info('')
             info("=" * 70)
             info('building wheels')
-            if getattr(Project, 'wheel_python_versions', None) is None or not Project.wheel_python_versions:
+
+            venvs = VirtualenvInfo('wheel_python_versions')
+            if venvs.defined:
+                value = setup_cfg_value(section='wheel', key='universal')
+                if value is None or value != '0':
+                    warning('To use wheels, you must disable universal in setup.cfg:\n    [wheel]\n    universal=0\n')
+                    return
+                for venv_info in venvs.infos():
+                    venv_info.run('herring build::wheel --python-tag py{ver}'.format(ver=venv_info.ver))
+            else:
                 info("To build wheels, in your herringfile you must set Project.wheel_python_versions to a list"
                      "of compact version, for example: ['27', '33', '34'] will build wheels for "
                      "python 2.7, 3.3, and 3.4")
                 return
-
-            if env_value('VIRTUAL_ENV', None) is not None:
-                warning('You are currently in a virtualenv, please deactivate and try the build again.')
-                return
-
-            value = setup_cfg_value(section='wheel', key='universal')
-            if value is None or value != '0':
-                warning('To use wheels, you must disable universal in setup.cfg:\n    [wheel]\n    universal=0\n')
-                return
-
-            new_env = Project.env_without_virtualenvwrapper()
-
-            with LocalShell() as local:
-                venv_script = Project.virtualenvwrapper_script
-                for wheel_info in Project.wheel_infos():
-                    venvs = local.run('/bin/bash -c "source {venv_script} ;'
-                                      'lsvirtualenv -b"'.format(venv_script=venv_script),
-                                      verbose=True,
-                                      env=new_env).strip().split("\n")
-                    if wheel_info.venv in venvs:
-                        local.run('/bin/bash -c "source {venv_script} ; '
-                                  'workon {venv} ; python --version ; echo "$VIRTUAL_ENV" ; '
-                                  'herring build::wheel --python-tag py{ver}"'.format(venv_script=venv_script,
-                                                                                      venv=wheel_info.venv,
-                                                                                      ver=wheel_info.ver),
-                                  verbose=True,
-                                  env=new_env)
 
         @task()
         def sdist():
@@ -184,9 +166,16 @@ if Project.package:
             info('')
             info("=" * 70)
             info('building source distribution')
-            with LocalShell() as local:
-                # builds source distribution
-                local.system("python setup.py sdist")
+            venvs = VirtualenvInfo('sdist_python_version')
+            if venvs.defined:
+                for venv_info in venvs.infos():
+                    info('Building sdist using {venv} virtual environment'.format(venv=venv_info.venv))
+                    venv_info.run('python setup.py sdist')
+            else:
+                info("Building sdist using default environment")
+                with LocalShell() as local:
+                    # builds source distribution
+                    local.system("python setup.py sdist")
 
         @task()
         def wheel():
@@ -269,7 +258,7 @@ if Project.package:
                 # Please log on to https://pypi.python.org/pypi
                 # Then select "{name}" under "Your packages".
                 # Next use the "Browse" button to select "{zip}" and press "Upload Documentation".
-                # """.format(name=Project.name))
+                # """.format(name=Project.base_name))
 
     @task()
     def release():
