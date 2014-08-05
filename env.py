@@ -8,7 +8,7 @@ import os
 from herringlib.simple_logger import warning
 
 
-def env_value(name, default_value=None):
+def env_value(name, default_value=None, warn_if_unset=False):
     """
     Safely get value from environment variable, get default value if not defined in environment
     :param name: The environment variable name
@@ -16,6 +16,7 @@ def env_value(name, default_value=None):
     """
     if name in os.environ:
         return os.environ[name]
-    warning("The \"{name}\" environment variable is not set".format(name=name))
+    if warn_if_unset:
+        warning("The \"{name}\" environment variable is not set".format(name=name))
     return default_value
 
