@@ -11,7 +11,7 @@ from herring.herring_app import task, task_execute
 from herringlib.project_settings import Project, packages_required
 from herringlib.local_shell import LocalShell
 from herringlib.simple_logger import info
-from herringlib.venv import VirtualenvInfo
+from herringlib.venv import VirtualenvInfo, venv_decorator
 
 __docformat__ = 'restructuredtext en'
 
@@ -22,18 +22,17 @@ required_packages = [
 
 if packages_required(required_packages):
     @task()
+    @venv_decorator(attr_name='test_python_versions')
     def test():
-        """
-        Run the unit tests.
+        """Run the unit tests."""
 
-        Run the tests in each of the virtual environments defined in Project.test_python_versions
-        or if not defined, then in Project.wheel_python_versions.  If neither are defined, then
-        run the test in the current environment.
-        """
+        # Run the tests in each of the virtual environments defined in Project.test_python_versions
+        # or if not defined, then in Project.wheel_python_versions.  If neither are defined, then
+        # run the test in the current environment.
 
         venvs = VirtualenvInfo('test_python_versions', 'wheel_python_versions')
 
-        if venvs.defined:
+        if not venvs.in_virtualenv and venvs.defined:
             for venv_info in venvs.infos():
                 info('Running unit tests using the {venv} virtual environment.'.format(venv=venv_info.venv))
                 venv_info.run('py.test {tests_dir}'.format(tests_dir=Project.tests_dir))

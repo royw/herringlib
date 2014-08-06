@@ -599,7 +599,7 @@ def get_requirements(doc_string):
 
 
 # noinspection PyArgumentEqualDefault
-@task(namespace='project', )
+@task(namespace='project', private=True)
 def check_requirements():
     """ Checks that herringfile and herringlib/* required packages are in requirements.txt file """
     requirements_filename = os.path.join(Project.herringfile_dir, 'requirements.txt')

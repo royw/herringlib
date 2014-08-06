@@ -22,6 +22,8 @@ Usage
 """
 
 import os
+from functools import wraps
+from decorator import decorator
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task
@@ -30,7 +32,7 @@ from herringlib.env import env_value
 from herringlib.list_helper import is_sequence
 from herringlib.local_shell import LocalShell
 from herringlib.project_settings import Project
-from herringlib.simple_logger import warning, info, error
+from herringlib.simple_logger import info, error, debug
 
 
 class InVirtualenvError(RuntimeError):
@@ -128,22 +130,31 @@ class VirtualenvInfo(object):
     """
     def __init__(self, *attr_names):
         self._ver_attr = None
-        self._raise_when_in_venv = True
-        print(repr(attr_names))
+        self._raise_when_in_venv = False
+        debug(repr(attr_names))
         for name in attr_names:
-            print(name)
+            debug(name)
             self._ver_attr = getattr(Project, name, None)
             if self._ver_attr is not None:
-                print("_ver_attr: %s" % repr(self._ver_attr))
+                debug("_ver_attr: %s" % repr(self._ver_attr))
                 break
 
+    @property
+    def in_virtualenv(self):
+        """Are we in a virtual environment?"""
+        return env_value('VIRTUAL_ENV', None) is not None
+
+    @property
+    def virtualenv(self):
+        """
+        :return: the current virtual environment
+        :rtype: str
+        """
+        return env_value('VIRTUAL_ENV', None)
+
+    @property
     def defined(self):
         """Does the project attribute resolve to any virtual environments?"""
-        if env_value('VIRTUAL_ENV', None) is not None:
-            if self._raise_when_in_venv:
-                raise InVirtualenvError()
-            else:
-                warning(str(InVirtualenvError()))
         return self._ver_attr is not None
 
     # noinspection PyBroadException
@@ -162,7 +173,7 @@ class VirtualenvInfo(object):
         :param exists: the virtualenv must exist to be included in the generator
         :type exists: bool
         """
-        if not self.defined():
+        if not self.in_virtualenv and not self.defined:
             raise NoAvailableVirtualenv()
         value = self._ver_attr
         if not is_sequence(value):
@@ -184,7 +195,7 @@ def mkvenvs():
     """Make virturalenvs used for wheel building.  Requires Project.wheel_python_versions and virtualenvwrapper."""
 
     venvs = VirtualenvInfo('python_versions')
-    if venvs.defined:
+    if not venvs.in_virtualenv and venvs.defined:
         for venv_info in venvs.infos(exists=False):
             requirement_file = 'requirements.txt'
             versioned_requirement_file = Project.versioned_requirements_file_format.format(ver=venv_info.ver)
@@ -206,7 +217,7 @@ def mkvenvs():
 def rmvenvs():
     """Remove all the virtual environments"""
     venvs = VirtualenvInfo('python_versions')
-    if venvs.defined:
+    if not venvs.in_virtualenv and venvs.defined:
         for venv_info in venvs.infos():
             venv_info.rmvirtualenv()
 
@@ -216,6 +227,48 @@ def lsvenvs():
     """List the virtual environments"""
     venvs = VirtualenvInfo('python_versions')
     info("Project Virtual Environments:")
-    if venvs.defined:
+    if not venvs.in_virtualenv and venvs.defined:
         for venv_info in venvs.infos():
             info(venv_info.venv)
+
+
+def using_version(attr_name):
+    """
+    :param attr_name: the python_version attribute name
+    :type attr_name: str
+    :returns: the virtual environment(s) from the given attr_name or 'default environment'
+    :rtype: str
+    """
+    venvs = VirtualenvInfo(attr_name)
+    if venvs.in_virtualenv:
+        return venvs.virtualenv
+    if venvs.defined:
+        return ", ".join([venv_info.venv for venv_info in venvs.infos()])
+    return "default environment"
+
+
+# noinspection PyUnusedLocal
+def venv_decorator(attr_name, *targs, **tkwargs):
+    """
+    This decorator adds the current virtual environments to the function's docstring.
+
+    :param attr_name:  the python_version type attribute name relavent to the function being decorated
+    :param targs: pass thru args
+    :param tkwargs: pass thru kwargs
+    """
+
+    # noinspection PyDocstring
+    def internalFunc(func):
+        func.__doc__ = "{0} [virtualenv: {1}]".format(func.__doc__, using_version(attr_name))
+
+        # noinspection PyShadowingNames,PyDocstring
+        @wraps(func)
+        def wrapper(func, *args, **kwargs):
+            return func(*args, **kwargs)
+
+        return decorator(wrapper, func)
+
+    if len(targs) == 1 and callable(targs[0]):
+        return internalFunc(targs[0])
+    else:
+        return internalFunc

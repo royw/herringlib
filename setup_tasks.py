@@ -18,7 +18,7 @@ from getpass import getpass
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, HerringFile, task_execute, namespace
 from herringlib.setup_cfg import setup_cfg_value
-from herringlib.venv import VirtualenvInfo
+from herringlib.venv import VirtualenvInfo, using_version, venv_decorator
 from herringlib.version import bump, get_project_version
 from herringlib.project_settings import Project
 from herringlib.local_shell import LocalShell
@@ -126,12 +126,12 @@ if Project.package:
     # @task(depends=['doc::post_clean'])
     @task()
     def build():
-        """ build the project as a source distribution (deactivate virtualenv before running).
+        """Build the project both sdist and wheels"""
 
-        Note, you must disable universal in setup.cfg::
-            [wheel]
-            universal=0
-        """
+        # Note, you must disable universal in setup.cfg::
+        #     [wheel]
+        #     universal=0
+
         if Project.version == '0.0.0':
             bump()
         task_execute('build::sdist')
@@ -139,15 +139,16 @@ if Project.package:
 
     with namespace('build'):
 
-        @task()
+        @task(private=False)
+        @venv_decorator(attr_name='wheel_python_versions')
         def wheels():
-            """ build wheels (deactivate virtualenv before running) """
+            """build wheels"""
             info('')
             info("=" * 70)
             info('building wheels')
 
             venvs = VirtualenvInfo('wheel_python_versions')
-            if venvs.defined:
+            if not venvs.in_virtualenv and venvs.defined:
                 value = setup_cfg_value(section='wheel', key='universal')
                 if value is None or value != '0':
                     warning('To use wheels, you must disable universal in setup.cfg:\n    [wheel]\n    universal=0\n')
@@ -160,14 +161,15 @@ if Project.package:
                      "python 2.7, 3.3, and 3.4")
                 return
 
-        @task()
+        @task(private=False)
+        @venv_decorator(attr_name='sdist_python_version')
         def sdist():
-            """ build source distribution """
+            """ build source distribution"""
             info('')
             info("=" * 70)
             info('building source distribution')
             venvs = VirtualenvInfo('sdist_python_version')
-            if venvs.defined:
+            if not venvs.in_virtualenv and venvs.defined:
                 for venv_info in venvs.infos():
                     info('Building sdist using {venv} virtual environment'.format(venv=venv_info.venv))
                     venv_info.run('python setup.py sdist')
@@ -177,7 +179,7 @@ if Project.package:
                     # builds source distribution
                     local.system("python setup.py sdist")
 
-        @task()
+        @task(private=True)
         def wheel():
             """ build wheel distribution """
             info('')

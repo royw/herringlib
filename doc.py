@@ -36,7 +36,7 @@ from herringlib.mkdir_p import mkdir_p
 from herringlib.simple_logger import info, warning
 from herringlib.project_settings import Project, packages_required
 from herringlib.local_shell import LocalShell
-from herringlib.venv import VirtualenvInfo
+from herringlib.venv import VirtualenvInfo, venv_decorator
 
 __docformat__ = 'restructuredtext en'
 
@@ -61,11 +61,12 @@ if packages_required(required_packages):
     from herringlib.safe_edit import safe_edit, quick_edit
 
     @task()
+    @venv_decorator(attr_name='doc_python_version')
     def doc():
         """generate project documentation"""
 
         venvs = VirtualenvInfo('doc_python_version')
-        if venvs.defined:
+        if not venvs.in_virtualenv and venvs.defined:
             for venv_info in venvs.infos():
                 venv_info.run('herring doc::generate --python-tag py{ver}'.format(ver=venv_info.ver))
         else:
@@ -73,7 +74,7 @@ if packages_required(required_packages):
             task_execute('doc::generate')
 
     with namespace('doc'):
-        @task(depends=['clean'])
+        @task(depends=['clean'], private=True)
         def clean():
             """Remove documentation artifacts"""
             recursively_remove(os.path.join(Project.docs_dir, '_src'), '*')
@@ -205,7 +206,7 @@ if packages_required(required_packages):
                     out_file.write(".. inheritance-diagram:: %s\n" % value)
                 out_file.write("\n\n")
 
-        @task(depends=['clean'])
+        @task(depends=['clean'], private=True)
         def api():
             """Generate API sphinx source files from code"""
             if Project.package is not None:
@@ -291,7 +292,7 @@ if packages_required(required_packages):
                 info(cmd_line)
                 os.system(cmd_line)
 
-        @task(depends=['api'])
+        @task(depends=['api'], private=True)
         def diagrams():
             """Create UML diagrams"""
             if Project.package is not None:
@@ -301,7 +302,7 @@ if packages_required(required_packages):
                     _create_module_diagrams(path)
                     _create_class_diagrams(path)
 
-        @task(depends=['api', 'diagrams', 'logo::create', 'update'])
+        @task(depends=['api', 'diagrams', 'logo::create', 'update'], private=True)
         def sphinx():
             """Generate sphinx HTML API documents"""
             _customize_doc_src_files()
@@ -323,7 +324,7 @@ if packages_required(required_packages):
                                                           pdfdir=Project.docs_pdf_dir))
                 clean_doc_log('docs.log')
 
-        @task()
+        @task(private=True)
         def incremental():
             """Incremental build docs for testing purposes"""
             with cd(Project.docs_dir):
@@ -331,19 +332,19 @@ if packages_required(required_packages):
                           '-n . ../{htmldir}'.format(pythonpath=Project.pythonPath, htmldir=Project.docs_html_dir))
                 clean_doc_log('docs.log')
 
-        @task(depends=['api'])
+        @task(depends=['api'], private=True)
         def epy():
             """Generate epy API documents"""
             with cd(Project.docs_dir):
                 with LocalShell() as local:
                     local.run('epydoc -v --output _epy --graph all bin db dst dut lab otto pc tests util')
 
-        @task(depends=['sphinx'])
+        @task(depends=['sphinx'], private=True)
         def generate():
             """Generate API documents"""
             pass
 
-        @task(depends=['generate'])
+        @task(depends=['generate'], private=True)
         def post_clean():
             """Generate docs then clean up afterwards"""
             clean()
@@ -437,7 +438,7 @@ if packages_required(required_packages):
                             ["html_logo = \"{logo}\"".format(logo=logo_file)]})
 
         with namespace('update'):
-            @task()
+            @task(private=True)
             def changelog():
                 """rewrite the changelog to CHANGES.rst"""
                 with open(Project.changelog_file, 'w') as changelog_file:
@@ -449,7 +450,7 @@ if packages_required(required_packages):
                         for line in output.strip().split("\n"):
                             changelog_file.write("    {line}\n".format(line=line))
 
-            @task()
+            @task(private=True)
             def todo():
                 """rewrite the TODO.rst file"""
                 with open(Project.todo_file, 'w') as todo_file:
@@ -464,7 +465,7 @@ if packages_required(required_packages):
                             todo_file.write("\n")
                         todo_file.write("\n")
 
-            @task()
+            @task(private=True)
             def design():
                 """Update the design.rst from the source module's docstrings"""
                 design_header = Project.design_header.strip()
@@ -510,7 +511,7 @@ if packages_required(required_packages):
                     with open(Project.design_file, 'w'):
                         pass
 
-            @task()
+            @task(private=True)
             def usage():
                 """Update the usage.rst from the application's --help output"""
                 # noinspection PyBroadException
@@ -539,7 +540,7 @@ if packages_required(required_packages):
                 except:
                     pass
 
-            @task()
+            @task(private=True)
             def readme():
                 """Update the README.rst from the application's --longhelp output"""
                 # noinspection PyBroadException
@@ -555,7 +556,7 @@ if packages_required(required_packages):
                 except:
                     pass
 
-            @task()
+            @task(private=True)
             def install():
                 """Update the install.rst"""
                 with open(Project.install_file, 'w') as install_file:

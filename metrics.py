@@ -22,6 +22,7 @@ from herringlib.executables import executables_available
 __docformat__ = 'restructuredtext en'
 
 import os
+# noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace
 from herringlib.project_settings import Project, packages_required
 
@@ -38,7 +39,7 @@ if packages_required(required_packages):
     from herringlib.local_shell import LocalShell
 
     with namespace('metrics'):
-        @task()
+        @task(private=True)
         def cheesecake():
             """ Run the cheesecake kwalitee metric """
             if not executables_available(['cheesecake_index']):
@@ -50,7 +51,7 @@ if packages_required(required_packages):
                               Project.version,
                               cheesecake_log))
 
-        @task()
+        @task(private=True)
         def lint():
             """ Run pylint with project overrides from pylint.rc """
             if not executables_available(['pylint']):
@@ -62,7 +63,7 @@ if packages_required(required_packages):
             with LocalShell() as local:
                 local.system("pylint {options} {dir} > {log}".format(options=options, dir=Project.package, log=pylint_log))
 
-        @task()
+        @task(private=True)
         def complexity():
             """ Run McCabe code complexity """
             if not executables_available(['pymetrics', 'pycabehtml.py']):

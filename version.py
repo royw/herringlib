@@ -188,7 +188,7 @@ with namespace('version'):
         """
         return bump_tiny()
 
-    @task()
+    @task(private=True)
     def bump_tiny():
         """
         Bumps the Minor (Major.Minor.Tiny.Tiny2) version in VERSION file up by one.
@@ -196,7 +196,7 @@ with namespace('version'):
         """
         return bump_field('Tiny')
 
-    @task()
+    @task(private=True)
     def bump_minor():
         """
         Bumps the Minor (Major.Minor.Tiny.Tiny2) version in VERSION file up by one.
@@ -204,7 +204,7 @@ with namespace('version'):
         """
         return bump_field('Minor')
 
-    @task()
+    @task(private=True)
     def bump_major():
         """
         Bumps the Major (Major.Minor.Tiny.Tiny2) version in VERSION file up by one.
