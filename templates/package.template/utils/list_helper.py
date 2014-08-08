@@ -2,9 +2,13 @@
 """
 Helpers for list manipulation.  Basically modelled from ruby's Array.compress, Array.uniq
 
-Add the following to your *requirements.txt* file:
+Add the following to your *requirements-py26.txt* file:
 
-* ordereddict if sys.version_info < (3, 1)
+* ordereddict
+
+Add the following to your *requirements-py27.txt* file:
+
+* ordereddict
 
 """
 

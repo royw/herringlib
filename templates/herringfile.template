@@ -1,7 +1,12 @@
 """
 {description}
 
-Add the following to your *requirements-py26.txt* and *requirements-py27.txt* files:
+Add the following to your *requirements-py26.txt* file:
+
+* argparse
+* ordereddict
+
+Add the following to your *requirements-py27.txt* file:
 
 * argparse
 * ordereddict
@@ -19,10 +24,12 @@ Add the following to your *requirements.txt* files:
 """
 import os
 import re
+from pprint import pformat
+from sys import version, path
 
 # noinspection PyUnresolvedReferences
-from herring.herring_app import task, namespace, HerringFile, task_execute
-from herring.support.simple_logger import info
+from herring.herring_app import task, namespace, HerringFile, task_execute, verbose_mode, debug_mode
+from herringlib.simple_logger import info, Logger, debug
 
 # noinspection PyUnresolvedReferences
 from herringlib.project_settings import Project
@@ -31,6 +38,9 @@ from herringlib.project_settings import Project
 
 herringfile_dir = os.path.dirname(__file__)
 Project.herringfile_dir = herringfile_dir
+
+Logger.set_verbose(verbose_mode)
+Logger.set_debug(debug_mode)
 
 Project.metadata(
     {{
@@ -60,6 +70,9 @@ Project.metadata(
         # python versions (defined in 'python_versions') to unit test with.  Defaults to 'wheel_python_versions'.
         'test_python_versions': ('27', '34'),
 
+        # python versions (defined in 'python_versions') to run metrics with.  Defaults to 'wheel_python_versions'.
+        'metrics_python_versions': '27',
+
         # python version (defined in 'python_versions') to build source distribution with
         'sdist_python_version': '27',
 
@@ -69,6 +82,13 @@ Project.metadata(
 )
 
 Project.required_files()
+
+if HerringFile.uninstalled_packages:
+    print("You have missing packages.  You may install using the following command:")
+    print("\n  pip install %s" % ' '.join(HerringFile.uninstalled_packages))
+
+info("Python version: {{version}}".format(version=version))
+debug("Python path: {{path}}".format(path=pformat(path)))
 
 
 @task(depends=['build', 'doc', 'test'])

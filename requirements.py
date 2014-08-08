@@ -16,22 +16,23 @@ Herringlib supports specifying required packages in each module's docstring as f
 2) after that line, ignoring blank lines, there are bullet list items starting with a '* ' then
    containing the names of the required third party packages followed by any optional conditions.
 
-Here's an example module docstring::
+Here's an example module docstring (using '#' instead of '*' to keep this file from adding these
+example packages to your project's requirement files)::
 
     '''
     Another great module...
 
     Add the following to your *requirements.txt* file:
-    * wheel
+    # wheel
 
     Add the following to your *requirements-py27.txt* file:
 
-    * argparse
-    * ordereddict
+    # argparse
+    # ordereddict
 
     Add the following to your *requirements-py[test_python_versions].txt* file:
 
-    * pytest
+    # pytest
 
     '''
 
@@ -234,12 +235,17 @@ class Requirements(object):
             debug('file: %s' % file_)
             required_files = self._parse_docstring(self._get_module_docstring(file_))
             debug('required_files: %s' % pformat(required_files))
-            requirements.update(required_files)
+            for key in required_files.keys():
+                if key not in requirements.keys():
+                    requirements[key] = []
+                requirements[key].extend(required_files[key])
 
         needed = {}
         diff = {}
         for filename in requirements.keys():
-            needed[filename] = sorted(compress_list(unique_list(requirements[filename])))
+            if filename not in needed.keys():
+                needed[filename] = []
+            needed[filename].extend(sorted(compress_list(unique_list(requirements[filename]))))
 
             if not os.path.exists(filename):
                 info("Missing: " + filename)

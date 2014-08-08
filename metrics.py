@@ -7,7 +7,7 @@ Herring tasks for quality metrics (cheesecake, pymetrics, pycabehtml, pylint).
     you may need to install pymetrics using your OS package management tool, on
     ubuntu 12.04, just installing using pip did not provide a runnable pymetrics script.
 
-Add the following to your *requirements.txt* file:
+Add the following to your *requirements-py[metrics_python_versions].txt* file:
 
 * cheesecake
 * matplotlib
@@ -17,15 +17,19 @@ Add the following to your *requirements.txt* file:
 * pymetrics
 
 """
+import os
+
+# noinspection PyUnresolvedReferences
+from herring.herring_app import task, namespace, task_execute
+
+from herringlib.mkdir_p import mkdir_p
+from herringlib.project_settings import Project
 from herringlib.executables import executables_available
 from herringlib.project_tasks import packages_required
+from herringlib.simple_logger import info
+from herringlib.venv import VirtualenvInfo
 
 __docformat__ = 'restructuredtext en'
-
-import os
-# noinspection PyUnresolvedReferences
-from herring.herring_app import task, namespace
-from herringlib.project_settings import Project
 
 required_packages = [
     'Cheesecake',
@@ -45,6 +49,7 @@ if packages_required(required_packages):
             """ Run the cheesecake kwalitee metric """
             if not executables_available(['cheesecake_index']):
                 return
+            mkdir_p(Project.quality_dir)
             cheesecake_log = os.path.join(Project.quality_dir, 'cheesecake.log')
             with LocalShell() as local:
                 local.system("cheesecake_index --path=dist/%s-%s.tar.gz --keep-log -l %s" %
@@ -57,6 +62,7 @@ if packages_required(required_packages):
             """ Run pylint with project overrides from pylint.rc """
             if not executables_available(['pylint']):
                 return
+            mkdir_p(Project.quality_dir)
             options = ''
             if os.path.exists(Project.pylintrc):
                 options += "--rcfile=pylint.rc"
@@ -71,6 +77,7 @@ if packages_required(required_packages):
             """ Run McCabe code complexity """
             if not executables_available(['pymetrics', 'pycabehtml.py']):
                 return
+            mkdir_p(Project.quality_dir)
             quality_dir = Project.quality_dir
             complexity_txt = os.path.join(quality_dir, 'complexity.txt')
             graph = os.path.join(quality_dir, 'output.png')
@@ -84,7 +91,25 @@ if packages_required(required_packages):
                 local.system("pycabehtml.py -i %s -o %s -a %s -g %s" %
                              (complexity_txt, metrics_html, acc, graph))
 
-    @task(depends=['metrics::cheesecake', 'metrics::lint', 'metrics::complexity'])
-    def metrics():
+    @task(namespace='metrics', depends=['metrics::cheesecake', 'metrics::lint', 'metrics::complexity'], private=False)
+    def all_metrics():
         """ Quality metrics """
         pass
+
+    @task()
+    def metrics():
+        """ Quality metrics """
+
+        # Run the metrics in each of the virtual environments defined in Project.metrics_python_versions
+        # or if not defined, then in Project.wheel_python_versions.  If neither are defined, then
+        # run the test in the current environment.
+
+        venvs = VirtualenvInfo('metrics_python_versions', 'wheel_python_versions')
+
+        if not venvs.in_virtualenv and venvs.defined:
+            for venv_info in venvs.infos():
+                info('Running metrics using the {venv} virtual environment.'.format(venv=venv_info.venv))
+                venv_info.run('herring metrics::all_metrics')
+        else:
+            info('Running metrics using the current python environment')
+            task_execute('metrics::all_metrics')

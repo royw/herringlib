@@ -210,7 +210,10 @@ def mkvenvs():
                     info('=' * len(requirement_file))
                     info(pformat(requirements))
 
-            install_lines = []
+            install_lines = [
+                'pip install --upgrade pip ; ',
+                'pip install --upgrade setuptools ; ',
+            ]
             if 'numpy' in requirements:
                 install_lines.append('pip install numpy ; ')
 

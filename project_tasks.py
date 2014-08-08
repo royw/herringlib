@@ -18,7 +18,7 @@ except ImportError:
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, HerringFile
 
-from herringlib.simple_logger import error, info
+from herringlib.simple_logger import error, info, debug
 from herringlib.split_all import split_all
 from herringlib.mkdir_p import mkdir_p
 from herringlib.local_shell import LocalShell
@@ -252,8 +252,9 @@ def packages_required(package_names):
 @task(namespace='project', private=False)
 def check_requirements():
     """ Checks that herringfile and herringlib/* required packages are in requirements.txt file """
+    debug("check_requirements")
     needed = Requirements(Project).find_missing_requirements()
-    for filename in needed.keys():
+    for filename in sorted(needed.keys()):
         requirements_filename = os.path.join(Project.herringfile_dir, filename)
         if needed[filename]:
             info("Please add the following to your %s:\n" % requirements_filename)
