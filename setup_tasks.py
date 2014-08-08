@@ -5,7 +5,7 @@ Set of Herring tasks for packaging a project.
 In early development, the install/uninstall tasks are useful.
 Less so after you start deploying to a local pypi server.
 
-Add the following to your *requirements.txt* file:
+Add the following to your *requirements-py[wheel_python_versions].txt* file:
 
 * wheel
 
@@ -18,7 +18,7 @@ from getpass import getpass
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, HerringFile, task_execute, namespace
 from herringlib.setup_cfg import setup_cfg_value
-from herringlib.venv import VirtualenvInfo, using_version, venv_decorator
+from herringlib.venv import VirtualenvInfo, venv_decorator
 from herringlib.version import bump, get_project_version
 from herringlib.project_settings import Project
 from herringlib.local_shell import LocalShell
@@ -179,7 +179,7 @@ if Project.package:
                     # builds source distribution
                     local.system("python setup.py sdist")
 
-        @task(private=True)
+        @task(private=False)
         def wheel():
             """ build wheel distribution """
             info('')

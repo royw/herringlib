@@ -8,12 +8,13 @@ Add the following to your *requirements.txt* file:
 * scp
 
 """
+from herringlib.project_tasks import packages_required
 from herringlib.simple_logger import info
 
 __docformat__ = 'restructuredtext en'
 
 
-from herringlib.project_settings import Project, packages_required
+from herringlib.project_settings import Project
 
 required_packages = [
     'pexpect',
@@ -226,11 +227,12 @@ if packages_required(required_packages):
             ssh.connect(Project.address, Project.port, Project.user, Project.password)
             scp = SCPClient(ssh.get_transport())
             # scp = SCPClient(self.ssh.get_transport())
+            # noinspection PyBroadException
             try:
                 info("\nfiles: %s" % repr(files))
                 info("remote_path: %s" % remote_path)
                 output = scp.put(files, '"{dest}"'.format(dest=remote_path), recursive=True) or ''
-            except Exception as ex:
+            except Exception:
                 try:
                     output = scp.put(files, remote_path, recursive=True) or ''
                 except Exception as ex:

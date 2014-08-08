@@ -1,9 +1,20 @@
 """
 {description}
 
-Add the following to your *requirements.txt* file:
+Add the following to your *requirements-py26.txt* and *requirements-py27.txt* files:
 
-* argparse if sys.version_info < (3, 2)
+* argparse
+* ordereddict
+
+Add the following to your *requirements.txt* files:
+
+* cheesecake
+* pycabehtml
+* pylint
+* pymetrics
+* mako
+* pexpect
+* setuptools
 
 """
 import os

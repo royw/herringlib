@@ -18,13 +18,14 @@ Add the following to your *requirements.txt* file:
 
 """
 from herringlib.executables import executables_available
+from herringlib.project_tasks import packages_required
 
 __docformat__ = 'restructuredtext en'
 
 import os
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace
-from herringlib.project_settings import Project, packages_required
+from herringlib.project_settings import Project
 
 required_packages = [
     'Cheesecake',
@@ -61,7 +62,9 @@ if packages_required(required_packages):
                 options += "--rcfile=pylint.rc"
             pylint_log = os.path.join(Project.quality_dir, 'pylint.log')
             with LocalShell() as local:
-                local.system("pylint {options} {dir} > {log}".format(options=options, dir=Project.package, log=pylint_log))
+                local.system("pylint {options} {dir} > {log}".format(options=options,
+                                                                     dir=Project.package,
+                                                                     log=pylint_log))
 
         @task(private=True)
         def complexity():

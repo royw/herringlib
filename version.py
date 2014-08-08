@@ -68,13 +68,17 @@ def _file_spec(basename, project_package=None):
 
 
 def get_version_from_file(project_package=None):
-    """ get the version from VERSION.txt """
+    """ get the version from VERSION.txt
+
+    :param project_package: the package directory relative to the herringfile directory
+           where the VERSION.txt may reside.
+    """
     try:
         parts = [Project.herringfile_dir, project_package, 'VERSION.txt']
         version_file = os.path.join(*[f for f in parts if f is not None])
         Project.version_file = version_file
         print("version_file => %s" % version_file)
-        with open(version_file, 'r') as file_:
+        with open(version_file) as file_:
             return str(Version(file_.read().strip()))
     except IOError:
         pass
@@ -97,7 +101,7 @@ def get_project_version(project_package=None):
     try:
         file_name = _file_spec('__init__.py', project_package)
         debug("version_file => %s" % file_name)
-        with open(file_name, 'r') as in_file:
+        with open(file_name) as in_file:
             for line in in_file.readlines():
                 match = re.match(VERSION_REGEX, line)
                 if match:
@@ -109,13 +113,13 @@ def get_project_version(project_package=None):
     try:
         file_name = _file_spec('VERSION.txt', project_package)
         info("version_file => %s" % file_name)
-        with open(file_name, 'r') as in_file:
+        with open(file_name) as in_file:
             return in_file.read().strip()
     except IOError:
         try:
             file_name = _file_spec('VERSION.txt', Project.herringfile_dir)
             info("version_file => %s" % file_name)
-            with open(file_name, 'r') as in_file:
+            with open(file_name) as in_file:
                 return in_file.read().strip()
         except IOError:
             pass
@@ -214,6 +218,14 @@ with namespace('version'):
 
 
 def bump_field(field):
+    """
+    Increment the given field by one.
+
+    :param field: the field name (ex: 'Minor').
+    :type field: str
+    :return: the new version
+    :rtype: str
+    """
     original_version_str = get_project_version(project_package=Project.package)
     ver = Version(original_version_str)
     info('ver before bump: %s' % str(ver))

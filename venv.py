@@ -23,6 +23,7 @@ Usage
 
 import os
 from functools import wraps
+from pprint import pformat
 from decorator import decorator
 
 # noinspection PyUnresolvedReferences
@@ -197,15 +198,31 @@ def mkvenvs():
     venvs = VirtualenvInfo('python_versions')
     if not venvs.in_virtualenv and venvs.defined:
         for venv_info in venvs.infos(exists=False):
-            requirement_file = 'requirements.txt'
+            requirement_files = ['requirements.txt']
             versioned_requirement_file = Project.versioned_requirements_file_format.format(ver=venv_info.ver)
             if os.path.isfile(versioned_requirement_file):
-                requirement_file = versioned_requirement_file
+                requirement_files.append(versioned_requirement_file)
+
+            for requirement_file in requirement_files:
+                with open(requirement_file) as file_:
+                    requirements = file_.readlines()
+                    info(requirement_file)
+                    info('=' * len(requirement_file))
+                    info(pformat(requirements))
+
+            install_lines = []
+            if 'numpy' in requirements:
+                install_lines.append('pip install numpy ; ')
+
+            if 'matplotlib' in requirements:
+                install_lines.append('pip install matplotlib ; ')
+
+            for requirement_file in requirement_files:
+                install_lines.append('pip install -r {requirement_file} ; '.format(requirement_file=requirement_file))
 
             venv_info.mkvirtualenv()
-            venv_info.run('pip install numpy ; '
-                          'pip install matplotlib ; '
-                          'pip install -r {requirement_file}"'.format(requirement_file=requirement_file))
+            info(''.join(install_lines))
+            venv_info.run(''.join(install_lines))
     else:
         info("To build with wheels, in your herringfile you must set Project.wheel_python_versions to a list"
              "of compact version, for example: ['27', '33', '34'] will build wheels for "

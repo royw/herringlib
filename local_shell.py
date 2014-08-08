@@ -8,8 +8,7 @@ Add the following to your *requirements.txt* file:
 * pexpect
 
 """
-from pprint import pformat
-from herringlib.simple_logger import error, info
+from herringlib.simple_logger import error
 
 __docformat__ = 'restructuredtext en'
 
@@ -49,6 +48,7 @@ class LocalShell(AShell):
         self.prefix = prefix
         self.postfix = postfix
 
+    # noinspection PyMethodMayBeStatic
     def env(self):
         """return local environment dictionary."""
         return os.environ
@@ -102,6 +102,12 @@ class LocalShell(AShell):
         return ''.join(output).split("\n")
 
     def run_lines(self, commands_str, **kwargs):
+        """
+        Run each newline separated line from commands_str.
+
+        :param commands_str: commands to run, may be separated with newlines.
+        :param kwargs: arguments to pass to the run command.
+        """
         for cmd_line in [line.strip() for line in commands_str.split("\n")]:
             if cmd_line:
                 self.run(cmd_line, **kwargs)
@@ -112,10 +118,6 @@ class LocalShell(AShell):
         """
         Runs the command and returns the output, writing each the output to out_stream if verbose is True.
 
-        :param timeout:
-        :param pattern_response:
-        :param postfix:
-        :param accept_defaults:
         :param out_stream:
         :param cmd_args: list of command arguments or str command line
         :type cmd_args: list or str
@@ -125,6 +127,16 @@ class LocalShell(AShell):
         :type verbose: bool
         :param prefix: list of command arguments to prepend to the command line
         :type prefix: list
+        :param postfix:
+        :param accept_defaults:
+        :type accept_defaults: bool
+        :param pattern_response:
+        :param timeout:
+        :type timeout: int
+        :param timeout_interval:
+        :type timeout_interval: int
+        :param debug: emit debugging info
+        :type debug: bool
         """
         if isinstance(cmd_args, str):
             cmd_args = pexpect.split_command_line(cmd_args)
@@ -160,6 +172,12 @@ class LocalShell(AShell):
         :type verbose: bool
         :param prefix: list of command arguments to prepend to the command line
         :type prefix: list
+        :param timeout:
+        :type timeout: int
+        :param timeout_interval:
+        :type timeout_interval: int
+        :param debug: emit debugging info
+        :type debug: bool
         """
         self.display("run_generator(%s, %s)\n\n" % (cmd_args, env), out_stream=out_stream, verbose=debug)
         args = self.expand_args(cmd_args, prefix=prefix, postfix=postfix)
@@ -184,6 +202,10 @@ class LocalShell(AShell):
         :type env: dict
         :param verbose: outputs the method call if True
         :type verbose: bool
+        :param timeout:
+        :type timeout: int
+        :param timeout_interval:
+        :type timeout_interval: int
         """
         self.display("run_process(%s, %s)\n\n" % (cmd_args, env), out_stream=out_stream, verbose=verbose)
         sub_env = os.environ.copy()
@@ -220,6 +242,7 @@ class LocalShell(AShell):
             except OSError as ex:
                 error("Error: Unable to run process: {cmd_args} - {err}".format(cmd_args=repr(cmd_args), err=str(ex)))
 
+    # noinspection PyMethodMayBeStatic
     def _non_block_read(self, output):
         fd = output.fileno()
         fl = fcntl.fcntl(fd, fcntl.F_GETFL)

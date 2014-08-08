@@ -52,7 +52,12 @@ class GracefulInterruptHandler(object):
 
         #noinspection PyUnusedLocal
         def handler(signum, frame):
-            """signal that an interrupt has occurred."""
+            """
+            signal that an interrupt has occurred.
+
+            :param signum: signal number
+            :param frame:
+            """
             self.release()
             self.interrupted = True
 

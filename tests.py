@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Add the following to your *requirements.txt* file:
+Add the following to your *requirements-py[test_python_versions].txt* file:
 
 * coverage
 * pytest
@@ -8,8 +8,9 @@ Add the following to your *requirements.txt* file:
 """
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, task_execute
-from herringlib.project_settings import Project, packages_required
+from herringlib.project_settings import Project
 from herringlib.local_shell import LocalShell
+from herringlib.project_tasks import packages_required
 from herringlib.simple_logger import info
 from herringlib.venv import VirtualenvInfo, venv_decorator
 

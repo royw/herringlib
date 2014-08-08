@@ -7,7 +7,7 @@ Supports Sphinx (default) and EpyDoc.
 Normal usage is to invoke the *doc* task.
 
 
-Add the following to your *requirements.txt* file:
+Add the following to your *requirements-py[doc_python_version].txt* file:
 
 * Pygments
 * Sphinx
@@ -33,8 +33,9 @@ from textwrap import dedent
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace, task_execute
 from herringlib.mkdir_p import mkdir_p
+from herringlib.project_tasks import packages_required
 from herringlib.simple_logger import info, warning
-from herringlib.project_settings import Project, packages_required
+from herringlib.project_settings import Project
 from herringlib.local_shell import LocalShell
 from herringlib.venv import VirtualenvInfo, venv_decorator
 
