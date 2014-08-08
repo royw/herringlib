@@ -15,6 +15,7 @@ Add the following to your *requirements-py[metrics_python_versions].txt* file:
 * pycabehtml
 * pylint
 * pymetrics
+* radon
 
 """
 import os
@@ -91,7 +92,38 @@ if packages_required(required_packages):
                 local.system("pycabehtml.py -i %s -o %s -a %s -g %s" %
                              (complexity_txt, metrics_html, acc, graph))
 
-    @task(namespace='metrics', depends=['metrics::cheesecake', 'metrics::lint', 'metrics::complexity'], private=False)
+        @task(private=True)
+        def radon():
+            if not executables_available(['radon']):
+                return
+            mkdir_p(Project.quality_dir)
+
+            def qd(basename):
+                """
+                get the relative path to report file in quality directory
+
+                :param basename: the report base name.
+                :returns: the relative path to the given report name in the quality directory.
+                """
+                return os.path.join(Project.quality_dir, basename)
+
+            with LocalShell() as local:
+                local.system("radon cc -s --average --total-average {dir} > {out}".format(
+                    dir=Project.package, out=qd('radon_cc.txt')))
+                local.system("radon cc -s --average --total-average --json {dir} > {out}".format(
+                    dir=Project.package, out=qd('radon_cc.json')))
+                local.system("radon cc -s --average --total-average --xml {dir} > {out}".format(
+                    dir=Project.package, out=qd('radon_cc.xml')))
+                local.system("radon mi -s {dir} > {out}".format(
+                    dir=Project.package, out=qd('radon_mi.txt')))
+                local.system("radon raw -s {dir} > {out}".format(
+                    dir=Project.package, out=qd('radon_raw.txt')))
+                local.system("radon raw -s --json {dir} > {out}".format(
+                    dir=Project.package, out=qd('radon_raw.json')))
+
+    @task(namespace='metrics',
+          depends=['metrics::cheesecake', 'metrics::lint', 'metrics::complexity', 'metrics::radon'],
+          private=False)
     def all_metrics():
         """ Quality metrics """
         pass
