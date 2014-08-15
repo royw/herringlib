@@ -91,10 +91,18 @@ def value_from_setup_py(arg_name):
     return None
 
 
-@task(namespace='project', help='Available options: --name, --package, --author, --author_email, --description')
-def init():
+def _project_defaults():
     """
-    Initialize a new python project with default files.  Default values from herring.conf and directory name.
+    Get the project defaults from (in order of preference):
+
+    * setup.py,
+    * kwargs,
+    * herring config file,
+    * environment variables,
+    * default values.
+
+    :return: dictionary of defaults
+    :rtype: dict[str,str]
     """
     defaults = {
         'package': os.path.basename(os.path.abspath(os.curdir)),
@@ -126,6 +134,33 @@ def init():
         value = value_from_setup_py(key)
         if value is not None:
             defaults[key] = value
+    return defaults
+
+
+def _render(template_filename, template_dir, dest_filename, defaults):
+    # info('dest_filename: %s' % dest_filename)
+    if os.path.isdir(template_filename):
+        mkdir_p(template_filename)
+    else:
+        mkdir_p(os.path.dirname(dest_filename))
+        template_root, template_ext = os.path.splitext(template_filename)
+        if template_ext == '.template':
+            if not os.path.isdir(dest_filename):
+                if not os.path.isfile(dest_filename) or os.path.getsize(dest_filename) == 0:
+                    __create_from_template(template_filename, dest_filename, **defaults)
+        else:
+            if not os.path.isfile(dest_filename):
+                if os.path.join(template_dir, '__init__.py') != template_filename and os.path.join(
+                        template_dir, 'bin', '__init__.py') != template_filename:
+                    shutil.copyfile(template_filename, dest_filename)
+
+
+@task(namespace='project', help='Available options: --name, --package, --author, --author_email, --description')
+def init():
+    """
+    Initialize a new python project with default files.  Default values from herring.conf and directory name.
+    """
+    defaults = _project_defaults()
 
     for template_dir in [os.path.abspath(os.path.join(herringlib, 'herringlib', 'templates'))
                          for herringlib in HerringFile.herringlib_paths]:
@@ -138,21 +173,7 @@ def init():
                 # info('template_filename: %s' % template_filename)
                 dest_filename = resolve_template_dir(str(template_filename.replace(template_dir, '.')),
                                                      defaults['package'])
-                # info('dest_filename: %s' % dest_filename)
-                if os.path.isdir(template_filename):
-                    mkdir_p(template_filename)
-                else:
-                    mkdir_p(os.path.dirname(dest_filename))
-                    template_root, template_ext = os.path.splitext(template_filename)
-                    if template_ext == '.template':
-                        if not os.path.isdir(dest_filename):
-                            if not os.path.isfile(dest_filename) or os.path.getsize(dest_filename) == 0:
-                                __create_from_template(template_filename, dest_filename, **defaults)
-                    else:
-                        if not os.path.isfile(dest_filename):
-                            if os.path.join(template_dir, '__init__.py') != template_filename and os.path.join(
-                                    template_dir, 'bin', '__init__.py') != template_filename:
-                                shutil.copyfile(template_filename, dest_filename)
+                _render(template_filename, template_dir, dest_filename, defaults)
 
 
 def resolve_template_dir(original_path, package_name):

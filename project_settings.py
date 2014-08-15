@@ -295,11 +295,7 @@ class ProjectSettings(object):
             if key.endswith('_dir'):
                 self.__directory(value)
 
-        missing_keys = self.__missing_required_attributes()
-        for missing_key in missing_keys:
-            error("Missing required '{key}' in Project.metadata call in the herringfile.".format(key=missing_key))
-        if missing_keys:
-            raise Exception('The herringfiles has missing required keys.  Please correct and try again.')
+        self.__check_missing_required_attributes()
 
         from herringlib.version import get_project_version
 
@@ -328,6 +324,13 @@ class ProjectSettings(object):
                 self.design_header = in_file.read()
         except:
             pass
+
+    def __check_missing_required_attributes(self):
+        missing_keys = self.__missing_required_attributes()
+        for missing_key in missing_keys:
+            error("Missing required '{key}' in Project.metadata call in the herringfile.".format(key=missing_key))
+        if missing_keys:
+            raise Exception('The herringfiles has missing required keys.  Please correct and try again.')
 
     def __missing_required_attributes(self):
         missing_keys = []

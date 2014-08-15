@@ -8,7 +8,9 @@ Add the following to your *requirements.txt* file:
 * pexpect
 
 """
+from herringlib.project_settings import Project
 from herringlib.simple_logger import error
+from herringlib.watchdog import Watchdog
 
 __docformat__ = 'restructuredtext en'
 
@@ -42,11 +44,15 @@ class LocalShell(AShell):
     """
         Provides run interface on local system.
     """
-    def __init__(self, logfile=None, verbose=False, prefix=None, postfix=None):
+    def __init__(self, logfile=None, verbose=False, prefix=None, postfix=None, password=None, environment=None):
         super(LocalShell, self).__init__(is_remote=False, verbose=verbose)
         self.logfile = logfile
         self.prefix = prefix
         self.postfix = postfix
+        self.password = password
+        if environment:
+            self.prefix = Project.prefix[environment]
+            self.postfix = Project.postfix[environment]
 
     # noinspection PyMethodMayBeStatic
     def env(self):
@@ -64,11 +70,15 @@ class LocalShell(AShell):
         :param postfix: command line arguments appended to the given cmd_args
         :param pattern_response: dictionary whose key is a regular expression pattern that when matched
             results in the value being sent to the running process.  If the value is None, then no response is sent.
+        :returns: the output of the command
+        :rtype: str
         """
         self.display("run_pattern_response(%s)\n\n" % cmd_args, out_stream=out_stream, verbose=verbose)
         if pattern_response is None:
             pattern_response = OrderedDict()
             pattern_response[r'\[\S+\](?<!\[sudo\]) '] = CR    # accept default prompts, don't match "[sudo] "
+            if self.password is not None:
+                pattern_response[r'\[sudo\] password for \S+\:'] = self.password + CR
 
         pattern_response[MOVEMENT] = None
         pattern_response[pexpect.TIMEOUT] = CR
@@ -99,7 +109,7 @@ class LocalShell(AShell):
                     break
         except pexpect.ExceptionPexpect as ex:
             self.display(str(ex) + '\n', out_stream=out_stream, verbose=verbose)
-        return ''.join(output).split("\n")
+        return ''.join(output)
 
     def run_lines(self, commands_str, **kwargs):
         """
@@ -107,10 +117,14 @@ class LocalShell(AShell):
 
         :param commands_str: commands to run, may be separated with newlines.
         :param kwargs: arguments to pass to the run command.
+        :returns: the output of the command
+        :rtype: str
         """
+        output = []
         for cmd_line in [line.strip() for line in commands_str.split("\n")]:
             if cmd_line:
-                self.run(cmd_line, **kwargs)
+                output.append(self.run(cmd_line, **kwargs))
+        return ''.join(output)
 
     def run(self, cmd_args, out_stream=sys.stdout, env=None, verbose=False,
             prefix=None, postfix=None, accept_defaults=False, pattern_response=None,
@@ -137,6 +151,8 @@ class LocalShell(AShell):
         :type timeout_interval: int
         :param debug: emit debugging info
         :type debug: bool
+        :returns: the output of the command
+        :rtype: str
         """
         if isinstance(cmd_args, str):
             cmd_args = pexpect.split_command_line(cmd_args)
@@ -178,6 +194,8 @@ class LocalShell(AShell):
         :type timeout_interval: int
         :param debug: emit debugging info
         :type debug: bool
+        :yields: each line of output as it is generated
+        :ytype: str
         """
         self.display("run_generator(%s, %s)\n\n" % (cmd_args, env), out_stream=out_stream, verbose=debug)
         args = self.expand_args(cmd_args, prefix=prefix, postfix=postfix)
@@ -206,6 +224,8 @@ class LocalShell(AShell):
         :type timeout: int
         :param timeout_interval:
         :type timeout_interval: int
+        :yields: each line of output as it is generated
+        :ytype: str
         """
         self.display("run_process(%s, %s)\n\n" % (cmd_args, env), out_stream=out_stream, verbose=verbose)
         sub_env = os.environ.copy()
@@ -213,7 +233,6 @@ class LocalShell(AShell):
             for key, value in env.items():
                 sub_env[key] = value
 
-        timeout_seconds = timeout
         with GracefulInterruptHandler() as handler:
             try:
                 # info("PATH={path}".format(path=pformat(sub_env['PATH'].split(':'))))
@@ -221,26 +240,28 @@ class LocalShell(AShell):
                 process = subprocess.Popen(cmd_args,
                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                            env=sub_env)
-                while process.poll() is None:   # returns None while subprocess is running
-                    if handler.interrupted:
-                        process.kill()
-                    while True:
-                        line = self._non_block_read(process.stdout)
-                        if not line:
-                            break
-                        yield line
-                    if timeout:
-                        if timeout_seconds > 0:
-                            sleep(timeout_interval)
-                            timeout_seconds -= timeout_interval
-                        else:
+                fido = Watchdog(timeout)
+                try:
+                    while process.poll() is None:   # returns None while subprocess is running
+                        if handler.interrupted:
                             process.kill()
+                        while True:
+                            line = self._non_block_read(process.stdout)
+                            if not line:
+                                break
+                            yield line
+                        sleep(timeout_interval)
+                except Watchdog:
+                    process.kill()
+                fido.stop()
 
                 line = self._non_block_read(process.stdout)
                 if line:
                     yield line
             except OSError as ex:
                 error("Error: Unable to run process: {cmd_args} - {err}".format(cmd_args=repr(cmd_args), err=str(ex)))
+
+    # def _process_loop(self, cmd_args, sub_env, handler):
 
     # noinspection PyMethodMayBeStatic
     def _non_block_read(self, output):

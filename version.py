@@ -129,6 +129,45 @@ def get_project_version(project_package=None):
     return get_project_version(project_package)
 
 
+def _edit_package_version(version_str, project_package=None):
+    def version_line(ver_str):
+        """
+        return python line for setting the __version__ attribute
+
+        :param ver_str: the version string
+         :type ver_str: str
+        """
+        return "__version__ = '{version}'".format(version=ver_str)
+    file_name = _file_spec('__init__.py', project_package)
+    with safe_edit(file_name) as files:
+        replaced = False
+        for line in files['in'].readlines():
+            match = re.match(VERSION_REGEX, line)
+            if match:
+                line = re.sub(VERSION_REGEX, version_line(version_str), line)
+                replaced = True
+            files['out'].write(line)
+        if not replaced:
+            files['out'].write("\n")
+            files['out'].write(version_line(version_str))
+            files['out'].write("\n")
+
+
+def _replace_version_txt_file(version_str, project_package=None):
+    file_name = _file_spec('VERSION.txt', project_package)
+    try:
+        with open(file_name, 'w') as version_file:
+            version_file.write(version_str)
+    except IOError as ex2:
+        error(ex2)
+        file_name = _file_spec('VERSION.txt', Project.herringfile_dir)
+        try:
+            with open(file_name, 'w') as version_file:
+                version_file.write(version_str)
+        except IOError as ex2:
+            error(ex2)
+
+
 def set_project_version(version_str, project_package=None):
     """
     Set the version in __init__.py
@@ -139,48 +178,14 @@ def set_project_version(version_str, project_package=None):
     :type project_package: str
     """
 
-    def version_line(ver_str):
-        """
-        return python line for setting the __version__ attribute
-
-        :param ver_str: the version string
-         :type ver_str: str
-        """
-        return "__version__ = '{version}'".format(version=ver_str)
-
     try:
-        file_name = _file_spec('__init__.py', project_package)
-        with safe_edit(file_name) as files:
-            replaced = False
-            for line in files['in'].readlines():
-                match = re.match(VERSION_REGEX, line)
-                if match:
-                    line = re.sub(VERSION_REGEX, version_line(version_str), line)
-                    replaced = True
-                files['out'].write(line)
-            if not replaced:
-                files['out'].write("\n")
-                files['out'].write(version_line(version_str))
-                files['out'].write("\n")
-
+        _edit_package_version(version_str=version_str, project_package=project_package)
         file_name = _file_spec('VERSION.txt', project_package)
         if os.path.exists(file_name):
             os.remove(file_name)
-
     except IOError as ex:
         error(ex)
-        file_name = _file_spec('VERSION.txt', project_package)
-        try:
-            with open(file_name, 'w') as version_file:
-                version_file.write(version_str)
-        except IOError as ex2:
-            error(ex2)
-            file_name = _file_spec('VERSION.txt', Project.herringfile_dir)
-            try:
-                with open(file_name, 'w') as version_file:
-                    version_file.write(version_str)
-            except IOError as ex2:
-                error(ex2)
+        _replace_version_txt_file(version_str=version_str, project_package=project_package)
 
 
 with namespace('version'):

@@ -38,6 +38,7 @@ from herringlib.simple_logger import info, error, debug
 
 class InVirtualenvError(RuntimeError):
     """Indicate that we are currently in a virtualenv"""
+
     def __init__(self):
         super(InVirtualenvError, self).__init__('You are currently in a virtualenv, please deactivate and '
                                                 'try generating documentation again.')
@@ -45,6 +46,7 @@ class InVirtualenvError(RuntimeError):
 
 class NoAvailableVirtualenv(RuntimeError):
     """Indicate that there are not any known virtualenv"""
+
     def __init__(self):
         super(NoAvailableVirtualenv, self).__init__('Cannot open a virtualenv, there are none selected.')
 
@@ -101,15 +103,19 @@ class VenvInfo(object):
                               env=new_env).strip().split("\n")
             return self.venv in venvs
 
-    def run(self, command_line):
+    def run(self, command_line, verbose=False):
         """
         Run a command in the context of this virtual environment
 
         :param command_line: A shell command line.
         :type command_line: str
+        :param verbose: outputs the method call if True
+        :type verbose: bool
+        :returns: the output of running the command
+        :rtype: str
         """
         new_env = Project.env_without_virtualenvwrapper()
-
+        output = None
         with LocalShell() as local:
             venv_script = Project.virtualenvwrapper_script
             venvs = local.run('/bin/bash -c "source {venv_script} ;'
@@ -117,11 +123,12 @@ class VenvInfo(object):
                               verbose=False,
                               env=new_env).strip().split("\n")
             if self.venv in venvs:
-                local.run('/bin/bash -c "source {venv_script} ; '
-                          'workon {venv} ; python --version ; echo \"$VIRTUAL_ENV\" ; '
-                          '{cmd}"'.format(venv_script=venv_script, venv=self.venv, cmd=command_line),
-                          verbose=True,
-                          env=new_env)
+                output = local.run('/bin/bash -c "source {venv_script} ; '
+                                   'workon {venv} ; python --version ; echo \"$VIRTUAL_ENV\" ; '
+                                   '{cmd}"'.format(venv_script=venv_script, venv=self.venv, cmd=command_line),
+                                   verbose=verbose,
+                                   env=new_env)
+        return output
 
 
 class VirtualenvInfo(object):
@@ -129,6 +136,7 @@ class VirtualenvInfo(object):
     Given the name of one or more project attributes that contain lists of 2-digit python versions,
     support running commands in each of the virtualenvs.
     """
+
     def __init__(self, *attr_names):
         self._ver_attr = None
         self._raise_when_in_venv = False

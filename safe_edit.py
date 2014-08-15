@@ -13,6 +13,33 @@ from tempfile import NamedTemporaryFile
 from contextlib import contextmanager
 
 
+def _open(file_name, mode='r'):
+    """
+    Open a file for either python2 or python3
+    """
+    try:
+        # python3
+        file_ = open(file_name, mode, encoding='utf-8')
+    except TypeError:
+        # python2
+        file_ = open(file_name, mode)
+    return file_
+
+
+def _named_temporary_file(mode='w', delete=True):
+    """
+    Create a NamedTemporaryFile for either python2 or python3
+    """
+    try:
+        # python3
+        # noinspection PyArgumentList
+        tmp_file = NamedTemporaryFile(mode=mode, delete=delete, encoding='utf-8')
+    except TypeError:
+        # python2
+        tmp_file = NamedTemporaryFile(mode=mode, delete=delete)
+    return tmp_file
+
+
 # noinspection PyArgumentEqualDefault
 @contextmanager
 def safe_edit(file_name):
@@ -38,15 +65,8 @@ def safe_edit(file_name):
     tmp_file = None
     try:
         if os.path.isfile(file_name):
-            try:
-                in_file = open(file_name, mode='r', encoding='utf-8')
-            except TypeError:
-                in_file = open(file_name, mode='r')
-        try:
-            # noinspection PyArgumentList
-            tmp_file = NamedTemporaryFile(mode='w', delete=False, encoding='utf-8')
-        except TypeError:
-            tmp_file = NamedTemporaryFile(mode='w', delete=False)
+            in_file = _open(file_name, mode='r')
+        tmp_file = _named_temporary_file(mode='w', delete=False)
         tf_name = tmp_file.name
         yield {'in': in_file, 'out': tmp_file}
 

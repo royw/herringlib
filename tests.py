@@ -36,9 +36,8 @@ if packages_required(required_packages):
         if not venvs.in_virtualenv and venvs.defined:
             for venv_info in venvs.infos():
                 info('Running unit tests using the {venv} virtual environment.'.format(venv=venv_info.venv))
-                venv_info.run('py.test {tests_dir}'.format(tests_dir=Project.tests_dir))
+                venv_info.run('py.test {tests_dir}'.format(tests_dir=Project.tests_dir), verbose=True)
         else:
-            info('Running unit tests using the current python environment')
             with LocalShell() as local:
-                local.run(("py.test %s" % Project.tests_dir).split(' '), verbose=True)
-            return
+                info('Running unit tests using the current python environment')
+                local.run("py.test {tests_dir}".format(tests_dir=Project.tests_dir), verbose=True)

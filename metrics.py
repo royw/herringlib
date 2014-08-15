@@ -18,10 +18,12 @@ Add the following to your *requirements-py[metrics_python_versions].txt* file:
 * radon
 
 """
+import json
 import os
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace, task_execute
+from pprint import pformat
 
 from herringlib.mkdir_p import mkdir_p
 from herringlib.project_settings import Project
@@ -145,3 +147,84 @@ if packages_required(required_packages):
         else:
             info('Running metrics using the current python environment')
             task_execute('metrics::all_metrics')
+
+    @task(namespace='metrics', help='To display graphs instead of creating png files, use --display')
+    def graph_complexity():
+        """ Create Cyclomatic Complexity graphs. """
+        from matplotlib import pyplot
+
+        with LocalShell() as local:
+            data_json = local.run("radon cc -s --json {dir}".format(dir=Project.package))
+            data = json.loads(data_json)
+
+        # info(pformat(data))
+        components = {'function': {}, 'method': {}, 'class': {}}
+        for path in data.keys():
+            for component in data[path]:
+                # info(repr(component))
+                complexity_score = component['complexity']
+                if complexity_score not in components[component['type']]:
+                    components[component['type']][complexity_score] = []
+                components[component['type']][complexity_score].append(component)
+
+        ylabel = {
+            'all': 'Components',
+            'function': 'Functions',
+            'class': 'Classes',
+            'method': 'Methods'
+        }
+
+        x = {}
+        y = {}
+        for component_type in components.keys():
+            info(component_type)
+            x[component_type] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                                 21, 22, 23, 24, 25]
+            y[component_type] = [0] * 25
+            for score in sorted(components[component_type].keys()):
+                cnt = len(components[component_type][score])
+                # info("{complexity}: {cnt}".format(complexity=score, cnt=cnt))
+                if score < 25:
+                    y[component_type][score - 1] += cnt
+                else:
+                    y[component_type][-1] += cnt
+
+            pyplot.bar(x[component_type][0:4], y[component_type][0:4], align='center', color='green')
+            pyplot.bar(x[component_type][5:9], y[component_type][5:9], align='center', color='blue')
+            pyplot.bar(x[component_type][10:14], y[component_type][10:14], align='center', color='yellow')
+            pyplot.bar(x[component_type][15:19], y[component_type][15:19], align='center', color='orange')
+            pyplot.bar(x[component_type][20:], y[component_type][20:], align='center', color='red')
+
+            pyplot.xlabel('Cyclomatic Complexity')
+            pyplot.ylabel('Number of {type}'.format(type=ylabel[component_type]))
+
+            if '--display' in task.argv:
+                pyplot.show()
+            else:
+                pyplot.savefig(os.path.join(Project.quality_dir, "cc_{type}.png".format(type=component_type)))
+
+        hatch = {'class': '/', 'method': '+', 'function': '*'}
+        bottom = [0] * 25
+        legend_bar = {}
+        for component_type in components.keys():
+            legend_bar[component_type] = pyplot.bar(x[component_type][0:4], y[component_type][0:4], align='center',
+                                                    color='green', hatch=hatch[component_type], bottom=bottom[0:4])
+            pyplot.bar(x[component_type][5:9], y[component_type][5:9], align='center', color='blue',
+                       hatch=hatch[component_type], bottom=bottom[5:9])
+            pyplot.bar(x[component_type][10:14], y[component_type][10:14], align='center', color='yellow',
+                       hatch=hatch[component_type], bottom=bottom[10:14])
+            pyplot.bar(x[component_type][15:19], y[component_type][15:19], align='center', color='orange',
+                       hatch=hatch[component_type], bottom=bottom[15:19])
+            pyplot.bar(x[component_type][20:24], y[component_type][20:24], align='center', color='red',
+                       hatch=hatch[component_type], bottom=bottom[20:24])
+            bottom = [bottom[j] + y[component_type][j] for j in range(len(bottom))]
+
+        pyplot.xlabel('Cyclomatic Complexity')
+        pyplot.ylabel('Number of Components')
+        pyplot.legend((legend_bar[component_type] for component_type in components.keys()),
+                      (component_type for component_type in components.keys()))
+
+        if '--display' in task.argv:
+            pyplot.show()
+        else:
+            pyplot.savefig(os.path.join(Project.quality_dir, "cc_all.png"))

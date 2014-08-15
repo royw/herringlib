@@ -96,11 +96,20 @@ class Requirements(object):
     """
     Object for managing requirements files.
     """
-    requirement_regex = r'(requirements\.txt)|requirements\-py(\d\d)\.txt|requirements\-py\[(\S+)\]\.txt'
-    item_regex = r'\*\s+(.+)'
+    REQUIREMENT_REGEX = r'(requirements\.txt)|requirements\-py(\d\d)\.txt|requirements\-py\[(\S+)\]\.txt'
+    ITEM_REGEX = r'\*\s+(.+)'
 
     def __init__(self, project):
         self._project = project
+
+    def _find_item_groups(self, lines):
+        item_indexes = [i for i, item in enumerate(lines) if re.match(self.ITEM_REGEX, item)]
+        debug("item_indexes: %s" % repr(item_indexes))
+
+        item_groups = []
+        for k, g in groupby(enumerate(item_indexes), lambda x: x[0] - x[1]):  # lambda (i, x): i - x):
+            item_groups.append(map(itemgetter(1), g))
+        return item_groups
 
     def _parse_docstring(self, doc_string):
         """
@@ -123,21 +132,15 @@ class Requirements(object):
         if doc_string is None or not doc_string:
             return requirements
 
-        # print('"""' + doc_string + '"""')
-        lines = [line.strip() for line in doc_string.split("\n") if line.strip()]
+        lines = list(filter(str.strip, doc_string.splitlines()))
         # lines should now contain:
         # ['blah', 'blah', '...requirements.txt...','* pkg 1', '* pkg 2', 'blah']
         debug(lines)
 
-        requirement_indexes = [i for i, item in enumerate(lines) if re.search(self.requirement_regex, item)]
-        item_indexes = [i for i, item in enumerate(lines) if re.match(self.item_regex, item)]
-
+        requirement_indexes = [i for i, item in enumerate(lines) if re.search(self.REQUIREMENT_REGEX, item)]
         debug("requirement_indexes: %s" % repr(requirement_indexes))
-        debug("item_indexes: %s" % repr(item_indexes))
 
-        item_groups = []
-        for k, g in groupby(enumerate(item_indexes), lambda x: x[0] - x[1]):   # lambda (i, x): i - x):
-            item_groups.append(map(itemgetter(1), g))
+        item_groups = self._find_item_groups(lines)
         # print("item_groups: %s" % repr(item_groups))
 
         # example using doc_string:
@@ -161,7 +164,7 @@ class Requirements(object):
                         debug("filename: %s" % filename)
                         if filename not in requirements:
                             requirements[filename] = []
-                        requirements[filename].extend([re.match(self.item_regex, lines[item_index]).group(1)
+                        requirements[filename].extend([re.match(self.ITEM_REGEX, lines[item_index]).group(1)
                                                        for item_index in item_group])
 
         debug("requirements:\n%s" % pformat(requirements))
@@ -178,7 +181,7 @@ class Requirements(object):
         """
         requirement_files = []
         versions = None
-        match = re.search(self.requirement_regex, line)
+        match = re.search(self.REQUIREMENT_REGEX, line)
         if match:
             debug("match.group(1): %s" % match.group(1))
             debug("match.group(2): %s" % match.group(2))
@@ -214,13 +217,9 @@ class Requirements(object):
         debug("docstring: %s" % docstring)
         return docstring
 
-    def find_missing_requirements(self):
-        """
-        Find the required packages that are not in the requirements.txt file.
-
-        :return: set of missing packages.
-        :rtype: dict[str,set[str]]
-        """
+    # noinspection PyMethodMayBeStatic
+    def _get_herringlib_py_files(self):
+        """find all the .py files in the herringlib directory"""
         lib_files = []
         debug("HerringFile.herringlib_paths: %s" % repr(HerringFile.herringlib_paths))
         for herringlib_path in [os.path.join(path_, 'herringlib') for path_ in HerringFile.herringlib_paths]:
@@ -228,6 +227,17 @@ class Requirements(object):
                 for f in fnmatch.filter(files, '*.py'):
                     lib_files.append(os.path.join(dir_path, f))
 
+        return lib_files
+
+    def _get_requirements_dict_from_py_files(self):
+        """
+        Scan the herringlib py file docstrings extracting the 3rd party requirements.
+
+        :return: requirements dict where key is the requirements file name (ex: "requirements-py27.txt") and
+                 the value is a list of package names (ex: ['argparse', 'wheel']).
+        :rtype: dict[str,list[str]]
+        """
+        lib_files = self._get_herringlib_py_files()
         lib_files.append(os.path.join(self._project.herringfile_dir, 'herringfile'))
         debug("files: %s" % repr(lib_files))
         requirements = {}
@@ -239,6 +249,16 @@ class Requirements(object):
                 if key not in requirements.keys():
                     requirements[key] = []
                 requirements[key].extend(required_files[key])
+        return requirements
+
+    def find_missing_requirements(self):
+        """
+        Find the required packages that are not in the requirements.txt file.
+
+        :return: set of missing packages.
+        :rtype: dict[str,set[str]]
+        """
+        requirements = self._get_requirements_dict_from_py_files()
 
         needed = {}
         diff = {}

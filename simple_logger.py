@@ -152,6 +152,31 @@ class SimpleLogger(object):
         """
         self.show_level = show_level
 
+    def _output_prefix(self, level):
+        """
+        generate the prefix for a log message
+
+        :param level: the log level ('debug', 'info', 'warning', 'error', 'fatal')
+        :type level: str
+        :returns: the prefix for a log message
+        :rtype: str
+        """
+
+        now = time()
+        diff_time = now - self.last_message_time
+        self.last_message_time = now
+
+        buf = []
+        if self.enable_timestamp:
+            buf.append("{now} ".format(now=strftime("%H:%M:%S", localtime(now))))
+        if self.enable_elapsed_time:
+            buf.append("%.3f " % diff_time)
+        if self.show_level:
+            buf.append("{level}:  ".format(level=level.upper()))
+        if self.current_component:
+            buf.append("[{component}]  ".format(component=str(self.current_component)))
+        return ''.join(buf)
+
     def _output(self, level, message, newline=True):
         """
         Assemble the message and send it to the appropriate stream(s).
@@ -163,22 +188,12 @@ class SimpleLogger(object):
         :param newline: if asserted then append a newline to the end of the message
         :type newline: bool
         """
-        now = time()
-        diff_time = now - self.last_message_time
-        self.last_message_time = now
 
         buf = []
         if newline and not self.previous_newline:
             buf.append("\n")
         self.previous_newline = newline
-        if self.enable_timestamp:
-            buf.append("{now} ".format(now=strftime("%H:%M:%S", localtime(now))))
-        if self.enable_elapsed_time:
-            buf.append("%.3f " % diff_time)
-        if self.show_level:
-            buf.append("{level}:  ".format(level=level.upper()))
-        if self.current_component:
-            buf.append("[{component}]  ".format(component=str(self.current_component)))
+        buf.append(self._output_prefix(level))
         buf.append(str(message))
 
         # support python3 chained exceptions

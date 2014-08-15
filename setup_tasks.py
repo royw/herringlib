@@ -32,6 +32,15 @@ __docformat__ = 'restructuredtext en'
 try:
     from herringlib.remote_shell import RemoteShell
 
+    @task(namespace='build')
+    def tag():
+        """ Tag the current git commit with the current version. """
+
+        # http://git-scm.com/book/en/Git-Basics-Tagging
+
+        with LocalShell() as local:
+            local.run('git tag -a v{ver} -m "version {ver}"'.format(ver=Project.version))
+
     @task(namespace='doc')
     def publish():
         """ copy latest docs to the server """
@@ -59,6 +68,24 @@ try:
             remote.run('sudo chown -R www-data:users \"{dest}\"'.format(dest=doc_version),
                        accept_defaults=True, timeout=10)
 
+    def _dist_wheel_files():
+        pattern = "{name}-{version}-*.whl".format(name=Project.base_name, version=Project.version)
+        project_wheel_names = [os.path.basename(path) for path in glob(os.path.join(Project.herringfile_dir,
+                                                                                    'dist', pattern))]
+        dist_wheel_files = []
+        for project_wheel_name in project_wheel_names:
+            dist_wheel_files.append(os.path.join(Project.herringfile_dir, 'dist', project_wheel_name))
+        return dist_wheel_files
+
+    def _dist_wheels(dist_dir):
+        pattern = "{name}-{version}-*.whl".format(name=Project.base_name, version=Project.version)
+        project_wheel_names = [os.path.basename(path) for path in glob(os.path.join(Project.herringfile_dir,
+                                                                                    'dist', pattern))]
+        dist_wheels = []
+        for project_wheel_name in project_wheel_names:
+            dist_wheels.append('{dir}/{file}'.format(dir=dist_dir, file=project_wheel_name))
+        return dist_wheels
+
     @task()
     def deploy():
         """ copy latest sdist tar ball to server """
@@ -78,14 +105,8 @@ try:
             dist_latest = '{dir}/{file}'.format(dir=dist_dir, file=project_latest_name)
             dist_file = os.path.join(Project.herringfile_dir, 'dist', project_version_name)
 
-            pattern = "{name}-{version}-*.whl".format(name=Project.base_name, version=version)
-            project_wheel_names = [os.path.basename(path) for path in glob(os.path.join(Project.herringfile_dir,
-                                                                                        'dist', pattern))]
-            dist_wheels = []
-            dist_wheel_files = []
-            for project_wheel_name in project_wheel_names:
-                dist_wheels.append('{dir}/{file}'.format(dir=dist_dir, file=project_wheel_name))
-                dist_wheel_files.append(os.path.join(Project.herringfile_dir, 'dist', project_wheel_name))
+            dist_wheels = _dist_wheels(dist_dir=dist_dir)
+            dist_wheel_files = _dist_wheel_files()
 
             password = Project.password or getpass("password for {user}@{host}: ".format(user=Project.user,
                                                                                          host=Project.dist_host))
@@ -117,6 +138,7 @@ try:
                                accept_defaults=True, timeout=10)
                     remote.run('sudo chmod 777 {dest}'.format(dest=dist_wheel),
                                accept_defaults=True, timeout=10)
+
 except Exception as ex:
     error(ex)
 
@@ -174,9 +196,8 @@ if Project.package:
                     info('Building sdist using {venv} virtual environment'.format(venv=venv_info.venv))
                     venv_info.run('python setup.py sdist')
             else:
-                info("Building sdist using default environment")
                 with LocalShell() as local:
-                    # builds source distribution
+                    info("Building sdist using default environment")
                     local.system("python setup.py sdist")
 
         @task(private=False)
