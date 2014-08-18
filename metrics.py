@@ -153,6 +153,8 @@ if packages_required(required_packages):
         """ Create Cyclomatic Complexity graphs. """
         from matplotlib import pyplot
 
+        graphic_type_ext = 'svg'
+
         with LocalShell() as local:
             data_json = local.run("radon cc -s --json {dir}".format(dir=Project.package))
             data = json.loads(data_json)
@@ -167,13 +169,14 @@ if packages_required(required_packages):
                     components[component['type']][complexity_score] = []
                 components[component['type']][complexity_score].append(component)
 
-        ylabel = {
+        component_names = {
             'all': 'Components',
             'function': 'Functions',
             'class': 'Classes',
             'method': 'Methods'
         }
 
+        fig_number = 1
         x = {}
         y = {}
         for component_type in components.keys():
@@ -189,6 +192,13 @@ if packages_required(required_packages):
                 else:
                     y[component_type][-1] += cnt
 
+            info("fig_number: %d" % fig_number)
+            # plot_number = 110 + fig_number
+            plot_number = 111
+            info("plot_number: %d" % plot_number)
+            fig = pyplot.figure(fig_number)
+            pyplot.subplot(plot_number)
+            fig.suptitle("Cyclomatic Complexity of {type}".format(type=component_names[component_type]))
             pyplot.bar(x[component_type][0:4], y[component_type][0:4], align='center', color='green')
             pyplot.bar(x[component_type][5:9], y[component_type][5:9], align='center', color='blue')
             pyplot.bar(x[component_type][10:14], y[component_type][10:14], align='center', color='yellow')
@@ -196,13 +206,19 @@ if packages_required(required_packages):
             pyplot.bar(x[component_type][20:], y[component_type][20:], align='center', color='red')
 
             pyplot.xlabel('Cyclomatic Complexity')
-            pyplot.ylabel('Number of {type}'.format(type=ylabel[component_type]))
+            pyplot.ylabel('Number of {type}'.format(type=component_names[component_type]))
 
-            if '--display' in task.argv:
-                pyplot.show()
-            else:
-                pyplot.savefig(os.path.join(Project.quality_dir, "cc_{type}.png".format(type=component_type)))
+            pyplot.savefig(os.path.join(Project.quality_dir, "cc_{type}.{ext}".format(type=component_type,
+                                                                                      ext=graphic_type_ext)))
+            fig_number += 1
 
+        info("fig_number: %d" % fig_number)
+        # plot_number = 110 + fig_number
+        plot_number = 111
+        info("plot_number: %d" % plot_number)
+        fig = pyplot.figure(fig_number)
+        pyplot.subplot(plot_number)
+        fig.suptitle("Cyclomatic Complexity of All Components")
         hatch = {'class': '/', 'method': '+', 'function': '*'}
         bottom = [0] * 25
         legend_bar = {}
@@ -224,7 +240,7 @@ if packages_required(required_packages):
         pyplot.legend((legend_bar[component_type] for component_type in components.keys()),
                       (component_type for component_type in components.keys()))
 
+        pyplot.savefig(os.path.join(Project.quality_dir, "cc_all.{ext}".format(ext=graphic_type_ext)))
+
         if '--display' in task.argv:
-            pyplot.show()
-        else:
-            pyplot.savefig(os.path.join(Project.quality_dir, "cc_all.png"))
+            pyplot.show(fig_number)
