@@ -9,7 +9,7 @@ Add the following to your *requirements.txt* file:
 
 """
 from herringlib.project_settings import Project
-from herringlib.simple_logger import error
+from herringlib.simple_logger import error, info
 from herringlib.watchdog import Watchdog
 
 __docformat__ = 'restructuredtext en'
@@ -73,6 +73,7 @@ class LocalShell(AShell):
         :returns: the output of the command
         :rtype: str
         """
+        # info("run_pattern_response verbose: %s" % repr(verbose))
         self.display("run_pattern_response(%s)\n\n" % cmd_args, out_stream=out_stream, verbose=verbose)
         if pattern_response is None:
             pattern_response = OrderedDict()
@@ -154,6 +155,7 @@ class LocalShell(AShell):
         :returns: the output of the command
         :rtype: str
         """
+        # info("LocalShell.run verbose: %s" % repr(verbose))
         if isinstance(cmd_args, str):
             cmd_args = pexpect.split_command_line(cmd_args)
 

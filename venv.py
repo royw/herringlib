@@ -103,7 +103,7 @@ class VenvInfo(object):
                               env=new_env).strip().split("\n")
             return self.venv in venvs
 
-    def run(self, command_line, verbose=False):
+    def run(self, command_line, verbose=True):
         """
         Run a command in the context of this virtual environment
 
@@ -114,6 +114,7 @@ class VenvInfo(object):
         :returns: the output of running the command
         :rtype: str
         """
+        # info('VenvInfo.run verbose: %s' % repr(verbose))
         new_env = Project.env_without_virtualenvwrapper()
         output = None
         with LocalShell() as local:
