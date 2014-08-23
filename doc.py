@@ -21,6 +21,7 @@ Add the following to your *requirements-py[doc_python_version].txt* file:
 * paramiko
 * scp
 * rst2pdf
+* decorator
 
 """
 import ast

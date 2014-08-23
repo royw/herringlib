@@ -19,6 +19,14 @@ Usage
         info('Generating documentation using the current python environment')
         task_execute('doc::generate')
 
+Add the following to your *requirements-py26.txt* file:
+
+* decorator
+
+Add the following to your *requirements-py27.txt* file:
+
+* decorator
+
 """
 
 import os

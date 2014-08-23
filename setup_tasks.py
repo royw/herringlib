@@ -8,6 +8,7 @@ Less so after you start deploying to a local pypi server.
 Add the following to your *requirements-py[wheel_python_versions].txt* file:
 
 * wheel
+* decorator
 
 """
 import os

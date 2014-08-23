@@ -223,19 +223,10 @@ def describe():
             info("'{key}': '{value}'".format(key=key, value=value))
 
 
-def packages_required(package_names):
-    """
-    Check that the given packages are installed.
-
-    :param package_names: the package names
-    :type package_names: list
-    :return: asserted if all the packages are installed
-    :rtype: bool
-    """
+def _pip_list():
+    names = []
     # noinspection PyBroadException
     try:
-        result = True
-
         # idiotic python setup tools creates empty egg directory in project that then causes pip to blow up.
         # Wonderful python tools in action!
         # so lets remove the stupid egg directory so we can use pip to get a listing of installed packages.
@@ -254,16 +245,38 @@ def packages_required(package_names):
             pip_list_output = local.run('{pip} list'.format(pip=pip))
             # info(pip_list_output)
             lines = pip_list_output.split("\n")
-            names = [line.split(" ")[0].lower() for line in lines if line.strip()]
-            # info(names)
-            for pkg_name in package_names:
-                if pkg_name.lower() not in names:
-                    try:
-                        # info('__import__({name})'.format(name=pkg_name))
-                        __import__(pkg_name)
-                    except ImportError:
-                        info(pkg_name + " not installed!")
-                        result = False
+            names = [line.split(" ")[0].lower().encode('ascii','ignore') for line in lines if line.strip()]
+    except:
+        pass
+
+    return names
+
+__pip_list = _pip_list()
+
+
+def packages_required(package_names):
+    """
+    Check that the given packages are installed.
+
+    :param package_names: the package names
+    :type package_names: list
+    :return: asserted if all the packages are installed
+    :rtype: bool
+    """
+    # noinspection PyBroadException
+    try:
+        result = True
+
+        info(package_names)
+        info(__pip_list)
+        for pkg_name in package_names:
+            if pkg_name.lower() not in __pip_list:
+                try:
+                    info('__import__({name})'.format(name=pkg_name))
+                    __import__(pkg_name)
+                except ImportError:
+                    info(pkg_name + " not installed!")
+                    result = False
         return result
     except:
         return False
