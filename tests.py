@@ -4,6 +4,7 @@ Add the following to your *requirements-py[test_python_versions].txt* file:
 
 * coverage
 * pytest
+* decorator
 
 """
 # noinspection PyUnresolvedReferences
