@@ -9,7 +9,7 @@ Add the following to your *requirements.txt* file:
 
 """
 from herringlib.project_settings import Project
-from herringlib.simple_logger import error, info
+from herringlib.simple_logger import error
 from herringlib.watchdog import Watchdog
 
 __docformat__ = 'restructuredtext en'

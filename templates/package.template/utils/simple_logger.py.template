@@ -2,8 +2,7 @@
 """
 A simple logger that supports multiple output streams on a per level basis.
 """
-from time import gmtime, strftime, time, localtime
-from {package}.utils.list_helper import unique_list
+from time import strftime, time, localtime
 
 __docformat__ = 'restructuredtext en'
 
@@ -110,7 +109,7 @@ class SimpleLogger(object):
     def set_debug(self, enable_debug=True):
         """
         Set debug logging mode.
-    
+
         :param enable_debug: if debug, then debug messages are sent to stdout.
         :type enable_debug: bool
         """
@@ -132,7 +131,7 @@ class SimpleLogger(object):
     def set_show_level(self, show_level=True):
         """
         Enable showing the logging level.
-    
+
         :param show_level: if on, then include the log level of the message (DEBUG, INFO, ...) in the output.
         :type show_level: bool
         """
@@ -190,7 +189,7 @@ class SimpleLogger(object):
     def debug(self, message):
         """
         Debug message.
-    
+
         :param message: the message to emit
         :type message: object that can be converted to a string using str()
         """
@@ -199,7 +198,7 @@ class SimpleLogger(object):
     def info(self, message):
         """
         Info message.
-    
+
         :param message: the message to emit
         :type message: object that can be converted to a string using str()
         """
@@ -208,7 +207,7 @@ class SimpleLogger(object):
     def warning(self, message):
         """
         Warning message.
-    
+
         :param message: the message to emit
         :type message: object that can be converted to a string using str()
         """
@@ -217,7 +216,7 @@ class SimpleLogger(object):
     def error(self, message):
         """
         Error message.
-    
+
         :param message: the message to emit
         :type message: object that can be converted to a string using str()
         """
@@ -226,7 +225,7 @@ class SimpleLogger(object):
     def fatal(self, message):
         """
         Fatal message.
-    
+
         :param message: the message to emit
         :type message: object that can be converted to a string using str()
         """

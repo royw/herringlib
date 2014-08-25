@@ -7,7 +7,7 @@ Python 2/3 portable subset of pathlib.
 
 # noinspection PyDocstring
 import os
-from herring.support.comparable_mixin import ComparableMixin
+from {package}.utils.comparable_mixin import ComparableMixin
 
 
 # noinspection PyDocstring

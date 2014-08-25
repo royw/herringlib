@@ -27,18 +27,20 @@ if packages_required(required_packages):
     import pexpect
     import paramiko
     import re
-    from collections import OrderedDict
-    from time import sleep
-    import sys
-    import pexpect
-    import paramiko
-    import re
-    from collections import OrderedDict
+
     from time import sleep
     from getpass import getpass
     from paramiko import SSHClient
     from pxssh import pxssh
     from scp import SCPClient
+
+    try:
+        # noinspection PyUnresolvedReferences
+        from ordereddict import OrderedDict
+    except ImportError:
+        # noinspection PyUnresolvedReferences
+        from collections import OrderedDict
+
     from herringlib.ashell import AShell, CR, MOVEMENT
 
     class RemoteShell(AShell):

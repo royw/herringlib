@@ -119,7 +119,7 @@ class ApplicationSettings(object):
         for section in self.__config_sections:
             try:
                 defaults.update(dict(config.items(section)))
-            except configparser.NoSectionError:
+            except NoSectionError:
                 pass
 
         # HACK:  ArgumentParser by default uses env['COLUMNS'] which is always 80, so we get the terminal

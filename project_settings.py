@@ -112,7 +112,7 @@ ATTRIBUTES = {
         'help': 'The directory where the API docs are placed relative to the herringfile_dir.'},
     'author': {
         'required': True,
-        'help': 'The primary author name.'},
+        'help': "The primary author's real name."},
     'author_email': {
         'required': True,
         'help': "The primary author's email address."},
@@ -189,14 +189,15 @@ ATTRIBUTES = {
         'help': 'The source file with the main entry point.'},
     'name': {
         'required': True,
-        'help': "The project's name"},
+        'help': "The project's name.  Please no hyphens or underscores."},
     'news_file': {
         'default': 'docs/news.rst',
         'help': 'The news documentation file relative to the herringfile_dir.'},
     'package': {
         'default': None,
         'required': True,
-        'help': 'The package name relative to the herringfile_dir.  Set to None for document only projects.'},
+        'help': 'The package name relative to the herringfile_dir.  Set to None for document only projects.  Please '
+                'no hyphens or underscores.'},
     'password': {
         'default': None,
         'help': 'The password for logging into the dist_host.'},

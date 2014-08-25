@@ -44,9 +44,14 @@ Logger.set_debug(debug_mode)
 
 Project.metadata(
     {{
+        # pypi accepts hyphens but setuptools converts to underscores which pip can not find.
+        # So please do not use hyphens or underscores in the name or package fields:
         'name': '{name}',
         'package': '{package}',
+
+        # author should be your real name, not your account name.
         'author': '{author}',
+
         'author_email': '{author_email}',
         'description': '{description}',
 

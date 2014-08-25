@@ -21,6 +21,7 @@ except ImportError:
     # noinspection PyUnresolvedReferences
     from collections import OrderedDict
 
+
 def compress_list(src_list):
     """
     Removes None or empty items from the list
@@ -32,6 +33,7 @@ def compress_list(src_list):
     """
     return [item for item in src_list if item]
 
+
 def unique_list(src_list):
     """
     returns a new list without any duplicates
@@ -42,6 +44,7 @@ def unique_list(src_list):
     :rtype: list
     """
     return OrderedDict.fromkeys(src_list).keys()
+
 
 def is_sequence(item):
     """

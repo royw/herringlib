@@ -8,29 +8,34 @@ Less so after you start deploying to a local pypi server.
 Add the following to your *requirements-py[wheel_python_versions].txt* file:
 
 * wheel
+* decorator
 
 """
 import os
 
-from glob import glob
-from getpass import getpass
+try:
+    from glob import glob
+    from getpass import getpass
 
-# noinspection PyUnresolvedReferences
-from herring.herring_app import task, HerringFile, task_execute, namespace
-from herringlib.setup_cfg import setup_cfg_value
-from herringlib.venv import VirtualenvInfo, venv_decorator
-from herringlib.version import bump, get_project_version
-from herringlib.project_settings import Project
-from herringlib.local_shell import LocalShell
-from herringlib.simple_logger import error, info, warning
-from herringlib.query import query_yes_no
+    # noinspection PyUnresolvedReferences
+    from herring.herring_app import task, HerringFile, task_execute, namespace
+    from herringlib.setup_cfg import setup_cfg_value
+    from herringlib.venv import VirtualenvInfo, venv_decorator
+    from herringlib.version import bump, get_project_version
+    from herringlib.project_settings import Project
+    from herringlib.local_shell import LocalShell
+    from herringlib.simple_logger import error, info, warning
+    from herringlib.query import query_yes_no
+    from herringlib.remote_shell import RemoteShell
+except ImportError as ex:
+    from herringlib.simple_logger import error
+    error("Problem importing:  {msg}".format(msg=str(ex)))
 
 __docformat__ = 'restructuredtext en'
 
 
 # noinspection PyBroadException
 try:
-    from herringlib.remote_shell import RemoteShell
 
     @task(namespace='build')
     def tag():

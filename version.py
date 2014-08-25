@@ -37,6 +37,7 @@ Add the following to your *requirements.txt* file:
 * versio
 
 """
+from herringlib.touch import touch
 
 __docformat__ = 'restructuredtext en'
 
@@ -139,6 +140,8 @@ def _edit_package_version(version_str, project_package=None):
         """
         return "__version__ = '{version}'".format(version=ver_str)
     file_name = _file_spec('__init__.py', project_package)
+    if not os.path.isfile(file_name):
+        touch(file_name)
     with safe_edit(file_name) as files:
         replaced = False
         for line in files['in'].readlines():
