@@ -129,7 +129,7 @@ class LocalShell(AShell):
 
     def run(self, cmd_args, out_stream=sys.stdout, env=None, verbose=False,
             prefix=None, postfix=None, accept_defaults=False, pattern_response=None,
-            timeout=0, timeout_interval=1, debug=False):
+            timeout=0, timeout_interval=.001, debug=False):
         """
         Runs the command and returns the output, writing each the output to out_stream if verbose is True.
 
@@ -176,7 +176,7 @@ class LocalShell(AShell):
         return ''.join(lines)
 
     def run_generator(self, cmd_args, out_stream=sys.stdout, env=None, verbose=True,
-                      prefix=None, postfix=None, timeout=0, timeout_interval=1, debug=False):
+                      prefix=None, postfix=None, timeout=0, timeout_interval=.001, debug=False):
         """
         Runs the command and yields on each line of output, writing each the output to out_stream if verbose is True.
 
@@ -211,7 +211,7 @@ class LocalShell(AShell):
             yield line
 
     def run_process(self, cmd_args, env=None, out_stream=sys.stdout, verbose=True,
-                    timeout=0, timeout_interval=1):
+                    timeout=0, timeout_interval=.001):
         """
         Run the process yield for each output line from the process.
 
