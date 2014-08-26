@@ -5,6 +5,7 @@ A simple logger that supports multiple output streams on a per level basis.
 import sys
 
 from time import strftime, time, localtime
+import traceback
 
 __docformat__ = 'restructuredtext en'
 __all__ = ('FileLogger', 'SimpleLogger', 'Logger', 'debug', 'info', 'warning', 'error', 'fatal', 'progress', 'flush')
@@ -54,6 +55,7 @@ class SimpleLogger(object):
         self.enable_timestamp = False
         self.enable_elapsed_time = False
         self.last_message_time = time()
+        self.trace_level = 'error'
         self.log_outputter = {
             'debug': [],
             'info': [out_stream],
@@ -61,6 +63,7 @@ class SimpleLogger(object):
             'error': [err_stream],
             'fatal': [err_stream],
         }
+        self.levels = ['debug', 'info', 'warning', 'error', 'fatal']
 
     def add_logger(self, logger):
         """
@@ -181,6 +184,22 @@ class SimpleLogger(object):
         """
         Assemble the message and send it to the appropriate stream(s).
 
+        Configuration attributes:
+
+        * self.previous_newline
+          Output a newline before this message.
+        * self.enable_timestamp
+          Include a timestamp in this message.
+        * self.enable_elapsed_time
+          Include the elapsed time since the last message in this message.
+        * self.show_level
+          Output the message level in this message.
+        * self.current_component
+          Output the current_component in this message.
+        * self.trace_level
+          If the message is an exception and the message level is equal to or greater than the trace_level, then
+          output a back trace in this message.
+
         :param level: the log level ('debug', 'info', 'warning', 'error', 'fatal')
         :type level: str
         :param message: the message to include in the output message.
@@ -203,6 +222,12 @@ class SimpleLogger(object):
                 buf.append(' - ')
                 buf.append(str(exc))
                 exc = getattr(exc, chain, None)
+
+        # add traceback for Exception messages where the message level >= trace_level
+        if isinstance(message, Exception):
+            if self.levels.index(level) >= self.levels.index(self.trace_level):
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                buf.extend(traceback.format_exception(exc_type, exc_value, exc_traceback))
 
         if newline:
             buf.append("\n")
