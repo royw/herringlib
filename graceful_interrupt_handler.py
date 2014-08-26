@@ -14,6 +14,8 @@ __docformat__ = 'restructuredtext en'
 
 import signal
 
+__all__ = ('GracefulInterruptHandler',)
+
 
 class GracefulInterruptHandler(object):
     """
@@ -44,7 +46,10 @@ class GracefulInterruptHandler(object):
         self.original_handler = None
 
     def __enter__(self):
+        return self.capture()
 
+    def capture(self):
+        """ Capture the signal handler """
         self.interrupted = False
         self.released = False
 
