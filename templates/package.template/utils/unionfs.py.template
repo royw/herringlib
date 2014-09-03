@@ -31,9 +31,9 @@ def unionfs(source_dirs=None, mount_dir=None, verbose=False):
     if unionfs_available(verbose=verbose):
         try:
             if verbose:
-                info("mkdir_p({dir})".format(dir=mount_dir))
+                info("mkdir_p({{dir}})".format(dir=mount_dir))
             mkdir_p(mount_dir)
-            cmd = 'unionfs-fuse {source_dirs} {mount_dir}'.format(source_dirs=':'.join(source_dirs),
+            cmd = 'unionfs-fuse {{source_dirs}} {{mount_dir}}'.format(source_dirs=':'.join(source_dirs),
                                                                   mount_dir=mount_dir)
             if verbose:
                 info(cmd)
@@ -43,12 +43,12 @@ def unionfs(source_dirs=None, mount_dir=None, verbose=False):
             # noinspection PyBroadException
             try:
                 if os.path.isdir(mount_dir):
-                    cmd = 'fusermount -u {mount}'.format(mount=mount_dir)
+                    cmd = 'fusermount -u {{mount}}'.format(mount=mount_dir)
                     if verbose:
                         info(cmd)
                     subprocess.call(cmd, shell=True)
                     if verbose:
-                        info('rmtree({dir})'.format(dir=mount_dir))
+                        info('rmtree({{dir}})'.format(dir=mount_dir))
                     shutil.rmtree(mount_dir)
             except:
                 pass

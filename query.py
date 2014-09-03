@@ -18,16 +18,16 @@ def query_yes_no(question, default="yes"):
     valid = {"yes": True, "y": True, "ye": True,
              "no": False, "n": False}
     if default is None:
-        prompt = " [y/n] "
+        prompt_str = " [y/n] "
     elif default == "yes":
-        prompt = " [Y/n] "
+        prompt_str = " [Y/n] "
     elif default == "no":
-        prompt = " [y/N] "
+        prompt_str = " [y/N] "
     else:
         raise ValueError("invalid default answer: '%s'" % default)
 
     while True:
-        sys.stdout.write(question + prompt)
+        sys.stdout.write(question + prompt_str)
         try:
             # noinspection PyUnresolvedReferences
             choice = raw_input().lower()
@@ -40,3 +40,30 @@ def query_yes_no(question, default="yes"):
             return valid[choice]
         else:
             sys.stdout.write("Please respond with 'yes' or 'no' (or 'y' or 'n').\n")
+
+
+def prompt(question, default=None):
+    """
+    Prompt the user with a question that can have a default value
+
+    :param question: is a string that is presented to the user.
+    :type question: str
+    :param default: is the presumed answer if the user just hits <Enter>.
+    :type default: str
+    :return: The "answer" return value.
+    :rtype: str|None
+    """
+    if default is None:
+        prompt_str = " "
+    else:
+        prompt_str = " [{default}] ".format(default=str(default))
+
+    sys.stdout.write(question + prompt_str)
+    try:
+        # noinspection PyUnresolvedReferences
+        choice = raw_input()
+    except NameError:
+        choice = input()
+    if choice == '':
+        return default
+    return choice

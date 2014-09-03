@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+"""
+This is a dummy template used for template rendering testings.
+"""
+
+test_data = {{
+    'name': '{name}',
+    'package': '{package}',
+    'author': '{author}',
+    'author_email': '{author_email}',
+    'description': '{description}',
+}}
+
+print(repr(test_data))

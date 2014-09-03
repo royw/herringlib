@@ -343,6 +343,18 @@ if packages_required(required_packages):
         @task(depends=['api', 'diagrams', 'logo::create', 'update'])
         def pdf():
             """Generate PDF API documents"""
+
+            venvs = VirtualenvInfo('doc_python_version')
+            if not venvs.in_virtualenv and venvs.defined:
+                for venv_info in venvs.infos():
+                    venv_info.run('herring doc::pdf_generate')
+            else:
+                info('Generating documentation using the current python environment')
+                task_execute('doc::pdf_generate')
+
+        @task()
+        def pdf_generate():
+            """generate PDF using current python environment"""
             _customize_doc_src_files()
             with cd(Project.docs_dir):
                 os.system('PYTHONPATH={pythonpath} sphinx-build -b pdf -d _build/doctrees -w docs.log '

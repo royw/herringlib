@@ -5,6 +5,8 @@ Project tasks
 import ast
 import os
 import shutil
+from herringlib.query import prompt
+from herringlib.template import Template
 
 try:
     # python3
@@ -18,53 +20,12 @@ except ImportError:
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, HerringFile
 
-from herringlib.simple_logger import error, info, debug
-from herringlib.split_all import split_all
-from herringlib.mkdir_p import mkdir_p
+from herringlib.simple_logger import info, debug
 from herringlib.local_shell import LocalShell
 from herringlib.requirements import Requirements
 from herringlib.project_settings import Project
 
 missing_modules = []
-
-
-def __create_from_template(src_filename, dest_filename, **kwargs):
-    """
-    Render the destination file from the source template file
-
-    Scans the templates directory and create any corresponding files relative
-    to the root directory.  If the file is a .template, then renders the file,
-    else simply copy it.
-
-    Template files are just string templates which will be formatted with the
-    following named arguments:  name, package, author, author_email, and description.
-
-    Note, be sure to escape curly brackets ('{', '}') with double curly brackets ('{{', '}}').
-
-    :param src_filename: the template file
-    :param dest_filename: the rendered file
-    """
-    # info("creating {dest} from {src} with options: {options}".format(dest=dest_filename,
-    # src=src_filename,
-    # options=repr(kwargs)))
-    with open(src_filename) as in_file:
-        template = in_file.read()
-
-    try:
-        rendered = template.format(name=kwargs['name'],
-                                   package=kwargs['package'],
-                                   author=kwargs['author'],
-                                   author_email=kwargs['author_email'],
-                                   description=kwargs['description'])
-        with open(dest_filename, 'w') as out_file:
-            try:
-                out_file.write(rendered)
-            # catching all exceptions
-            # pylint: disable=W0703
-            except Exception as ex:
-                error(ex)
-    except Exception as ex:
-        error("Error rendering template ({file}) - {err}".format(file=src_filename, err=str(ex)))
 
 
 def value_from_setup_py(arg_name):
@@ -86,9 +47,9 @@ def value_from_setup_py(arg_name):
         # now setup() takes keyword arguments so scan them looking for key that matches the given arg_name,
         # then return the keyword's value
         for keyword in keywords:
-            for keywordarg in keyword:
-                if keywordarg.arg == arg_name:
-                    return keywordarg.value.s
+            for keyword_arg in keyword:
+                if keyword_arg.arg == arg_name:
+                    return keyword_arg.value.s
     # didn't find it
     return None
 
@@ -131,30 +92,23 @@ def _project_defaults():
     for key in task.kwargs:
         defaults[key] = task.kwargs[key]
 
-    # override 'name' default from setup.py
+    # override defaults from setup.py
     for key in ['name', 'author', 'author_email', 'description']:
         value = value_from_setup_py(key)
         if value is not None:
             defaults[key] = value
+
+    # override defaults from herringfile
+    for key in ['name', 'author', 'author_email', 'description']:
+        # noinspection PyBroadException
+        try:
+            value = getattr(Project, key, None)
+            if value is not None:
+                defaults[key] = value
+        except:
+            pass
+
     return defaults
-
-
-def _render(template_filename, template_dir, dest_filename, defaults):
-    # info('dest_filename: %s' % dest_filename)
-    if os.path.isdir(template_filename):
-        mkdir_p(template_filename)
-    else:
-        mkdir_p(os.path.dirname(dest_filename))
-        template_root, template_ext = os.path.splitext(template_filename)
-        if template_ext == '.template':
-            if not os.path.isdir(dest_filename):
-                if not os.path.isfile(dest_filename) or os.path.getsize(dest_filename) == 0:
-                    __create_from_template(template_filename, dest_filename, **defaults)
-        else:
-            if not os.path.isfile(dest_filename):
-                if os.path.join(template_dir, '__init__.py') != template_filename and os.path.join(
-                        template_dir, 'bin', '__init__.py') != template_filename:
-                    shutil.copyfile(template_filename, dest_filename)
 
 
 @task(namespace='project', help='Available options: --name, --package, --author, --author_email, --description')
@@ -164,38 +118,35 @@ def init():
     """
     defaults = _project_defaults()
 
+    defaults['name'] = prompt("Enter the project's name:", defaults['name'])
+    defaults['package'] = prompt("Enter the project's package:", defaults['package'])
+    defaults['author'] = prompt("Enter the project's author:", defaults['author'])
+    defaults['author_email'] = prompt("Enter the project's author's email:", defaults['author_email'])
+    defaults['description'] = prompt("Enter the project's description:", defaults['description'])
+
+    template = Template()
+
     for template_dir in [os.path.abspath(os.path.join(herringlib, 'herringlib', 'templates'))
                          for herringlib in HerringFile.herringlib_paths]:
 
         info("template directory: %s" % template_dir)
-
-        for root_dir, dirs, files in os.walk(template_dir):
-            for file_name in files:
-                template_filename = os.path.join(root_dir, file_name)
-                # info('template_filename: %s' % template_filename)
-                dest_filename = resolve_template_dir(str(template_filename.replace(template_dir, '.')),
-                                                     defaults['package'])
-                _render(template_filename, template_dir, dest_filename, defaults)
+        template.generate(template_dir, defaults, overwrite=False)
 
 
-def resolve_template_dir(original_path, package_name):
+@task(namespace='project')
+def update():
     """
-    Remote '.template' from original_path and replace 'package' with package_name.
-
-    :param original_path:  Path to a template file.
-    :type original_path: str
-    :param package_name: The project's package name.
-    :type package_name: str
-    :return:  resolved path
-    :rtype: str
+    Regenerate files (except herringfile) from current templates.  WARNING: Backup or commit files before running!!!
     """
-    new_parts = []
-    for part in split_all(original_path):
-        if part.endswith('.template'):
-            part = part.replace('.template', '')
-            part = part.replace('package', package_name)
-        new_parts.append(part)
-    return os.path.join(*new_parts)
+    defaults = _project_defaults()
+
+    template = Template()
+
+    for template_dir in [os.path.abspath(os.path.join(herringlib, 'herringlib', 'templates'))
+                         for herringlib in HerringFile.herringlib_paths]:
+
+        info("template directory: %s" % template_dir)
+        template.generate(template_dir, defaults, overwrite=True)
 
 
 @task(namespace='project')
