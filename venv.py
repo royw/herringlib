@@ -288,6 +288,14 @@ def using_version(attr_name):
 def venv_decorator(attr_name, *targs, **tkwargs):
     """
     This decorator adds the current virtual environments to the function's docstring.
+    This lets the user know (via herring --tasks) what virtual environments a task uses.
+
+    Usage::
+
+        @task(private=False)
+        @venv_decorator(attr_name='wheel_python_versions')
+        def wheels():
+            ...
 
     :param attr_name:  the python_version type attribute name relavent to the function being decorated
     :param targs: pass thru args
