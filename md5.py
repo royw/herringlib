@@ -26,3 +26,15 @@ def md5sum(file_name):
     digest = md5.hexdigest()
     # info("size: {size}  hash: {hash}  file: {file}".format(file=file_name, size=size, hash=digest))
     return digest, size
+
+
+def md5digest(file_name):
+    """
+    Calculate the hash of the given file.
+
+    :param file_name: the file name
+    :type file_name: str
+    :return: the hex digest
+    :rtype: str
+    """
+    return md5sum(file_name)[0]
