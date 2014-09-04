@@ -41,7 +41,7 @@ from herringlib.env import env_value
 from herringlib.list_helper import is_sequence
 from herringlib.local_shell import LocalShell
 from herringlib.project_settings import Project
-from herringlib.simple_logger import info, error, debug
+from herringlib.simple_logger import info, error, debug, warning
 
 
 class InVirtualenvError(RuntimeError):
@@ -257,6 +257,8 @@ def rmvenvs():
     if not venvs.in_virtualenv and venvs.defined:
         for venv_info in venvs.infos():
             venv_info.rmvirtualenv()
+    else:
+        warning('Please deactivate the current virtual environment then try running this task again.')
 
 
 @task(namespace='project')
