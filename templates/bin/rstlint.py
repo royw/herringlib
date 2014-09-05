@@ -11,7 +11,7 @@
 #       - wrong markup after versionchanged directive
 """
 
-from __future__ import with_statement
+from __future__ import print_function, with_statement
 
 import os
 import re
@@ -226,7 +226,7 @@ Options:  -v       verbose (print all checked file names)
                         print >>out, '[%d] %s:%d: %s' % (csev, fn, lno, msg)
                         count[csev] += 1
     if verbose:
-        print
+        print()
     if not count:
         if severity > 1:
             print('No problems with severity >= %d found.' % severity)

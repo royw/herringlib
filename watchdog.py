@@ -35,10 +35,10 @@ class Watchdog(object):
             watchdog.reset()
     """
 
-    def __init__(self, timeout, userHandler=None):  # timeout in seconds
+    def __init__(self, timeout, user_handler=None):  # timeout in seconds
         self.timeout = timeout
         self.timer = None
-        self.handler = userHandler if userHandler is not None else self.defaultHandler
+        self.handler = user_handler if user_handler is not None else self.default_handler
         self.start()
 
     def reset(self):
@@ -63,7 +63,7 @@ class Watchdog(object):
             self.timer.cancel()
             self.timer = None
 
-    def defaultHandler(self):
+    def default_handler(self):
         """
         Call this handler on watchdog timeout if the userHandler is not given.
         """

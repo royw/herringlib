@@ -305,7 +305,7 @@ def venv_decorator(attr_name, *targs, **tkwargs):
     """
 
     # noinspection PyDocstring
-    def internalFunc(func):
+    def internal_func(func):
         func.__doc__ = "{0} [virtualenv: {1}]".format(func.__doc__, using_version(attr_name))
 
         # noinspection PyShadowingNames,PyDocstring
@@ -316,6 +316,6 @@ def venv_decorator(attr_name, *targs, **tkwargs):
         return decorator(wrapper, func)
 
     if len(targs) == 1 and callable(targs[0]):
-        return internalFunc(targs[0])
+        return internal_func(targs[0])
     else:
-        return internalFunc
+        return internal_func

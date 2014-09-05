@@ -29,7 +29,7 @@ def query_yes_no(question, default="yes"):
     while True:
         sys.stdout.write(question + prompt_str)
         try:
-            # noinspection PyUnresolvedReferences
+            # noinspection PyUnresolvedReferences,PyCompatibility
             choice = raw_input().lower()
         except NameError:
             choice = input().lower()
@@ -60,7 +60,7 @@ def prompt(question, default=None):
 
     sys.stdout.write(question + prompt_str)
     try:
-        # noinspection PyUnresolvedReferences
+        # noinspection PyUnresolvedReferences,PyCompatibility
         choice = raw_input()
     except NameError:
         choice = input()
