@@ -38,7 +38,7 @@ def backup_files(dest_dir):
     :param dest_dir: the directory where the backup files should be located
     :returns: a generator for all of the backup files in the dest_dir
     """
-    return [file for file in os.listdir(dest_dir) if file.endswith('~')]
+    return [file_ for file_ in os.listdir(dest_dir) if file_.endswith('~')]
 
 
 # noinspection PyProtectedMember

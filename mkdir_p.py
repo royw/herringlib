@@ -1,7 +1,7 @@
 # coding=utf-8
 
 """
-Describe Me!
+Simple mkdir -p
 """
 import os
 
@@ -10,7 +10,12 @@ __author__ = 'wrighroy'
 
 
 def mkdir_p(directory_name):
-    """mkdir -p"""
+    """
+    mkdir -p directory_name
+
+    :param directory_name: the directory path to create if needed.
+    :type directory_name: str
+    """
     try:
         os.makedirs(directory_name)
     except OSError as err:

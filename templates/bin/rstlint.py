@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
 # Check for stylistic and formal issues in .rst and .py
 # files included in the documentation.
 #
@@ -8,6 +9,7 @@
 
 # TODO: - wrong versions in versionadded/changed
 #       - wrong markup after versionchanged directive
+"""
 
 from __future__ import with_statement
 
@@ -51,8 +53,10 @@ checkers = {}
 checker_props = {'severity': 1, 'falsepositives': False}
 
 
+# noinspection PyDocstring
 def checker(*suffixes, **kwds):
     """Decorator to register a function as a checker."""
+    # noinspection PyDocstring
     def deco(func):
         for suffix in suffixes:
             checkers.setdefault(suffix, []).append(func)
@@ -62,6 +66,7 @@ def checker(*suffixes, **kwds):
     return deco
 
 
+# noinspection PyDocstring
 @checker('.py', severity=4)
 def check_syntax(fn, lines):
     """Check Python examples for valid syntax."""
@@ -76,6 +81,7 @@ def check_syntax(fn, lines):
         yield err.lineno, 'not compilable: %s' % err
 
 
+# noinspection PyDocstring,PyUnusedLocal
 @checker('.rst', severity=2)
 def check_suspicious_constructs(fn, lines):
     """Check for suspicious reST constructs."""
@@ -91,6 +97,7 @@ def check_suspicious_constructs(fn, lines):
             inprod = False
 
 
+# noinspection PyDocstring,PyUnusedLocal
 @checker('.py', '.rst')
 def check_whitespace(fn, lines):
     """Check for whitespace and line length issues."""
@@ -103,6 +110,7 @@ def check_whitespace(fn, lines):
             yield lno+1, 'trailing whitespace'
 
 
+# noinspection PyDocstring,PyUnusedLocal
 @checker('.rst', severity=0)
 def check_line_length(fn, lines):
     """Check for line length; this checker is not run by default."""
@@ -117,6 +125,7 @@ def check_line_length(fn, lines):
                 yield lno+1, "line too long"
 
 
+# noinspection PyDocstring,PyUnusedLocal
 @checker('.html', severity=2, falsepositives=True)
 def check_leaked_markup(fn, lines):
     """Check HTML files for leaked reST markup; this only works if
@@ -127,6 +136,7 @@ def check_leaked_markup(fn, lines):
             yield lno+1, 'possibly leaked markup: %r' % line
 
 
+# noinspection PyDocstring
 def main(argv):
     usage = '''\
 Usage: %s [-v] [-f] [-s sev] [-i path]* [path]
@@ -199,13 +209,14 @@ Options:  -v       verbose (print all checked file names)
                 print('Checking %s...' % fn)
 
             try:
-                with open(fn, 'r') as f:
+                with open(fn) as f:
                     lines = list(f)
             except (IOError, OSError) as err:
                 print('%s: cannot open: %s' % (fn, err))
                 count[4] += 1
                 continue
 
+            # noinspection PyShadowingNames,PyTypeChecker
             for checker in checkerlist:
                 if checker.falsepositives and not falsepos:
                     continue
@@ -224,8 +235,7 @@ Options:  -v       verbose (print all checked file names)
     else:
         for severity in sorted(count):
             number = count[severity]
-            print('%d problem%s with severity %d found.' % \
-                  (number, number > 1 and 's' or '', severity))
+            print('%d problem%s with severity %d found.' % (number, number > 1 and 's' or '', severity))
     return int(bool(count))
 
 

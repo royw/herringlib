@@ -23,7 +23,6 @@ import os
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace, task_execute
-from pprint import pformat
 
 from herringlib.mkdir_p import mkdir_p
 from herringlib.project_settings import Project
@@ -96,6 +95,7 @@ if packages_required(required_packages):
 
         @task(private=True)
         def radon():
+            """ Cyclomatic complexity metrics """
             if not executables_available(['radon']):
                 return
             mkdir_p(Project.quality_dir)
@@ -167,6 +167,7 @@ if packages_required(required_packages):
                 complexity_score = component['complexity']
                 if complexity_score not in components[component['type']]:
                     components[component['type']][complexity_score] = []
+                # noinspection PyUnresolvedReferences
                 components[component['type']][complexity_score].append(component)
 
         component_names = {
@@ -233,7 +234,7 @@ if packages_required(required_packages):
                        hatch=hatch[component_type], bottom=bottom[15:19])
             pyplot.bar(x[component_type][20:24], y[component_type][20:24], align='center', color='red',
                        hatch=hatch[component_type], bottom=bottom[20:24])
-            bottom = [bottom[j] + y[component_type][j] for j in range(len(bottom))]
+            bottom = list([bottom[j] + y[component_type][j] for j in range(len(bottom))])
 
         pyplot.xlabel('Cyclomatic Complexity')
         pyplot.ylabel('Number of Components')

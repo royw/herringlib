@@ -5,7 +5,7 @@ Project tasks
 import ast
 import os
 import shutil
-from herringlib.query import prompt
+from herringlib.prompt import prompt
 from herringlib.template import Template
 
 try:

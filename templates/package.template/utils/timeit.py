@@ -1,3 +1,9 @@
+# coding=utf-8
+
+"""
+primitive profiling decorator
+"""
+
 import tempfile
 import time
 
@@ -6,7 +12,11 @@ timeit_file = tempfile.NamedTemporaryFile(prefix="new-pcap-checkin", suffix="tim
 
 
 def timeit(func):
-    """function timing decorator"""
+    """
+    function timing decorator
+    :param func: function being decorated
+    """
+    # noinspection PyDocstring
     def wrapper(*args, **kwargs):
         if timeit_enabled:
             ts = time.time()
@@ -18,5 +28,3 @@ def timeit(func):
         else:
             return func(*args, **kwargs)
     return wrapper
-
-

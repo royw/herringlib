@@ -104,6 +104,7 @@ if packages_required(required_packages):
             _out_string(self.ssh.before)
             _out_string(self.ssh.after)
 
+        # noinspection PyUnusedLocal
         def run_pattern_response(self, cmd_args, out_stream=sys.stdout, verbose=True,
                                  prefix=None, postfix=None,
                                  pattern_response=None, accept_defaults=False,
@@ -169,23 +170,37 @@ if packages_required(required_packages):
 
         #noinspection PyUnusedLocal
         def run(self, cmd_args, out_stream=sys.stdout, env=None, verbose=True,
-                prefix=None, postfix=None, accept_defaults=False, pattern_response=None, timeout=120):
+                prefix=None, postfix=None, accept_defaults=False, pattern_response=None, timeout=120,
+                timeout_interval=.001, debug=False):
             """
             Runs the command and returns the output, writing each the output to out_stream if verbose is True.
 
-            :param timeout:
-            :param pattern_response:
-            :param accept_defaults:
-            :param postfix:
-            :param out_stream:
-            :param cmd_args: list of command arguments or a str command line
+            :param cmd_args: list of command arguments or str command line
             :type cmd_args: list or str
+            :param out_stream: the output stream
+            :type out_stream: file
             :param env: the environment variables for the command to use.
             :type env: dict
             :param verbose: if verbose, then echo the command and it's output to stdout.
             :type verbose: bool
             :param prefix: list of command arguments to prepend to the command line
-            :type prefix: list
+            :type prefix: list[str]
+            :param postfix: list of command arguments to append to the command line
+            :type postfix: list[str]
+            :param accept_defaults: accept responses to default regexes.
+            :type accept_defaults: bool
+            :param pattern_response: dictionary whose key is a regular expression pattern that when matched
+                results in the value being sent to the running process.  If the value is None, then no response is sent.
+            :type pattern_response: dict[str, str]
+            :param timeout: the maximum time to give the process to complete
+            :type timeout: int
+            :param timeout_interval: the time to sleep between process output polling
+            :type timeout_interval: int
+            :param debug: emit debugging info
+            :type debug: bool
+
+            :returns: the output of the command
+            :rtype: str
             """
             if isinstance(cmd_args, str):
                 # cmd_args = pexpect.split_command_line(cmd_args)

@@ -14,18 +14,28 @@ Add the following to your *requirements-py[wheel_python_versions].txt* file:
 import os
 
 try:
+    # noinspection PyUnresolvedReferences
     from glob import glob
+    # noinspection PyUnresolvedReferences
     from getpass import getpass
 
     # noinspection PyUnresolvedReferences
     from herring.herring_app import task, HerringFile, task_execute, namespace
+    # noinspection PyUnresolvedReferences
     from herringlib.setup_cfg import setup_cfg_value
+    # noinspection PyUnresolvedReferences
     from herringlib.venv import VirtualenvInfo, venv_decorator
+    # noinspection PyUnresolvedReferences
     from herringlib.version import bump, get_project_version
+    # noinspection PyUnresolvedReferences
     from herringlib.project_settings import Project
+    # noinspection PyUnresolvedReferences
     from herringlib.local_shell import LocalShell
+    # noinspection PyUnresolvedReferences
     from herringlib.simple_logger import error, info, warning
-    from herringlib.query import query_yes_no
+    # noinspection PyUnresolvedReferences
+    from herringlib.prompt import query_yes_no
+    # noinspection PyUnresolvedReferences
     from herringlib.remote_shell import RemoteShell
 except ImportError as ex:
     from herringlib.simple_logger import error

@@ -42,17 +42,29 @@ class Watchdog(object):
         self.start()
 
     def reset(self):
+        """
+        reset the watchdog
+        """
         self.stop()
         self.start()
 
     def start(self):
+        """
+        start the watchdog
+        """
         if self.timeout > 0:
             self.timer = Timer(self.timeout, self.handler)
 
     def stop(self):
+        """
+        stop the watchdog
+        """
         if self.timer is not None:
             self.timer.cancel()
             self.timer = None
 
     def defaultHandler(self):
+        """
+        Call this handler on watchdog timeout if the userHandler is not given.
+        """
         raise self

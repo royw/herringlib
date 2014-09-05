@@ -8,11 +8,21 @@ import os
 __docformat__ = 'restructuredtext en'
 
 
+# noinspection PyDocstring
 class FindError(Exception):
     pass
 
 
 def find_directory(env=None, path=None, search=None, error_message=None):
+    """
+    find a directory
+
+    :param env:
+    :param path:
+    :param search:
+    :param error_message:
+    :return: :rtype: :raise FindError:
+    """
     if env is not None:
         if env in os.environ:
             if os.path.isdir(os.environ[env]):

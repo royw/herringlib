@@ -133,25 +133,30 @@ class LocalShell(AShell):
         """
         Runs the command and returns the output, writing each the output to out_stream if verbose is True.
 
-        :param out_stream:
         :param cmd_args: list of command arguments or str command line
         :type cmd_args: list or str
+        :param out_stream: the output stream
+        :type out_stream: file
         :param env: the environment variables for the command to use.
         :type env: dict
         :param verbose: if verbose, then echo the command and it's output to stdout.
         :type verbose: bool
         :param prefix: list of command arguments to prepend to the command line
-        :type prefix: list
-        :param postfix:
-        :param accept_defaults:
+        :type prefix: list[str]
+        :param postfix: list of command arguments to append to the command line
+        :type postfix: list[str]
+        :param accept_defaults: accept responses to default regexes.
         :type accept_defaults: bool
-        :param pattern_response:
-        :param timeout:
+        :param pattern_response: dictionary whose key is a regular expression pattern that when matched
+            results in the value being sent to the running process.  If the value is None, then no response is sent.
+        :type pattern_response: dict[str, str]
+        :param timeout: the maximum time to give the process to complete
         :type timeout: int
-        :param timeout_interval:
+        :param timeout_interval: the time to sleep between process output polling
         :type timeout_interval: int
         :param debug: emit debugging info
         :type debug: bool
+
         :returns: the output of the command
         :rtype: str
         """

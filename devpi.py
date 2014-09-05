@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 Herring tasks for using a local devpi (http://doc.devpi.net/latest/)
 

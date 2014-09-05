@@ -11,7 +11,7 @@ def test_compress_list():
     compress_list removes empty or None elements from a list
     """
 
-    # incompressable lists
+    # incompressible lists
     assert compress_list([]) == []
     assert compress_list([1]) == [1]
     assert compress_list([1, 2]) == [1, 2]
