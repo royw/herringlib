@@ -32,6 +32,7 @@ Add the following to your *requirements-py27.txt* file:
 import os
 from functools import wraps
 from pprint import pformat
+import re
 from decorator import decorator
 
 # noinspection PyUnresolvedReferences
@@ -62,10 +63,17 @@ class NoAvailableVirtualenv(RuntimeError):
 class VenvInfo(object):
     """Container for information about virtual environment"""
 
-    def __init__(self, ver):
-        self.ver = ver
-        self.venv = '{package}{ver}'.format(package=Project.package, ver=ver)
-        self.python = '/usr/bin/python{v}'.format(v='.'.join(list(ver)))
+    def __init__(self, ver=None, venv=None):
+        if ver is not None:
+            self.ver = ver
+            self.venv = '{package}{ver}'.format(package=Project.package, ver=ver)
+            self.python = '/usr/bin/python{v}'.format(v='.'.join(list(ver)))
+        if venv is not None:
+            match = re.match(r'.*(\d+)', venv)
+            if match is not None:
+                self.ver = match.group(1)
+                self.python = '/usr/bin/python{v}'.format(v='.'.join(list(ver)))
+            self.venv = venv
 
     def mkvirtualenv(self):
         """Make a virtualenv"""

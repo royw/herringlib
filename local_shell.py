@@ -25,6 +25,7 @@ import pexpect
 from time import sleep
 from herringlib.ashell import AShell, MOVEMENT, CR
 from herringlib.graceful_interrupt_handler import GracefulInterruptHandler
+from herringlib.simple_logger import warning
 
 try:
     # noinspection PyUnresolvedReferences
@@ -44,7 +45,8 @@ class LocalShell(AShell):
     """
         Provides run interface on local system.
     """
-    def __init__(self, logfile=None, verbose=False, prefix=None, postfix=None, password=None, environment=None):
+    def __init__(self, logfile=None, verbose=False, prefix=None, postfix=None, password=None, environment=None,
+                 virtualenv=None):
         super(LocalShell, self).__init__(is_remote=False, verbose=verbose)
         self.logfile = logfile
         self.prefix = prefix
@@ -53,6 +55,24 @@ class LocalShell(AShell):
         if environment:
             self.prefix = Project.prefix[environment]
             self.postfix = Project.postfix[environment]
+        if virtualenv:
+            activate = None
+            full_path = os.path.expanduser(virtualenv)
+            if os.path.isdir(full_path):
+                activate = ["cd {path} ; source bin/activate ; ".format(path=full_path)]
+            else:
+                # noinspection PyBroadException
+                try:
+                    if virtualenv in [venv.strip() for venv in self.run('bash -c "lsvirtualenv -b"').splitlines()]:
+                        activate = "workon {venv} ; python --version ; " \
+                                   "echo \"VirtualEnv: $VIRTUAL_ENV\" ; ".format(venv=virtualenv)
+                except:
+                    warning('Not using virtualenv: {venv}'.format(venv=virtualenv))
+            if activate is not None:
+                if self.prefix:
+                    self.prefix = activate + self.prefix
+                else:
+                    self.prefix = activate
 
     # noinspection PyMethodMayBeStatic
     def env(self):

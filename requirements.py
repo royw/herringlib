@@ -108,7 +108,7 @@ class Requirements(object):
 
         item_groups = []
         for k, g in groupby(enumerate(item_indexes), lambda x: x[0] - x[1]):  # lambda (i, x): i - x):
-            item_groups.append(map(itemgetter(1), g))
+            item_groups.append(list(map(itemgetter(1), g)))
         return item_groups
 
     def _parse_docstring(self, doc_string):
@@ -157,7 +157,10 @@ class Requirements(object):
         #   }
 
         for index in requirement_indexes:
+            info("index: {index}".format(index=index))
+            info("item_groups: {group}".format(group=repr(item_groups)))
             for item_group in item_groups:
+                info("item_group: {group}".format(group=repr(item_group)))
                 if item_group[0] == index + 1:
                     # yes we have items for the requirement file
                     for filename in self._requirement_files_from_pattern(lines[index]):

@@ -8,6 +8,7 @@ Add the following to your *requirements.txt* file:
 * scp
 
 """
+import os
 from herringlib.project_tasks import packages_required
 from herringlib.simple_logger import info
 
@@ -46,22 +47,26 @@ if packages_required(required_packages):
     class RemoteShell(AShell):
         """
         Provides run interface over an ssh connection.
-
-        :param user:
-        :type user:
-        :param password:
-        :type password:
-        :param host:
-        :type host:
-        :param logfile:
-        :type logfile:
-        :param environment:
-        :type environment:
-        :param verbose:
-        :type verbose:
         """
 
-        def __init__(self, user=None, password=None, host=None, logfile=None, environment=None, verbose=False):
+        def __init__(self, user=None, password=None, host=None, logfile=None, environment=None, verbose=False,
+                     virtualenv=None, working_dir=None):
+            """
+            :param user: the remote user account
+            :type user: str
+            :param password: the password for the remote user account
+            :type password: str
+            :param host: the remote machine
+            :type host: str
+            :param logfile: optional logfile
+            :type logfile: str
+            :param environment: Optional key to Project.prefix and Project.postfix dictionaries
+            :type environment: str
+            :param verbose: extra logging
+            :type verbose: bool
+            :param virtualenv: directory that contains a virtual environment to activate upon connection
+            :type virtualenv: str
+            """
             super(RemoteShell, self).__init__(is_remote=True, verbose=verbose)
             if not user:
                 user = Project.user
@@ -78,9 +83,15 @@ if packages_required(required_packages):
             self.ssh.login(host, user, password)
             self.accept_defaults = False
             self.logfile = logfile
+            self.prefix = []
+            self.postfix = []
             if environment:
-                self.prefix = Project.prefix[environment]
-                self.postfix = Project.postfix[environment]
+                self.prefix.extend(Project.prefix[environment] or [])
+                self.postfix.extend(Project.postfix[environment] or [])
+            if working_dir:
+                self.prefix.insert(0, "cd {dir} ; ".format(dir=working_dir))
+            if virtualenv:
+                self.prefix.insert(0, "source {path}/bin/activate ; ".format(path=virtualenv))
 
         def env(self):
             """returns the environment dictionary"""
@@ -166,7 +177,7 @@ if packages_required(required_packages):
                     break
             self.ssh.prompt(timeout=0.1)
             self._report(output, out_stream=out_stream, verbose=verbose)
-            return ''.join(output).split("\n")
+            return ''.join(output).splitlines()
 
         #noinspection PyUnusedLocal
         def run(self, cmd_args, out_stream=sys.stdout, env=None, verbose=True,
@@ -206,22 +217,32 @@ if packages_required(required_packages):
                 # cmd_args = pexpect.split_command_line(cmd_args)
                 cmd_args = [cmd_args]
 
-            if pattern_response or accept_defaults or self.accept_defaults:
-                return self.run_pattern_response(cmd_args, out_stream=out_stream, verbose=verbose,
-                                                 prefix=prefix, postfix=postfix,
-                                                 pattern_response=pattern_response,
-                                                 accept_defaults=accept_defaults or self.accept_defaults,
-                                                 timeout=timeout)
+            prefix = prefix or self.prefix
+            postfix = postfix or self.postfix
 
-            args = self.expand_args(cmd_args, prefix=prefix, postfix=postfix)
-            command_line = ' '.join(args)
-            self.display("{line}\n".format(line=command_line), out_stream=out_stream, verbose=verbose)
-            self.ssh.prompt(timeout=.1)     # clear out any pending prompts
-            self.ssh.sendline(command_line)
-            self.ssh.prompt(timeout=timeout)
-            buf = [self.ssh.before.decode('utf-8')]
-            if self.ssh.after:
-                buf.append(self.ssh.after.decode('utf-8'))
+            if env:
+                env_args = ["%s=%s" % (k, v) for k, v in env.items()]
+                if prefix is None:
+                    prefix = env_args
+                else:
+                    prefix = prefix + env_args
+
+            if pattern_response or accept_defaults or self.accept_defaults:
+                buf = self.run_pattern_response(cmd_args, out_stream=out_stream, verbose=verbose,
+                                                prefix=prefix, postfix=postfix,
+                                                pattern_response=pattern_response,
+                                                accept_defaults=accept_defaults or self.accept_defaults,
+                                                timeout=timeout)
+            else:
+                args = self.expand_args(cmd_args, prefix=prefix, postfix=postfix)
+                command_line = ' '.join(args)
+                self.display("{line}\n".format(line=command_line), out_stream=out_stream, verbose=verbose)
+                self.ssh.prompt(timeout=.1)     # clear out any pending prompts
+                self.ssh.sendline(command_line)
+                self.ssh.prompt(timeout=timeout)
+                buf = [self.ssh.before.decode('utf-8')]
+                if self.ssh.after:
+                    buf.append(self.ssh.after.decode('utf-8'))
             return ''.join(buf)
 
         def put(self, files, remote_path=None, out_stream=sys.stdout, verbose=False):

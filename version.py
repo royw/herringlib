@@ -140,8 +140,8 @@ def _edit_package_version(version_str, project_package=None):
         """
         return "__version__ = '{version}'".format(version=ver_str)
     file_name = _file_spec('__init__.py', project_package)
-    if not os.path.isfile(file_name):
-        touch(file_name)
+    # if not os.path.isfile(file_name):
+    #     touch(file_name)
     with safe_edit(file_name) as files:
         replaced = False
         for line in files['in'].readlines():
@@ -186,7 +186,7 @@ def set_project_version(version_str, project_package=None):
         file_name = _file_spec('VERSION.txt', project_package)
         if os.path.exists(file_name):
             os.remove(file_name)
-    except IOError as ex:
+    except (AttributeError, IOError) as ex:
         error(ex)
         _replace_version_txt_file(version_str=version_str, project_package=project_package)
 
