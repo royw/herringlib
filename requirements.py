@@ -157,10 +157,7 @@ class Requirements(object):
         #   }
 
         for index in requirement_indexes:
-            info("index: {index}".format(index=index))
-            info("item_groups: {group}".format(group=repr(item_groups)))
             for item_group in item_groups:
-                info("item_group: {group}".format(group=repr(item_group)))
                 if item_group[0] == index + 1:
                     # yes we have items for the requirement file
                     for filename in self._requirement_files_from_pattern(lines[index]):
