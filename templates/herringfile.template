@@ -83,6 +83,10 @@ Project.metadata(
 
         # python versions (defined in 'python_versions') to build wheels for
         'wheel_python_versions': ('34', '33', '27', '26'),
+
+        # python version (defined in 'python_versions') to deploy to pypi server
+        'deploy_python_version': '27',
+
     }}
 )
 
