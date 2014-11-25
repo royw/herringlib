@@ -166,6 +166,12 @@ ATTRIBUTES = {
     'docs_pdf_dir': {
         'default': 'build/pdf',
         'help': 'The directory to write PDF documentation to relative to the herringfile_dir.'},
+    'docs_user': {
+        'default': 'www-data',
+        'help': 'The web server user that should own the documents when published.'},
+    'docs_group': {
+        'default': 'users',
+        'help': 'The web server group that should own the documents when published.'},
     'egg_dir': {
         'help': "The project's egg filename."},
     'faq_file': {
@@ -182,6 +188,9 @@ ATTRIBUTES = {
     'license_file': {
         'default': 'docs/license.rst',
         'help': 'The license documentation file relative to the herringfile_dir.'},
+    'logo_image': {
+        'default': None,
+        'help': "The project's logo image."},
     'logo_name': {
         'default': None,
         'help': 'The name used in the generated documentation logo image.'},
