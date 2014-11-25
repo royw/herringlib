@@ -8,7 +8,6 @@ Add the following to your *requirements.txt* file:
 * scp
 
 """
-import os
 from herringlib.project_tasks import packages_required
 from herringlib.simple_logger import info
 
