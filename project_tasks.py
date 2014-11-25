@@ -4,9 +4,11 @@ Project tasks
 """
 import ast
 import os
+from pprint import pformat
 import shutil
 from herringlib.prompt import prompt
 from herringlib.template import Template
+from herringlib.venv import VirtualenvInfo
 
 try:
     # python3
@@ -49,7 +51,8 @@ def value_from_setup_py(arg_name):
         for keyword in keywords:
             for keyword_arg in keyword:
                 if keyword_arg.arg == arg_name:
-                    return keyword_arg.value.s
+                    if hasattr(keyword_arg.value, 's'):
+                        return keyword_arg.value.s
     # didn't find it
     return None
 
@@ -130,6 +133,7 @@ def init():
                          for herringlib in HerringFile.herringlib_paths]:
 
         info("template directory: %s" % template_dir)
+        # noinspection PyArgumentEqualDefault
         template.generate(template_dir, defaults, overwrite=False)
 
 
@@ -204,7 +208,8 @@ def _pip_list():
 
     return names
 
-__pip_list = _pip_list()
+# noinspection PyArgumentEqualDefault
+__pip_list = [pkg.decode('utf-8') for pkg in _pip_list()]
 
 
 def packages_required(package_names):
@@ -226,10 +231,10 @@ def packages_required(package_names):
         for pkg_name in package_names:
             if pkg_name.lower() not in __pip_list:
                 try:
-                    # info('__import__({name})'.format(name=pkg_name))
+                    # info('__import__("{name}")'.format(name=pkg_name))
                     __import__(pkg_name)
                 except ImportError:
-                    # info(pkg_name + " not installed!")
+                    info(pkg_name + " not installed!")
                     missing_modules.append(pkg_name)
                     result = False
         return result
@@ -259,3 +264,21 @@ def check_requirements():
             info("\n".join(needed[filename]))
         else:
             info("Your %s includes all known herringlib task requirements" % requirements_filename)
+
+@task(namespace='project')
+def environment():
+    """ Display project environment """
+    venvs = VirtualenvInfo('python_versions')
+    site_packages_cmdline = "python -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())'"
+    project_env = {}
+    if not venvs.in_virtualenv and venvs.defined:
+        for venv_info in venvs.infos():
+            site_packages = venv_info.run(site_packages_cmdline).strip().splitlines()[2]
+            project_env[venv_info.venv + ': site-packages'] = site_packages
+    else:
+        with LocalShell() as local:
+            site_packages = local.system(site_packages_cmdline).strip()
+            project_env['site-packages'] = site_packages
+
+    info(pformat(project_env))
+    return project_env
