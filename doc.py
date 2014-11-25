@@ -29,13 +29,14 @@ import os
 import re
 import shutil
 import fnmatch
+from sys import version
 from textwrap import dedent
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace, task_execute
+from herringlib.simple_logger import info, warning
 from herringlib.mkdir_p import mkdir_p
 from herringlib.project_tasks import packages_required
-from herringlib.simple_logger import info, warning
 from herringlib.project_settings import Project
 from herringlib.local_shell import LocalShell
 from herringlib.venv import VirtualenvInfo, venv_decorator
@@ -55,7 +56,6 @@ required_packages = [
     'sphinxcontrib-nwdiag',
     'sphinxcontrib-seqdiag']
 
-
 if packages_required(required_packages):
     from herringlib.cd import cd
     from herringlib.clean import clean
@@ -69,6 +69,7 @@ if packages_required(required_packages):
         """generate project documentation"""
 
         venvs = VirtualenvInfo('doc_python_version')
+        info("venvs: {venvs}".format(venvs=repr(venvs.__dict__)))
         if not venvs.in_virtualenv and venvs.defined:
             for venv_info in venvs.infos():
                 venv_info.run('herring doc::generate --python-tag py{ver}'.format(ver=venv_info.ver))
@@ -246,7 +247,11 @@ if packages_required(required_packages):
             for root, dirs, files in os.walk(os.path.join(Project.docs_dir, '_src')):
                 for file_name in files:
                     if file_name != 'modules.rst':
-                        SourceFile(os.path.join(root, file_name)).hack()
+                        # noinspection PyBroadException
+                        try:
+                            SourceFile(os.path.join(root, file_name)).hack()
+                        except:
+                            pass
 
                 # ignore dot sub-directories ('.*') (mainly for skipping .svn directories)
                 for name in dirs:
@@ -458,6 +463,13 @@ if packages_required(required_packages):
 
                 return "{file}_animated.gif".format(file=file_name)
 
+            def _image(logo_name, logo_image, file_name):
+                label = "montage -label {name} {image} -geometry +0+0 -pointsize 16 " \
+                        "-background grey {file}.gif".format(name=logo_name, image=logo_image, file=file_name)
+                with LocalShell() as local:
+                    local.run(label)
+                return "{file}.gif".format(file=file_name)
+
             @task()
             def display():
                 """display project logo"""
@@ -469,7 +481,10 @@ if packages_required(required_packages):
             @task()
             def create():
                 """create the logo used in the sphinx documentation"""
-                logo_file = _neon(Project.logo_name, Project.base_name)
+                if Project.logo_image:
+                    logo_file = _image(Project.logo_name, Project.logo_image, Project.base_name)
+                else:
+                    logo_file = _neon(Project.logo_name, Project.base_name)
                 shutil.copyfile(logo_file, os.path.join(Project.docs_dir, '_static', logo_file))
                 quick_edit(os.path.join(Project.docs_dir, 'conf.py'),
                            {r'(\s*html_logo\s*=\s*\".*?\").*':
@@ -494,6 +509,7 @@ if packages_required(required_packages):
                 with open(Project.todo_file, 'w') as todo_file:
                     todo_file.write("TODO\n")
                     todo_file.write("====\n\n")
+                    # noinspection PyArgumentEqualDefault
                     with LocalShell(verbose=False) as local:
                         output = local.run("find {dir} -name \"*.py\" -exec "
                                            "egrep -H -o \"TODO:?\s+(.+)\s*\" '{{}}' \\;".format(dir=Project.package))
@@ -516,6 +532,7 @@ if packages_required(required_packages):
 
             def _parse_py_file(py_file):
                 tree = ast.parse(''.join(open(py_file)))
+                # noinspection PyArgumentEqualDefault
                 docstring = (ast.get_docstring(tree, clean=True) or '').strip()
                 functions = [node.name for node in tree.body if type(node) == ast.FunctionDef]
                 classes = [node.name for node in tree.body if type(node) == ast.ClassDef]
@@ -524,6 +541,8 @@ if packages_required(required_packages):
             @task(private=True)
             def design():
                 """Update the design.rst from the source module's docstrings"""
+                info("Python version: {version}".format(version=version))
+
                 design_header = Project.design_header.strip()
                 with open(Project.design_file, 'w') as design_file:
                     if design_header:
@@ -575,6 +594,7 @@ if packages_required(required_packages):
                 # noinspection PyBroadException
                 try:
                     console_scripts = _console_scripts()
+                    # noinspection PyArgumentEqualDefault
                     with LocalShell(verbose=False) as local:
                         with open(Project.usage_file, 'w') as usage_file:
                             usage_file.write("\n\n")
@@ -595,6 +615,7 @@ if packages_required(required_packages):
                 # noinspection PyBroadException
                 try:
                     if Project.main is not None:
+                        # noinspection PyArgumentEqualDefault
                         with LocalShell(verbose=False) as local:
                             text = local.system("%s --longhelp" % os.path.join(Project.herringfile_dir,
                                                                                Project.package, Project.main),
