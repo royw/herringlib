@@ -80,7 +80,11 @@ try:
             for file_ in [os.path.join(docs_html_dir, file_) for file_ in os.listdir(docs_html_dir)]:
                 remote.put(file_, doc_version)
             remote.run('ln -s \"{src}\" \"{dest}\"'.format(src=doc_version, dest=doc_latest))
-            remote.run('sudo chown -R www-data:users \"{dest}\"'.format(dest=doc_version),
+            remote.run('sudo chown -R {user}:{group} \"{dest}\"'.format(user=Project.docs_user,
+                                                                        group=Project.docs_group,
+                                                                        dest=doc_version),
+                       accept_defaults=True, timeout=10)
+            remote.run('sudo chmod -R g+w \"{dest}\"'.format(dest=doc_version),
                        accept_defaults=True, timeout=10)
 
     def _dist_wheel_files():
@@ -104,9 +108,22 @@ try:
     @task()
     def deploy():
         """ copy latest sdist tar ball to server """
+        info('')
+        info("=" * 70)
+        info('deploying source distribution')
         if getattr(Project, 'pypiserver', None) is not None and Project.pypiserver:
-            with LocalShell() as local:
-                local.run("python setup.py sdist upload -r {server}".format(server=Project.pypiserver), verbose=True)
+            venvs = VirtualenvInfo('deploy_python_version')
+            if not venvs.in_virtualenv and venvs.defined:
+                for venv_info in venvs.infos():
+                    info('Switching to deploy_python_version ({venv}) virtual environment'.format(venv=venv_info.venv))
+                    venv_info.run("python setup.py sdist upload -r {server}".format(server=Project.pypiserver),
+                                  verbose=True)
+            else:
+                with LocalShell() as local:
+                    info("Deploying sdist using default environment")
+                    local.run("python setup.py sdist upload -r {server}".format(server=Project.pypiserver),
+                              verbose=True)
+
         else:
             version = Project.version
             project_version_name = "{name}-{version}.tar.gz".format(name=Project.base_name, version=version)
