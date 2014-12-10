@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Herringlib by royw</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">Herringlib</h1>
+        <p class="header">Various herring tasks</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/royw/herringlib/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/royw/herringlib/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/royw/herringlib">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/royw">royw</a></p>
+
+
+      </header>
+      <section>
+        <h1>
+<a id="herringlib" class="anchor" href="#herringlib" aria-hidden="true"><span class="octicon octicon-link"></span></a>Herringlib</h1>
+
+<p>This is a set of development tasks for use with the Herring make utility (a python rake).</p>
+
+<h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<p>Clone to either ~/.herring/herringlib or path_to_python_project/herringlib</p>
+
+<p>Recommended to install unionfs-fuse then clone this herringlib to ~/.herring/herringlib and create
+path_to_python_project/herringlib where you can put project specific tasks.</p>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>Here a typical project creation example::</p>
+
+<pre><code>cd path_to_python_project
+touch herringfile
+herring project::init \
+--name PROJECT_NAME \
+--package PACKAGE_NAME \
+--author "Your Name" \
+--author_email YOUR@REAL.EMAIL \
+--description "A short description of project"
+</code></pre>
+
+<p>where::</p>
+
+<pre><code>PROJECT_NAME should not have any spaces
+PACKAGE_NAME is usually the lowercase of PROJECT_NAME where hyphens have been converted to underscores
+</code></pre>
+
+<p>Now edit herringfile, setup.py, and docs/conf.py</p>
+
+<p>Next create your projects virtualenv with::</p>
+
+<pre><code>herring project::mkvenvs
+</code></pre>
+
+<p>Now you are ready to go to town.  Here's the normal build cycle::</p>
+
+<pre><code>herring version::bump
+git add ...
+git commit -m 'blah, blah'
+herring test
+herring build
+herring deploy
+herring doc
+herring doc::publish
+</code></pre>
+
+<p>Rinse and repeat.</p>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="http://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
+  </body>
+</html>
