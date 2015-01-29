@@ -23,6 +23,10 @@ Add the following to your *requirements-py[doc_python_version].txt* file:
 * rst2pdf
 * decorator
 
+Add the following to your *requirements-py27.txt* file:
+
+* PIL
+
 """
 import ast
 import os
