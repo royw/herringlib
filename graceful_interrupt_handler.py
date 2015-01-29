@@ -49,19 +49,23 @@ class GracefulInterruptHandler(object):
         return self.capture()
 
     def capture(self):
-        """ Capture the signal handler """
+        """
+        Capture the signal.  Useful when not using the "with GracefulInterruptHandler" syntax.
+        :return: current GracefulInterruptHandler instance
+        :rtype: GracefulInterruptHandler
+        """
         self.interrupted = False
         self.released = False
 
         self.original_handler = signal.getsignal(self.sig)
 
-        #noinspection PyUnusedLocal
+        # noinspection PyUnusedLocal
         def handler(signum, frame):
             """
             signal that an interrupt has occurred.
 
-            :param signum: signal number
-            :param frame:
+            :param signum: the signal number
+            :param frame: unused
             """
             self.release()
             self.interrupted = True
@@ -70,7 +74,7 @@ class GracefulInterruptHandler(object):
 
         return self
 
-    #noinspection PyUnusedLocal,PyShadowingBuiltins
+    # noinspection PyUnusedLocal,PyShadowingBuiltins
     def __exit__(self, type, value, tb):
         self.release()
 
