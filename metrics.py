@@ -34,7 +34,7 @@ from herringlib.venv import VirtualenvInfo
 __docformat__ = 'restructuredtext en'
 
 required_packages = [
-    'Cheesecake',
+    # 'Cheesecake',
     'matplotlib',
     'numpy',
     'pycabehtml',
