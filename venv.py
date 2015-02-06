@@ -283,6 +283,8 @@ def upvenvs():
     info("Project Virtual Environments:")
     if not venvs.in_virtualenv and venvs.defined:
         for venv_info in venvs.infos():
+            venv_info.run('pip install --upgrade pip ; ')
+            venv_info.run('pip install --upgrade setuptools ; ')
             venv_info.run('pip install --upgrade -r requirements.txt')
 
 
