@@ -24,7 +24,7 @@ from herring.herring_app import task, HerringFile
 
 from herringlib.simple_logger import info, debug
 from herringlib.local_shell import LocalShell
-from herringlib.requirements import Requirements
+from herringlib.requirements import Requirements, Requirement
 from herringlib.project_settings import Project
 
 missing_modules = []
@@ -228,15 +228,17 @@ def packages_required(package_names):
 
         # info(package_names)
         # info(__pip_list)
-        for pkg_name in package_names:
-            if pkg_name.lower() not in __pip_list:
-                try:
-                    # info('__import__("{name}")'.format(name=pkg_name))
-                    __import__(pkg_name)
-                except ImportError:
-                    info(pkg_name + " not installed!")
-                    missing_modules.append(pkg_name)
-                    result = False
+        for requirement in [Requirement(name) for name in package_names]:
+            if requirement.supported_python():
+                pkg_name = requirement.package
+                if pkg_name.lower() not in __pip_list:
+                    try:
+                        # info('__import__("{name}")'.format(name=pkg_name))
+                        __import__(pkg_name)
+                    except ImportError:
+                        info(pkg_name + " not installed!")
+                        missing_modules.append(pkg_name)
+                        result = False
         return result
     except:
         return False

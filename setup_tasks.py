@@ -5,10 +5,10 @@ Set of Herring tasks for packaging a project.
 In early development, the install/uninstall tasks are useful.
 Less so after you start deploying to a local pypi server.
 
-Add the following to your *requirements-py[wheel_python_versions].txt* file:
+Add the following to your *requirements.txt* file:
 
-* wheel
-* decorator
+* wheel; python_version == "[wheel_python_versions]"
+* decorator; python_version == "[wheel_python_versions]"
 
 """
 import os

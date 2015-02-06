@@ -2,13 +2,9 @@
 """
 Helpers for list manipulation.  Basically modelled from ruby's Array.compress, Array.uniq
 
-Add the following to your *requirements-py26.txt* file:
+Add the following to your *requirements.txt* file:
 
-* ordereddict
-
-Add the following to your *requirements-py27.txt* file:
-
-* ordereddict
+* ordereddict; python_version < "3.0"
 
 """
 
@@ -55,7 +51,7 @@ try:
         :rtype: bool
         """
         return (not hasattr(item, "strip") and
-               (hasattr(item, "__getitem__") or hasattr(item, "__iter__")))
+                (hasattr(item, "__getitem__") or hasattr(item, "__iter__")))
 
 except ImportError:
     print("ordereddict not installed!")

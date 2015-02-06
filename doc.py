@@ -7,25 +7,22 @@ Supports Sphinx (default) and EpyDoc.
 Normal usage is to invoke the *doc* task.
 
 
-Add the following to your *requirements-py[doc_python_version].txt* file:
+Add the following to your *requirements.txt* file:
 
-* Pygments
-* Sphinx
-* sphinx-bootstrap-theme
-* sphinx-pyreverse
-* sphinxcontrib-plantuml
-* sphinxcontrib-blockdiag
-* sphinxcontrib-actdiag
-* sphinxcontrib-nwdiag
-* sphinxcontrib-seqdiag
-* paramiko
-* scp
-* rst2pdf
-* decorator
-
-Add the following to your *requirements-py27.txt* file:
-
-* PIL
+* Pygments; python_version == "[doc_python_version]"
+* Sphinx; python_version == "[doc_python_version]"
+* sphinx-bootstrap-theme; python_version == "[doc_python_version]"
+* sphinx-pyreverse; python_version == "[doc_python_version]"
+* sphinxcontrib-plantuml; python_version == "[doc_python_version]"
+* sphinxcontrib-blockdiag; python_version == "[doc_python_version]"
+* sphinxcontrib-actdiag; python_version == "[doc_python_version]"
+* sphinxcontrib-nwdiag; python_version == "[doc_python_version]"
+* sphinxcontrib-seqdiag; python_version == "[doc_python_version]"
+* paramiko; python_version == "[doc_python_version]"
+* scp; python_version == "[doc_python_version]"
+* rst2pdf; python_version == "[doc_python_version]"
+* decorator; python_version == "[doc_python_version]"
+* PIL; python_version == "[doc_python_version]" and python_version < "3.0"
 
 """
 import ast
@@ -38,6 +35,7 @@ from textwrap import dedent
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace, task_execute
+import sys
 from herringlib.simple_logger import info, warning
 from herringlib.mkdir_p import mkdir_p
 from herringlib.project_tasks import packages_required
@@ -48,17 +46,23 @@ from herringlib.indent import indent
 
 __docformat__ = 'restructuredtext en'
 
+required_packages = []
 
-required_packages = [
-    'Pygments',
-    'Sphinx',
-    'sphinx-bootstrap-theme',
-    'sphinx-pyreverse',
-    'sphinxcontrib-plantuml',
-    'sphinxcontrib-blockdiag',
-    'sphinxcontrib-actdiag',
-    'sphinxcontrib-nwdiag',
-    'sphinxcontrib-seqdiag']
+try:
+    for python_version in Project.doc_python_version:
+        if sys.version_info == tuple([int(x) for x in re.split(r'\.', python_version)]):
+            required_packages.extend([
+                'Pygments',
+                'Sphinx',
+                'sphinx-bootstrap-theme',
+                'sphinx-pyreverse',
+                'sphinxcontrib-plantuml',
+                'sphinxcontrib-blockdiag',
+                'sphinxcontrib-actdiag',
+                'sphinxcontrib-nwdiag',
+                'sphinxcontrib-seqdiag'])
+except AttributeError:
+    pass
 
 if packages_required(required_packages):
     from herringlib.cd import cd

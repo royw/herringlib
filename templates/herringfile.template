@@ -1,22 +1,14 @@
 """
 {description}
 
-Add the following to your *requirements-py26.txt* file:
-
-* argparse
-* ordereddict
-
-Add the following to your *requirements-py27.txt* file:
-
-* argparse
-* ordereddict
-
 Add the following to your *requirements.txt* files:
 
-* cheesecake
-* pycabehtml
-* pylint
-* pymetrics
+* argparse; python_version < "3.2"
+* ordereddict; python_version < "3.0"
+* cheesecake; python_version == "[metrics_python_versions]"
+* pycabehtml; python_version == "[metrics_python_versions]"
+* pylint; python_version == "[metrics_python_versions]"
+* pymetrics; python_version == "[metrics_python_versions]"
 * mako
 * pexpect
 * setuptools

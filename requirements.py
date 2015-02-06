@@ -3,16 +3,11 @@
 """
 Helpers for handing requirements.txt files.
 
-When herringlib initializes a project, it will create a requirements.txt file and a set of
-requirements-py{ver}.txt files using the 2-digit version strings from Project.python_versions.
-For example if Project.python_versions is ('27', '34') then it will create 'requirements-py27.txt'
-and 'requirements-py34.txt'.
+When herringlib initializes a project, it will create a requirements.txt file.
 
 Herringlib supports specifying required packages in each module's docstring as follows:
 
-1) there is a line in the docstring that contains "requirements.txt" or "requirements-py\d\d.txt"
-   or "requirements-py[*].txt" where '*' is the project attribute name that contains the two-digit
-   python version(s) (ex: Project.wheel_python_versions).
+1) there is a line in the docstring that contains "requirements.txt".
 2) after that line, ignoring blank lines, there are bullet list items starting with a '* ' then
    containing the names of the required third party packages followed by any optional conditions.
 
@@ -24,15 +19,9 @@ example packages to your project's requirement files)::
 
     Add the following to your *requirements.txt* file:
     # wheel
-
-    Add the following to your *requirements-py27.txt* file:
-
-    # argparse
-    # ordereddict
-
-    Add the following to your *requirements-py[test_python_versions].txt* file:
-
-    # pytest
+    # argparse; python_version < "3.0"
+    # ordereddict; python_version < "3.0"
+    # pytest; python_version == "[test_python_versions]"
 
     '''
 
@@ -50,12 +39,6 @@ Then herringlib will create:
     # requirements.txt
     wheel
 
-    # requirements-py27.txt
-    argparse
-    ordereddict
-
-    # requirements-py34.txt
-    pytest
 
 Then Project::mkvenvs will create the virtualenv and install the packages from the requirement files::
 
@@ -87,9 +70,75 @@ from itertools import groupby
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, HerringFile, task_execute
+from herringlib.comparable_mixin import ComparableMixin
 
 from herringlib.list_helper import compress_list, is_sequence, unique_list
-from herringlib.simple_logger import debug, info, warning
+from herringlib.simple_logger import debug, warning, info
+
+
+class Requirement(ComparableMixin):
+    """
+    Wrapper for requirement.txt line.  Support formats include::
+
+        -e ...#egg=...
+        package
+        package; marker
+        package <=> version
+        package <=> version; marker
+
+    The marker is typically "python_version <=> version".  Environment markers were added to pip 6 and are documented
+    in PEP 426 (https://www.python.org/dev/peps/pep-0426/#id46).
+    """
+    def __init__(self, line):
+        self.line = line.strip()
+        match = re.match(r'-e .*?#egg=(\S+)', self.line)
+        if match:
+            self.package = match.group(1).strip()
+        else:
+            self.package = re.split(r'[^a-zA-Z0-9_\-]', self.line)[0].strip()
+        self.qualified_package = re.split(r';', self.line)[0].strip()
+        try:
+            self.marker = re.split(r';', self.line)[1].strip()
+            self.marker = self.marker.replace("'", '"')
+        except IndexError:
+            self.marker = None
+
+    def supported_python(self):
+        """
+        Is this requirement intended for the currently running version of python?
+
+        If this requirement has a marker (ex: 'foo; python_version == "2.7"') check if the
+        current python qualifies.  If this requirement does not have a marker then return True.
+        """
+        debug("supported_python for: {line}".format(line=self.line))
+        if self.marker is not None:
+            match = re.match(r'''python_version\s*([!=<>]+)\s*["']?([\d\.]+)["']?''', self.marker)
+            if match:
+                ver_str = str(tuple([int(x) for x in re.split(r'\.', match.group(2))]))
+                import sys
+                code = "sys.version_info {operator} {version}".format(operator=match.group(1), version=str(ver_str))
+                result = eval(code)
+                info("{code} returned: {result}".format(code=code, result=str(result)))
+                return result
+        return True
+
+    def _cmpkey(self):
+        return self.__str__()
+
+    def __hash__(self):
+        return hash(self.line)
+
+    def __str__(self):
+        if self.marker is None:
+            return self.package
+        else:
+            return "{package}; {marker}".format(package=self.package, marker=self.marker)
+
+    def __repr__(self):
+        if self.marker is None:
+            return self.package
+        else:
+            return "{package}; {marker}".format(package=self.package, marker=self.marker)
 
 
 class Requirements(object):
@@ -111,14 +160,32 @@ class Requirements(object):
             item_groups.append(list(map(itemgetter(1), g)))
         return item_groups
 
+    def _variable_substitution(self, raw_lines):
+        lines = []
+        for line in raw_lines:
+
+            match = re.search(r'\[([^\]]+)]', line)
+            if match:
+                value = getattr(self._project, match.group(1), match.group(0))
+                if not is_sequence(value):
+                    value = [value]
+                new_lines = []
+                for v in value:
+                    new_lines.append(re.sub(r'\[([^\]]+)]', self._project.ver_to_version(v), line))
+            else:
+                new_lines = [line]
+
+            lines.extend(new_lines)
+
+        return lines
+
     def _parse_docstring(self, doc_string):
         """
         Extract the required packages from the docstring.
 
         This makes the following assumptions:
 
-        1) there is a line in the docstring that contains "requirements.txt" or "requirements-py[*].txt" where '*'
-           is the project attribute name that contains the two-digit python version(s).
+        1) there is a line in the docstring that contains "requirements.txt".
         2) after that line, ignoring blank lines, there are bullet list items starting with a '*'
         3) these bullet list items are the names of the required third party packages followed by any optional
            conditions
@@ -132,7 +199,9 @@ class Requirements(object):
         if doc_string is None or not doc_string:
             return requirements
 
-        lines = list(filter(str.strip, doc_string.splitlines()))
+        raw_lines = list(filter(str.strip, doc_string.splitlines()))
+        lines = self._variable_substitution(raw_lines)
+
         # lines should now contain:
         # ['blah', 'blah', '...requirements.txt...','* pkg 1', '* pkg 2', 'blah']
         debug(lines)
@@ -164,7 +233,8 @@ class Requirements(object):
                         debug("filename: %s" % filename)
                         if filename not in requirements:
                             requirements[filename] = []
-                        requirements[filename].extend([re.match(self.ITEM_REGEX, lines[item_index]).group(1)
+                        requirements[filename].extend([Requirement(re.match(self.ITEM_REGEX,
+                                                                            lines[item_index]).group(1))
                                                        for item_index in item_group])
 
         debug("requirements:\n%s" % pformat(requirements))
@@ -172,14 +242,14 @@ class Requirements(object):
 
     def _requirement_files_from_pattern(self, line):
         """
-        Given a requirements file pattern ('requirements.txt', 'requirements-py\d\d.txt', or 'requirements-py[\S+].txt')
-        return the set of actual filenames ('requirements-py27.txt',...).
+        Given a requirements file pattern ('requirements.txt')
+        return the set of actual filenames ('requirements.txt').
 
         :param line: a text line that should contain a requirements file pattern.
         :returns: requirement filenames
         :rtype: list[str]
         """
-        requirement_files = []
+        requirement_files = ['requirements.txt']
         versions = None
         match = re.search(self.REQUIREMENT_REGEX, line)
         if match:
@@ -195,17 +265,13 @@ class Requirements(object):
             if match.group(3) is not None:
                 versions = getattr(self._project, match.group(3), None)
 
-            if versions is not None:
-                if not is_sequence(versions):
-                    versions = [versions]
-                requirement_files.extend(["requirements-py{ver}.txt".format(ver=ver) for ver in versions])
-
         return requirement_files
 
     # noinspection PyMethodMayBeStatic
     def _get_module_docstring(self, file_path):
         """
         Get module-level docstring of Python module at filepath, e.g. 'path/to/file.py'.
+
         :param file_path:  The filepath to a module file.
         :type: str
         :returns: the module docstring
@@ -213,6 +279,7 @@ class Requirements(object):
         """
         debug("_get_module_docstring('{file}')".format(file=file_path))
         tree = ast.parse(''.join(open(file_path)))
+        # noinspection PyArgumentEqualDefault
         docstring = (ast.get_docstring(tree, clean=True) or '').strip()
         debug("docstring: %s" % docstring)
         return docstring
@@ -233,7 +300,7 @@ class Requirements(object):
         """
         Scan the herringlib py file docstrings extracting the 3rd party requirements.
 
-        :return: requirements dict where key is the requirements file name (ex: "requirements-py27.txt") and
+        :return: requirements dict where key is the requirements file name (ex: "requirements.txt") and
                  the value is a list of package names (ex: ['argparse', 'wheel']).
         :rtype: dict[str,list[str]]
         """
@@ -245,10 +312,13 @@ class Requirements(object):
             debug('file: %s' % file_)
             required_files = self._parse_docstring(self._get_module_docstring(file_))
             debug('required_files: %s' % pformat(required_files))
-            for key in required_files.keys():
-                if key not in requirements.keys():
-                    requirements[key] = []
-                requirements[key].extend(required_files[key])
+            for filename in required_files.keys():
+                if filename not in requirements.keys():
+                    requirements[filename] = []
+                for req in required_files[filename]:
+                    if req not in requirements[filename]:
+                        requirements[filename].append(req)
+                # requirements[filename].extend(required_files[filename])
         return requirements
 
     def find_missing_requirements(self):
@@ -259,6 +329,8 @@ class Requirements(object):
         :rtype: dict[str,set[str]]
         """
         requirements = self._get_requirements_dict_from_py_files()
+        debug('requirements:')
+        debug(pformat(requirements))
 
         needed = {}
         diff = {}
@@ -268,20 +340,18 @@ class Requirements(object):
             needed[filename].extend(sorted(compress_list(unique_list(requirements[filename]))))
 
             if not os.path.exists(filename):
-                info("Missing: " + filename)
+                debug("Missing: " + filename)
                 diff[filename] = sorted(set(needed[filename]))
             else:
                 with open(filename) as in_file:
                     existing_requirements = []
                     for line in [line.strip() for line in in_file.readlines()]:
                         if line and not line.startswith('#'):
-                            match = re.match("-e .*?#egg=(\S+)", line)
-                            if match:
-                                existing_requirements.append(match.group(1))
-                            else:
-                                existing_requirements.append(re.split("<|>|=|!", line)[0])
-                    required = sorted(compress_list(unique_list(existing_requirements)))
-                    diff[filename] = sorted(set(needed[filename]) - set(required))
+                            existing_requirements.append(Requirement(line))
+                    existing = sorted(compress_list(unique_list(existing_requirements)))
+                    difference = [req for req in needed[filename] if req not in existing]
+                    diff[filename] = [req for req in difference
+                                      if req.marker is None or Requirement(req.package) not in needed[filename]]
         debug("find_missing_requirements.needed: {pkgs}".format(pkgs=pformat(needed)))
         debug("find_missing_requirements.diff: {pkgs}".format(pkgs=pformat(diff)))
         return diff
@@ -298,8 +368,8 @@ class Requirements(object):
             try:
                 requirements_filename = os.path.join(self._project.herringfile_dir, filename)
                 with open(requirements_filename, 'a') as req_file:
-                    for need in needed[filename]:
-                        req_file.write(need + "\n")
+                    for need in sorted(unique_list(needed[filename])):
+                        req_file.write(str(need) + "\n")
             except IOError as ex:
                 warning("Can not add the following to the {filename} file: {needed}\n{err}".format(
                     filename=filename, needed=repr(needed[filename]), err=str(ex)))

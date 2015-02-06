@@ -19,13 +19,10 @@ Usage
         info('Generating documentation using the current python environment')
         task_execute('doc::generate')
 
-Add the following to your *requirements-py26.txt* file:
+Add the following to your *requirements.txt* file:
 
 * decorator
 
-Add the following to your *requirements-py27.txt* file:
-
-* decorator
 
 """
 
@@ -277,6 +274,16 @@ def lsvenvs():
     if not venvs.in_virtualenv and venvs.defined:
         for venv_info in venvs.infos():
             info(venv_info.venv)
+
+
+@task(namespace='project')
+def upvenvs():
+    """Run "pip install --update -r requirements" in each virtual environment."""
+    venvs = VirtualenvInfo('python_versions')
+    info("Project Virtual Environments:")
+    if not venvs.in_virtualenv and venvs.defined:
+        for venv_info in venvs.infos():
+            venv_info.run('pip install --upgrade -r requirements.txt')
 
 
 def using_version(attr_name):

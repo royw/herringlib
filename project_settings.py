@@ -58,7 +58,7 @@ that declares external dependencies without the leading '#' characters::
 #    * numpy
 #    * pycabehtml
 #    * pylint
-#    * pymetrics
+#    * pymetrics; python_version == "[metrics_python_versions]"
 #    * ordereddict if sys.version_info < (3, 1)
 
 Basically a line with "requirements.txt" followed by a list is assumed to identify these dependencies by
@@ -262,9 +262,9 @@ ATTRIBUTES = {
         'default': None,
         'help': 'The projects current version.'},
     'versioned_requirements_file_format': {
-        'default': 'requirements-py{ver}.txt',
+        'default': 'requirements.txt',
         'help': 'When creating multiple virtual environments, the format string for the per'
-                'version requirements.txt file (ex: requirements-py{ver}.txt).'},
+                'version requirements.txt file (ex: requirements.txt).'},
     'virtualenvwrapper_script': {
         'default': env_value(name='VIRTUALENVWRAPPER_SCRIPT',
                              default_value='/usr/share/virtualenvwrapper/virtualenvwrapper.sh'),
@@ -395,6 +395,17 @@ class ProjectSettings(object):
         Add required packages (specified in module docstrings) to the appropriate requirements text file(s).
         """
         return Requirements(self).required_files()
+
+    def ver_to_version(self, ver):
+        """
+        Convert shorthand version (ex: 27) to full dotted notation (ex: 2.7).
+
+        :param ver: shorthand version without periods
+        :type ver: str
+        :return: full dotted version
+        :rtype: str
+        """
+        return '.'.join(list(ver))
 
 
 Project = ProjectSettings()

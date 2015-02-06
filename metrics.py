@@ -7,15 +7,15 @@ Herring tasks for quality metrics (cheesecake, pymetrics, pycabehtml, pylint).
     you may need to install pymetrics using your OS package management tool, on
     ubuntu 12.04, just installing using pip did not provide a runnable pymetrics script.
 
-Add the following to your *requirements-py[metrics_python_versions].txt* file:
+Add the following to your *requirements.txt* file:
 
-* cheesecake
-* matplotlib
-* numpy
-* pycabehtml
-* pylint
-* pymetrics
-* radon
+* cheesecake; python_version == "[metrics_python_versions]"
+* matplotlib; python_version == "[metrics_python_versions]"
+* numpy; python_version == "[metrics_python_versions]"
+* pycabehtml; python_version == "[metrics_python_versions]"
+* pylint; python_version == "[metrics_python_versions]"
+* pymetrics; python_version == "[metrics_python_versions]"
+* radon; python_version == "[metrics_python_versions]"
 
 """
 import json

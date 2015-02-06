@@ -1,10 +1,10 @@
 # coding=utf-8
 """
-Add the following to your *requirements-py[test_python_versions].txt* file:
+Add the following to your *requirements.txt* file:
 
-* coverage
-* pytest
-* decorator
+* coverage; python_version == "[test_python_versions]"
+* pytest; python_version == "[test_python_versions]"
+* decorator; python_version == "[test_python_versions]"
 
 """
 # noinspection PyUnresolvedReferences
