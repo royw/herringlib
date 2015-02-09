@@ -28,7 +28,6 @@ Add the following to your *requirements.txt* file:
 
 import os
 from functools import wraps
-from pprint import pformat
 import re
 from decorator import decorator
 
@@ -77,6 +76,7 @@ class VenvInfo(object):
         new_env = Project.env_without_virtualenvwrapper()
         with LocalShell() as local:
             venv_script = Project.virtualenvwrapper_script
+            # noinspection PyArgumentEqualDefault
             venvs = local.run('/bin/bash -c "source {venv_script} ;'
                               'lsvirtualenv -b"'.format(venv_script=venv_script),
                               verbose=False,
@@ -94,6 +94,7 @@ class VenvInfo(object):
         new_env = Project.env_without_virtualenvwrapper()
         with LocalShell() as local:
             venv_script = Project.virtualenvwrapper_script
+            # noinspection PyArgumentEqualDefault
             venvs = local.run('/bin/bash -c "source {venv_script} ;'
                               'lsvirtualenv -b"'.format(venv_script=venv_script),
                               verbose=False,
@@ -110,6 +111,7 @@ class VenvInfo(object):
         new_env = Project.env_without_virtualenvwrapper()
         with LocalShell() as local:
             venv_script = Project.virtualenvwrapper_script
+            # noinspection PyArgumentEqualDefault
             venvs = local.run('/bin/bash -c "source {venv_script} ;'
                               'lsvirtualenv -b"'.format(venv_script=venv_script),
                               verbose=False,
@@ -132,6 +134,7 @@ class VenvInfo(object):
         output = None
         with LocalShell() as local:
             venv_script = Project.virtualenvwrapper_script
+            # noinspection PyArgumentEqualDefault
             venvs = local.run('/bin/bash -c "source {venv_script} ;'
                               'lsvirtualenv -b"'.format(venv_script=venv_script),
                               verbose=False,
@@ -165,6 +168,7 @@ class VirtualenvInfo(object):
     @property
     def in_virtualenv(self):
         """Are we in a virtual environment?"""
+        # noinspection PyArgumentEqualDefault
         return env_value('VIRTUAL_ENV', None) is not None
 
     @property
@@ -173,6 +177,7 @@ class VirtualenvInfo(object):
         :return: the current virtual environment
         :rtype: str
         """
+        # noinspection PyArgumentEqualDefault
         return env_value('VIRTUAL_ENV', None)
 
     @property
