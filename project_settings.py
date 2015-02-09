@@ -210,6 +210,9 @@ ATTRIBUTES = {
     'password': {
         'default': None,
         'help': 'The password for logging into the dist_host.'},
+    'pip_options': {
+        'default': '',
+        'help': 'Command line options to pass to pip install.'},
     'port': {
         'default': 22,
         'help': 'The SSH port for transferring files to the dist_host.'},
