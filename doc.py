@@ -36,7 +36,7 @@ from textwrap import dedent
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace, task_execute
 import sys
-from herringlib.simple_logger import info, warning
+from herringlib.simple_logger import info, warning, error
 from herringlib.mkdir_p import mkdir_p
 from herringlib.project_tasks import packages_required
 from herringlib.project_settings import Project
@@ -590,7 +590,7 @@ if packages_required(required_packages):
                             entry_points = eval(match.group(1))
                             console_scripts = [line.split('=')[1].split(':')[0].strip()
                                                for line in entry_points['console_scripts']]
-                            info(repr(console_scripts))
+                            # info(repr(console_scripts))
                             return console_scripts
                 except:
                     pass
@@ -622,17 +622,38 @@ if packages_required(required_packages):
                 """Update the README.rst from the application's --longhelp output"""
                 # noinspection PyBroadException
                 try:
+                    text = _app_output("--longhelp")
+                    if text:
+                        with open(Project.readme_file, 'w') as readme_file:
+                            readme_file.write(text)
+                except Exception as ex:
+                    error('Can not write {file} - {why}'.format(file=Project.readme_file, why=str(ex)))
+
+            def _app_output(options):
+                with LocalShell(verbose=False) as local:
                     if Project.main is not None:
-                        # noinspection PyArgumentEqualDefault
-                        with LocalShell(verbose=False) as local:
-                            text = local.system("%s --longhelp" % os.path.join(Project.herringfile_dir,
-                                                                               Project.package, Project.main),
+                        # noinspection PyBroadException
+                        try:
+                            executable = os.path.join(Project.herringfile_dir, Project.package, Project.main)
+                            text = local.system("{exe} {options}".format(exe=executable, options=options),
                                                 verbose=False)
                             if text:
-                                with open(Project.readme_file, 'w') as readme_file:
-                                    readme_file.write(text)
-                except:
-                    pass
+                                return text
+                        except Exception as ex:
+                            error('Error running "{exe}" - {why}'.format(exe=executable, why=str(ex)))
+
+                    console_scripts = _console_scripts()
+                    output = []
+                    for script in console_scripts:
+                        try:
+                            text = local.system("python -m {exe} {options}".format(exe=script, options=options),
+                                                verbose=False)
+                            # info("text:  {text}".format(text=text))
+                            if text:
+                                output.append(text)
+                        except Exception as ex:
+                            error('Error running "{exe}" - {ex}'.format(exe=script, ex=str(ex)))
+                    return '\n'.join(output)
 
             @task(private=True)
             def install():

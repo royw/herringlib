@@ -237,18 +237,23 @@ def mkvenvs():
                     # info('=' * len(requirement_file))
                     # info(pformat(requirements))
 
+            pip_options = ''
+            if pip_options in Project:
+                pip_options = Project.pip_options
+
             install_lines = [
-                'pip install --upgrade pip ; ',
-                'pip install --upgrade setuptools ; ',
+                'pip install --upgrade {pip_options} pip ; '.format(pip_options=pip_options),
+                'pip install --upgrade {pip_options} setuptools ; '.format(pip_options=pip_options),
             ]
             if 'numpy' in requirements:
-                install_lines.append('pip install numpy ; ')
+                install_lines.append('pip install {pip_options} numpy ; '.format(pip_options=pip_options))
 
             if 'matplotlib' in requirements:
-                install_lines.append('pip install matplotlib ; ')
+                install_lines.append('pip install {pip_options} matplotlib ; '.format(pip_options=pip_options))
 
-            for requirement_file in requirement_files:
-                install_lines.append('pip install -r {requirement_file} ; '.format(requirement_file=requirement_file))
+            for requirement_file in unique_list(requirement_files):
+                install_lines.append('pip install {pip_options} -r {requirement_file} ; '.format(
+                    pip_options=pip_options, requirement_file=requirement_file))
 
             venv_info.mkvirtualenv()
             info(''.join(install_lines))
