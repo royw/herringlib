@@ -36,7 +36,7 @@ from decorator import decorator
 from herring.herring_app import task
 
 from herringlib.env import env_value
-from herringlib.list_helper import is_sequence
+from herringlib.list_helper import is_sequence, unique_list
 from herringlib.local_shell import LocalShell
 from herringlib.project_settings import Project
 from herringlib.simple_logger import info, error, debug, warning
@@ -225,12 +225,12 @@ def mkvenvs():
             if os.path.isfile(versioned_requirement_file):
                 requirement_files.append(versioned_requirement_file)
 
-            for requirement_file in requirement_files:
+            for requirement_file in unique_list(requirement_files):
                 with open(requirement_file) as file_:
                     requirements = file_.readlines()
-                    info(requirement_file)
-                    info('=' * len(requirement_file))
-                    info(pformat(requirements))
+                    # info(requirement_file)
+                    # info('=' * len(requirement_file))
+                    # info(pformat(requirements))
 
             install_lines = [
                 'pip install --upgrade pip ; ',
