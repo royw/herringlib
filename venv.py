@@ -21,7 +21,7 @@ Usage
 
 Add the following to your *requirements.txt* file:
 
-* decorator
+* decorator; python_version == "[python_versions]"
 
 
 """
@@ -289,9 +289,20 @@ def upvenvs():
     info("Project Virtual Environments:")
     if not venvs.in_virtualenv and venvs.defined:
         for venv_info in venvs.infos():
-            venv_info.run('pip install --upgrade pip ; ')
-            venv_info.run('pip install --upgrade setuptools ; ')
+            venv_info.run('pip install --upgrade pip')
+            venv_info.run('pip install --upgrade setuptools')
             venv_info.run('pip install --upgrade -r requirements.txt')
+
+
+@task(namespace='project')
+def listvenvs():
+    """Run "pip list" in each virtual environment."""
+    venvs = VirtualenvInfo('python_versions')
+    info("Project Virtual Environments:")
+    if not venvs.in_virtualenv and venvs.defined:
+        for venv_info in venvs.infos():
+            venv_info.run('pip list ')
+            info('')
 
 
 def using_version(attr_name):
