@@ -3,9 +3,9 @@
 """
 Add the following to your *requirements.txt* file:
 
-* pexpect
-* paramiko
-* scp
+* pexpect; python_version == "[python_versions]"
+* paramiko; python_version == "[python_versions]"
+* scp; python_version == "[python_versions]"
 
 """
 from herringlib.project_tasks import packages_required

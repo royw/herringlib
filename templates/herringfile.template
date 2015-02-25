@@ -9,18 +9,18 @@ Add the following to your *requirements.txt* files:
 * pycabehtml; python_version == "[metrics_python_versions]"
 * pylint; python_version == "[metrics_python_versions]"
 * pymetrics; python_version == "[metrics_python_versions]"
-* mako
-* pexpect
-* setuptools
+* mako; python_version == "[python_versions]"
+* pexpect; python_version == "[python_versions]"
+* setuptools; python_version == "[python_versions]"
 
 """
 import os
-import re
 from pprint import pformat
 from sys import version, path
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace, HerringFile, task_execute, verbose_mode, debug_mode
+# noinspection PyUnresolvedReferences
 from herringlib.simple_logger import info, Logger, debug
 
 # noinspection PyUnresolvedReferences
