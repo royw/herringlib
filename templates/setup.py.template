@@ -3,9 +3,9 @@ import os
 import re
 from setuptools import setup
 
-from sys import version
+import sys
 
-if version < '2.2.3':
+if sys.version_info < (2, 6):
     print('{name} requires python 2.6 or newer')
     exit(-1)
 
@@ -35,16 +35,36 @@ def get_project_version():
         pass
 
     # no joy, so try getting the version from a VERSION.txt file.
-    try:
-        file_name = os.path.join(os.getcwd(), '{package}', 'VERSION.txt')
-        with open(file_name, 'r') as inFile:
-            return inFile.read().strip()
-    except IOError:
-        pass
+#    try:
+#        file_name = os.path.join(os.getcwd(), '{package}', 'VERSION.txt')
+#        with open(file_name, 'r') as inFile:
+#            return inFile.read().strip()
+#    except IOError:
+#        pass
 
     # no joy again, so return default
     return '0.0.0'
 
+
+# all versions of python
+required_imports = [
+    'six',
+    'fullmonty',
+]
+
+# libraries that have been moved into python
+print("Python (%s)" % sys.version)
+if sys.version_info < (3, 1):
+    required_imports.extend([
+        'ordereddict',  # new in py31
+        'decorator',
+    ])
+
+if sys.version_info < (3, 2):
+    required_imports.extend([
+        "argparse",  # new in py32
+        "configparser",  # back port from py32
+    ])
 
 setup(
     name='{name}',
@@ -64,19 +84,25 @@ setup(
     keywords=[],
     # use classifiers from:  https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+#        'Development Status :: 1 - Planning',
+        'Development Status :: 2 - Pre-Alpha',
+#        'Development Status :: 3 - Alpha',
+#        'Development Status :: 4 - Beta',
+#        'Development Status :: 5 - Production/Stable',
+#        'Development Status :: 6 - Mature',
+#        'Development Status :: 7 - Inactive',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'Programming Language :: Python',
+#        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
         'Topic :: Software Development',
     ],
-    install_requires=[
-        # "argparse",
-        # "mako"
-        # "Foo >= 1.2.3"
-    ],
+    install_requires=required_imports,
     entry_points={{
         'console_scripts': ['{package} = {package}.{package}_main:main']
     }})

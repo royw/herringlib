@@ -5,7 +5,7 @@ Run external scripts and programs.
 
 Add the following to your *requirements.txt* file:
 
-* pexpect
+* pexpect; python_version == "[python_versions]"
 
 """
 from herringlib.project_settings import Project
