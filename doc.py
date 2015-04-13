@@ -163,12 +163,16 @@ if packages_required(required_packages):
                 self.package = False
                 self.class_name = ''
 
-            def hack(self):
+            def hack(self, exclude=None):
                 """
                 substitute full names into mod lines with base names.
                 """
                 if os.path.splitext(self.file_name)[1] != '.rst':
                     return
+
+                if exclude is None:
+                    exclude = []
+
                 with safe_edit(self.file_name) as files:
                     in_file = files['in']
                     out_file = files['out']
@@ -191,7 +195,8 @@ if packages_required(required_packages):
                     out_file.write("%s\n" % title)
                     out_file.write('-' * len(title) + "\n\n")
                     for value in sorted(self.name_dict.values()):
-                        out_file.write(".. inheritance-diagram:: %s\n" % value)
+                        if value not in exclude:
+                            out_file.write(".. inheritance-diagram:: %s\n" % value)
                     out_file.write("\n\n")
 
             def _hack_mod(self, line):
@@ -250,14 +255,14 @@ if packages_required(required_packages):
                     print(cmd_line)
                     os.system(cmd_line)
 
-        def _customize_doc_src_files():
+        def _customize_doc_src_files(exclude=None):
             """change the auto-api generated sphinx src files to be more what we want"""
             for root, dirs, files in os.walk(os.path.join(Project.docs_dir, '_src')):
                 for file_name in files:
                     if file_name != 'modules.rst':
                         # noinspection PyBroadException
                         try:
-                            SourceFile(os.path.join(root, file_name)).hack()
+                            SourceFile(os.path.join(root, file_name)).hack(exclude=exclude)
                         except:
                             pass
 
@@ -344,7 +349,8 @@ if packages_required(required_packages):
         @task(depends=['api', 'diagrams', 'logo::create', 'update'], private=True)
         def sphinx():
             """Generate sphinx HTML API documents"""
-            _customize_doc_src_files()
+            exclude_from_inheritance_diagrams = getattr(Project, 'exclude_from_inheritance_diagrams', None)
+            _customize_doc_src_files(exclude=exclude_from_inheritance_diagrams)
             if os.path.isdir(Project.docs_html_dir):
                 shutil.rmtree(Project.docs_html_dir)
             with cd(Project.docs_dir):
@@ -368,7 +374,8 @@ if packages_required(required_packages):
         @task()
         def pdf_generate():
             """generate PDF using current python environment"""
-            _customize_doc_src_files()
+            exclude_from_inheritance_diagrams = getattr(Project, 'exclude_from_inheritance_diagrams', None)
+            _customize_doc_src_files(exclude=exclude_from_inheritance_diagrams)
             with cd(Project.docs_dir):
                 os.system('PYTHONPATH={pythonpath} sphinx-build -b pdf -d _build/doctrees -w docs.log '
                           '-a -E -n . ../{pdfdir}'.format(pythonpath=Project.pythonPath,
@@ -552,32 +559,32 @@ if packages_required(required_packages):
                 info("Python version: {version}".format(version=version))
 
                 design_header = Project.design_header.strip()
-                with open(Project.design_file, 'w') as design_file:
-                    if design_header:
-                        py_files = _find_py_files(Project.package)
-
-                        design_file.write("Design\n")
-                        design_file.write("======\n\n")
-                        design_file.write(design_header)
-                        design_file.write("\n\n")
-                        for py_file in sorted(py_files):
-                            docstring, functions, classes = _parse_py_file(py_file)
-                            design_file.write(py_file)
-                            design_file.write("\n")
-                            design_file.write('-' * len(py_file))
+                if design_header:
+                    py_files = _find_py_files(Project.package)
+                    if py_files:
+                        with open(Project.design_file, 'w') as design_file:
+                            design_file.write("Design\n")
+                            design_file.write("======\n\n")
+                            design_file.write(design_header)
                             design_file.write("\n\n")
-                            design_file.write(docstring)
-                            design_file.write("\n\n")
-                            if functions:
-                                design_file.write("Functions:\n\n")
-                                for function in functions:
-                                    design_file.write("* {name}\n".format(name=function))
+                            for py_file in sorted(py_files):
+                                docstring, functions, classes = _parse_py_file(py_file)
+                                design_file.write(py_file)
+                                design_file.write("\n")
+                                design_file.write('-' * len(py_file))
                                 design_file.write("\n\n")
-                            if classes:
-                                design_file.write("Classes:\n\n")
-                                for class_ in classes:
-                                    design_file.write("* {name}\n".format(name=class_))
+                                design_file.write(docstring)
                                 design_file.write("\n\n")
+                                if functions:
+                                    design_file.write("Functions:\n\n")
+                                    for function in functions:
+                                        design_file.write("* {name}\n".format(name=function))
+                                    design_file.write("\n\n")
+                                if classes:
+                                    design_file.write("Classes:\n\n")
+                                    for class_ in classes:
+                                        design_file.write("* {name}\n".format(name=class_))
+                                    design_file.write("\n\n")
 
             def _console_scripts():
                 # noinspection PyBroadException
