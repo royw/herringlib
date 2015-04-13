@@ -20,9 +20,12 @@ Add the following to your *requirements.txt* file:
 """
 import json
 import os
+import operator
 
 # noinspection PyUnresolvedReferences
+import six
 from herring.herring_app import task, namespace, task_execute
+import re
 
 from herringlib.mkdir_p import mkdir_p
 from herringlib.project_settings import Project
@@ -41,6 +44,241 @@ required_packages = [
     'pylint',
     'pymetrics'
 ]
+
+
+class PyViolationOutputter(object):
+    """
+    base class for outputters
+    """
+
+    def __init__(self):
+        pass
+
+    def append_violation(self, violation, source_lines):
+        """
+        append the given violation and source lines to the output
+
+        :param violation: String with the violation description
+        :param source_lines: List of source lines that have the violation
+        """
+        self.heading(violation, len(source_lines))
+        self.items(source_lines)
+
+    def heading(self, violation, number_of_violations):
+        """
+        output the given violation
+
+        :param violation: the violation description
+        :param number_of_violations: the number of occurrences of this violation
+        :raise NotImplementError: if not overridden by the derived class
+        """
+        raise NotImplementedError("should be overridden in derived classes")
+
+    def items(self, source_lines):
+        """
+        output the given source line references
+
+        :param source_lines: where in the source did the violation occur
+        :raise NotImplementError: if not overridden by the derived class
+        """
+        raise NotImplementedError("should be overridden in derived classes")
+
+
+class TextOutputter(PyViolationOutputter):
+    """
+    plain text outputter.
+
+    The output format is:
+       nnnnnn:  Ennn: violation description
+                      path/source: row: col
+                      path/source: row
+
+    """
+
+    def __init__(self, summary=False):
+        super(TextOutputter, self).__init__()
+        self.summary = summary
+        self.output = []
+
+    # noinspection PyDocstring
+    def heading(self, violation, n_items):
+        """
+        :see: PyViolationOutputter.heading
+        """
+        self.output.append("%6d:  %s" % (n_items, violation))
+
+    # noinspection PyDocstring
+    def items(self, source_lines):
+        """
+        :see: PyViolationOutputter.items
+        """
+        if not self.summary:
+            for src in source_lines:
+                self.item(src)
+
+    def item(self, src):
+        """
+        output a single source reference
+
+        :param src:
+        """
+        self.output.append('               ' + src)
+
+    def to_string(self):
+        """
+        :return: the output as a String
+        """
+        return "\n".join(self.output)
+
+
+class PyViolations(object):
+    """
+    The PyViolations class encapsulates processing pep8 and pyflakes output files.
+
+    instance variables:
+            violationDict: dictionary where the key is the error or violation string
+                       and the value is a list of source:row or source:row:col
+    """
+
+    PYLINT_REGEX = r"^([^:]+)\:(\d+)\:\s*\[([A-Z])[^\]]*?\]\s*(.+?)\s*$"
+    PYLINT_SUBSTITUTIONS = [
+        {'regex': r"Invalid name \".*?\"", 'replacement': "Invalid name \"...\""},
+        {'regex': r"Unused import \S+", 'replacement': "Unused import ..."},
+        {'regex': r"line\s+\d+", 'replacement': "line N"},
+        {'regex': r"'.*?'", 'replacement': "'...'"},
+        {'regex': r"\(\d+\/\d+\)", 'replacement': ""},
+        {'regex': r"\(\d+\)", 'replacement': ""},
+        {'regex': r"Access to a protected member \S+ of a client class",
+         'replacement': "Access to a protected member ... of a client class"},
+        {'regex': r"TODO[\:\s].*$", 'replacement': "TODO"},
+        {'regex': r"FIXME[\:\s].*$", 'replacement': "FIXME"},
+        {'regex': r"\d+ files", 'replacement': "N files"},
+        {'regex': r"Bad indentation. Found \d+ spaces, expected \d+", 'replacement': "Bad indentation."},
+        {'regex': r"Wildcard import\s+\S+", 'replacement': "Wildcard import ..."},
+        # {'regex': r"", 'replacement': ""},
+        # {'regex': r"", 'replacement': ""},
+        # {'regex': r"", 'replacement': ""},
+        # {'regex': r"", 'replacement': ""},
+        # {'regex': r"", 'replacement': ""},
+    ]
+
+    PEP8_REGEX = r"^([^:]+)\:(\d+)\:(\d+)\:\s*(\S+)\s*(.+?)\s*$"
+    PEP8_SUBSTITUTIONS = [
+        {'regex': r"\(\d+ \> \d+ characters\)", 'replacement': ""},
+        {'regex': r"too many blank lines \(\d+\)", 'replacement': "too many blank lines"},
+        # {'regex': r"whitespace before \'[\(\{\[\)\}\]]\'", 'replacement': "whitespace before"},
+        # {'regex': r"whitespace after \'[\(\{\[\)\}\]]\'", 'replacement': "whitespace after"},
+        # {'regex': r"whitespace before \'\S+?\'", 'replacement': "whitespace before"},
+        # {'regex': r"whitespace after \'\S+?\'", 'replacement': "whitespace after"}
+    ]
+
+    PYFLAKES_REGEX = r"^([^:]+)\:(\d+)\:\s*(.+?)\s*$"
+    PYFLAKES_SUBSTITUTIONS = [
+        {'regex': r"'from .*? import \*'", 'replacement': "\"from ... import *\""},
+        {'regex': r"from line \d+", 'replacement': "from line xx"},
+        {'regex': r"'.*?'", 'replacement': "'...'"}
+    ]
+
+    def __init__(self):
+        self.violationDict = {}
+
+    # noinspection PyMethodMayBeStatic
+    def require_keys(self, required_keys, **kwargs):
+        """
+        checks that all the required keys are present
+
+        :param required_keys: tuple of required keys
+        :param kwargs: the keyword arguments to check
+        :return: asserted if all the required keys are in the keyword arguments
+        """
+        for key in required_keys:
+            found = False
+            for k in kwargs.keys():
+                if k == key:
+                    found = True
+                    break
+            if not found:
+                return False
+        return True
+
+    def accumulate(self, **kwargs):
+        """
+        add the given violation to the violation dictionary (self.violationDict)
+
+        :param kwargs: required keys [src, row, violation], optional keys [col, error]
+        """
+        if self.require_keys(("src", "row", "violation"), **kwargs):
+            key = kwargs["violation"]
+            if 'error' in kwargs:
+                key = kwargs["error"] + ': ' + kwargs["violation"]
+            value = kwargs["src"] + ': ' + kwargs["row"]
+            if 'col' in kwargs:
+                value += ': ' + kwargs["col"]
+
+            if key not in self.violationDict:
+                self.violationDict[key] = []
+
+            self.violationDict[key].append(value)
+
+    def report(self, outputter):
+        """
+        Generate the report
+
+        :param outputter: The outputter used for the report
+        """
+        sizes = {}
+        for key in self.violationDict:
+            sizes[key] = len(self.violationDict[key])
+
+        for key in sorted(six.iteritems(sizes), key=operator.itemgetter(1), reverse=True):
+            outputter.append_violation(key[0], self.violationDict[key[0]])
+
+    # noinspection PyMethodMayBeStatic
+    def substitute(self, substitutions, reason):
+        """
+        Replaces a given set up regex pattern matches
+
+        :param substitutions: list of dicts with 'regex' and 'replacement' keys
+        :param reason: the string to perform the substitutions on.
+        :return: a string with the substitutions performed on it
+        """
+        reason_str = reason
+        for substitution in substitutions:
+            reason_str = re.sub(substitution['regex'], substitution['replacement'], reason_str)
+        return reason_str
+
+    def process_file(self, file_spec):
+        """
+        Process the file
+
+        :param file_spec: the file specs for output files from pylint, pyflakes and/or pep8
+
+        pylint format:     src_file:line: [code, location] violation
+        pep8 format:       src_file:line:column: error: violation
+        pyflakes format:   src_file:line: error
+        pyflakes violation = re.sub(/'.*?'/, "'...'", error)
+        """
+
+        violation_file = open(file_spec)
+        for line in violation_file:
+            match_obj = re.match(PyViolations.PYLINT_REGEX, line)
+            if match_obj:
+                self.accumulate(src=match_obj.group(1), row=match_obj.group(2), error=match_obj.group(3),
+                                violation=self.substitute(PyViolations.PYLINT_SUBSTITUTIONS, match_obj.group(4)))
+                continue
+
+            match_obj = re.match(PyViolations.PEP8_REGEX, line)
+            if match_obj:
+                self.accumulate(src=match_obj.group(1), row=match_obj.group(2), col=match_obj.group(3),
+                                error=match_obj.group(4),
+                                violation=self.substitute(PyViolations.PEP8_SUBSTITUTIONS, match_obj.group(5)))
+                continue
+
+            match_obj = re.match(PyViolations.PYFLAKES_REGEX, line)
+            if match_obj:
+                self.accumulate(src=match_obj.group(1), row=match_obj.group(2), error='    ',
+                                violation=self.substitute(PyViolations.PYFLAKES_SUBSTITUTIONS, match_obj.group(3)))
+
 
 if packages_required(required_packages):
     from herringlib.local_shell import LocalShell
@@ -74,6 +312,31 @@ if packages_required(required_packages):
                                                                      dir=Project.package,
                                                                      log=pylint_log))
 
+
+        @task(private=True)
+        def pep8():
+            """Run pep8 checks"""
+            pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
+            pep8_out = os.path.join(Project.quality_dir, 'pep8.out')
+            os.system("rm -f %s" % pep8_text)
+            os.system("PYTHONPATH=%s pep8 %s 2>/dev/null >%s" % (Project.pythonPath, Project.package, pep8_text))
+
+            # need to reorder the columns to make compatible with pylint file format
+            # pep8 output:    "{file}:{line}:{column}: {err} {desc}"
+            # pylint output:  "{file}:{line}: [{err}] {desc}"
+
+            with open(pep8_text, 'r') as src_file:
+                lines = src_file.readlines()
+
+            with open(pep8_out, 'w') as out_file:
+                for line in lines:
+                    match = re.match(r"(.+):(\d+):(\d+):\s*(\S+)\s+(.+)", line)
+                    if match:
+                        out_file.write("{file}:{line}: [{err}] {desc}\n".format(file=match.group(1),
+                                                                                line=match.group(2),
+                                                                                err=match.group(4),
+                                                                                desc=match.group(5)))
+
         @task(private=True)
         def complexity():
             """ Run McCabe code complexity """
@@ -92,6 +355,31 @@ if packages_required(required_packages):
                              (Project.package, complexity_txt))
                 local.system("pycabehtml.py -i %s -o %s -a %s -g %s" %
                              (complexity_txt, metrics_html, acc, graph))
+
+        @task(private=True)
+        def violations():
+            """Find the violations by inverting the results from the code analysis"""
+            pylint_log = os.path.join(Project.quality_dir, 'pylint.log')
+            pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
+
+            for fileSpec in (pylint_log, pep8_text):
+                pyviolations = PyViolations()
+                pyviolations.process_file(fileSpec)
+
+                # noinspection PyArgumentEqualDefault
+                outputter = TextOutputter(summary=False)
+                pyviolations.report(outputter)
+                output_filespec = os.path.join(Project.quality_dir,
+                                               "violations.%s" % os.path.basename(fileSpec))
+                with open(output_filespec, 'w') as f:
+                    f.write(outputter.to_string())
+
+                outputter = TextOutputter(summary=True)
+                pyviolations.report(outputter)
+                output_filespec = os.path.join(Project.quality_dir,
+                                               "violations.summary.%s" % os.path.basename(fileSpec))
+                with open(output_filespec, 'w') as f:
+                    f.write(outputter.to_string())
 
         @task(private=True)
         def radon():
@@ -123,12 +411,49 @@ if packages_required(required_packages):
                 local.system("radon raw -s --json {dir} > {out}".format(
                     dir=Project.package, out=qd('radon_raw.json')))
 
+        @task(private=True)
+        def violations_report():
+            """ Quality, violations, metrics reports """
+            lines = ["""
+            <html>
+              <head>
+                <title>Violation Reports</title>
+              </head>
+              <body>
+                <h1>Violation Reports</h1>
+            """]
+            pylint_log = os.path.join(Project.quality_dir, 'pylint.log')
+            pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
+            index_html = os.path.join(Project.quality_dir, 'index.html')
+
+            for fileSpec in (pylint_log, pep8_text):
+                file_base = os.path.basename(fileSpec)
+                violations_name = "violations.%s" % file_base
+                summary = "violations.summary.%s" % file_base
+                lines.append("            <h2>%s</h2>" % os.path.splitext(file_base)[0])
+                lines.append("            <ul>")
+                lines.append("              <li><a href='%s'>Report</a></li>" % file_base)
+                lines.append("              <li><a href='%s'>Violations</a></li>" % violations_name)
+                lines.append("              <li><a href='%s'>Violation Summary</a></li>" % summary)
+                lines.append("            </ul>")
+            lines.append("""
+              </body>
+            </html>
+            """)
+            with open(index_html, 'w') as f:
+                f.write("\n".join(lines))
+
     @task(namespace='metrics',
-          depends=['metrics::cheesecake', 'metrics::lint', 'metrics::complexity', 'metrics::radon'],
+          depends=['metrics::cheesecake',
+                   'metrics::lint',
+                   'metrics::pep8',
+                   'metrics::complexity',
+                   'metrics::violations',
+                   'metrics::radon'],
           private=False)
     def all_metrics():
         """ Quality metrics """
-        pass
+        task_execute('metrics::violations_report')
 
     @task()
     def metrics():
