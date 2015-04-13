@@ -261,6 +261,10 @@ ATTRIBUTES = {
     'user': {
         'default': env_value('USER'),
         'help': 'The dist_host user.'},
+    'venv_base': {
+        'default': None,
+        'help': 'The base name for the virtual environments.  Defaults to Settings["package"].',
+    },
     'version': {
         'default': None,
         'help': 'The projects current version.'},
@@ -328,6 +332,9 @@ class ProjectSettings(object):
                 Project.logo_name = Project.name
             if 'egg_dir' not in self.__dict__:
                 self.__setattr__('egg_dir', "{name}.egg-info".format(name=Project.name))
+
+        if Project.venv_base is None:
+            Project.venv_base = Project.package
 
         # load design header from file if available
         # noinspection PyBroadException
