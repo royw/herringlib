@@ -205,19 +205,16 @@ class Requirements(object):
 
     # noinspection PyMethodMayBeStatic
     def _reduce_by_version(self, requirements):
-        new_dict = {}
         requirement_dict = {}
         debug("requirements:\n" + pformat(requirements))
-        for filename in requirements:
-            for requirement in requirements[filename]:
-                if requirement.package not in requirement_dict:
-                    requirement_dict[requirement.package] = requirement
-                else:
-                    debug("merge {src} into {dest}".format(src=str(requirement),
-                                                           dest=str(requirement_dict[requirement.package])))
-                    requirement_dict[requirement.package].merge(requirement)
-            new_dict[filename] = requirement_dict.values()
-        return new_dict
+        for requirement in requirements:
+            if requirement.package not in requirement_dict:
+                requirement_dict[requirement.package] = requirement
+            else:
+                debug("merge {src} into {dest}".format(src=str(requirement),
+                                                       dest=str(requirement_dict[requirement.package])))
+                requirement_dict[requirement.package].merge(requirement)
+        return requirement_dict.values()
 
     def _find_item_groups(self, lines):
         item_indexes = [i for i, item in enumerate(lines) if re.match(self.ITEM_REGEX, item)]
@@ -263,9 +260,9 @@ class Requirements(object):
         :param doc_string: a module docstring
         :type: str
         :return: requirements by requirement file
-        :rtype: dist(str,list(Requirement))
+        :rtype: list(Requirement)
         """
-        requirements = {}
+        requirements = []
 
         debug("_parse_docstring")
         if doc_string is None or not doc_string:
@@ -286,28 +283,23 @@ class Requirements(object):
 
         # example using doc_string:
         #
-        # requirement_indexes: [3, 9, 11, 12]
         # item_indexes: [4, 5, 6, 7, 8, 10, 13, 14]
         # item_groups: [[4, 5, 6, 7, 8], [10], [13, 14]]
         #
         # we want:
-        # requirements = {
-        #       lines[3]: [lines[4], lines[5], lines[6], lines[7], lines[8]],
-        #       lines[9]: [lines[10]]
-        #       lines[12]: [lines[13], lines[14]],
-        #   }
+        # requirements = [
+        #       [lines[4], lines[5], lines[6], lines[7], lines[8]],
+        #       [lines[10]]
+        #       [lines[13], lines[14]],
+        #   ]
 
         for index in requirement_indexes:
             for item_group in item_groups:
                 if item_group[0] == index + 1:
                     # yes we have items for the requirement file
-                    filename = 'requirements.txt'
-                    debug("filename: %s" % filename)
-                    if filename not in requirements:
-                        requirements[filename] = []
-                    requirements[filename].extend([Requirement(re.match(self.ITEM_REGEX,
-                                                                        lines[item_index]).group(1))
-                                                   for item_index in item_group])
+                    requirements.extend([Requirement(re.match(self.ITEM_REGEX,
+                                                              lines[item_index]).group(1))
+                                         for item_index in item_group])
 
         debug("requirements:\n%s" % pformat(requirements))
         return requirements
@@ -352,18 +344,14 @@ class Requirements(object):
         lib_files = self._get_herringlib_py_files()
         lib_files.append(os.path.join(self._project.herringfile_dir, 'herringfile'))
         debug("files: %s" % repr(lib_files))
-        requirements = {}
+        requirements = []
         for file_ in lib_files:
             debug('file: %s' % file_)
             required_files = self._parse_docstring(self._get_module_docstring(file_))
             debug('required_files: %s' % pformat(required_files))
-            for filename in required_files.keys():
-                if filename not in requirements.keys():
-                    requirements[filename] = []
-                for req in required_files[filename]:
-                    if req not in requirements[filename]:
-                        requirements[filename].append(req)
-                # requirements[filename].extend(required_files[filename])
+            for req in required_files:
+                if req not in requirements:
+                    requirements.append(req)
         return requirements
 
     def find_missing_requirements(self):
@@ -371,32 +359,28 @@ class Requirements(object):
         Find the required packages that are not in the requirements.txt file.
 
         :return: set of missing packages.
-        :rtype: dict[str,set[str]]
+        :rtype: set[str]
         """
         requirements = self._reduce_by_version(self._get_requirements_dict_from_py_files())
         debug('requirements:')
         debug(pformat(requirements))
 
-        needed = {}
-        diff = {}
-        for filename in requirements.keys():
-            if filename not in needed.keys():
-                needed[filename] = []
-            needed[filename].extend(sorted(compress_list(unique_list(requirements[filename]))))
-
-            if not os.path.exists(filename):
-                debug("Missing: " + filename)
-                diff[filename] = sorted(set(needed[filename]))
-            else:
-                with open(filename) as in_file:
-                    existing_requirements = []
-                    for line in [line.strip() for line in in_file.readlines()]:
-                        if line and not line.startswith('#'):
-                            existing_requirements.append(Requirement(line))
-                    existing = sorted(compress_list(unique_list(existing_requirements)))
-                    difference = [req for req in needed[filename] if req not in existing]
-                    diff[filename] = [req for req in difference
-                                      if not req.markers or Requirement(req.package) not in needed[filename]]
+        needed = []
+        needed.extend(sorted(compress_list(unique_list(requirements))))
+        filename = 'requirements.txt'
+        if not os.path.exists(filename):
+            debug("Missing: " + filename)
+            diff = sorted(set(needed))
+        else:
+            with open(filename) as in_file:
+                existing_requirements = []
+                for line in [line.strip() for line in in_file.readlines()]:
+                    if line and not line.startswith('#'):
+                        existing_requirements.append(Requirement(line))
+                existing = sorted(compress_list(unique_list(existing_requirements)))
+                difference = [req for req in needed if req not in existing]
+                diff = [req for req in difference
+                        if not req.markers or Requirement(req.package) not in needed]
         debug("find_missing_requirements.needed: {pkgs}".format(pkgs=pformat(needed)))
         debug("find_missing_requirements.diff: {pkgs}".format(pkgs=pformat(diff)))
         return diff
@@ -409,15 +393,15 @@ class Requirements(object):
         debug("requiredFiles")
         needed = Requirements(self._project).find_missing_requirements()
         debug("needed: %s" % repr(needed))
-        for filename in needed.keys():
-            try:
-                requirements_filename = os.path.join(self._project.herringfile_dir, filename)
-                if not os.path.isfile(requirements_filename):
-                    with open(requirements_filename, 'w') as req_file:
-                        req_file.write('-e .\n\n')
-                with open(requirements_filename, 'a') as req_file:
-                    for need in sorted(unique_list(list(needed[filename]))):
-                        req_file.write(str(need) + "\n")
-            except IOError as ex:
-                warning("Can not add the following to the {filename} file: {needed}\n{err}".format(
-                    filename=filename, needed=repr(needed[filename]), err=str(ex)))
+        filename = 'requirements.txt'
+        try:
+            requirements_filename = os.path.join(self._project.herringfile_dir, filename)
+            if not os.path.isfile(requirements_filename):
+                with open(requirements_filename, 'w') as req_file:
+                    req_file.write('-e .\n\n')
+            with open(requirements_filename, 'a') as req_file:
+                for need in sorted(unique_list(list(needed))):
+                    req_file.write(str(need) + "\n")
+        except IOError as ex:
+            warning("Can not add the following to the {filename} file: {needed}\n{err}".format(
+                filename=filename, needed=repr(needed), err=str(ex)))
