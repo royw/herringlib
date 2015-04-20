@@ -21,7 +21,7 @@ example packages to your project's requirement files)::
     # wheel
     # argparse; python_version < "3.0"
     # ordereddict; python_version < "3.0"
-    # pytest; python_version == "[test_python_versions]"
+    # pytest; python_version in "[test_python_versions]"
 
     '''
 
@@ -73,7 +73,30 @@ from herring.herring_app import task, HerringFile, task_execute
 from herringlib.comparable_mixin import ComparableMixin
 
 from herringlib.list_helper import compress_list, is_sequence, unique_list
-from herringlib.simple_logger import debug, warning, info
+from herringlib.simple_logger import debug, warning
+
+
+class EnvironmentMarker(object):
+    """
+    On a requirement the environment marker is to the right of a semi-colon.
+    """
+    def __init__(self, marker):
+        self.marker = marker
+        self.name = None
+        self.operator = None
+        self.value = None
+        if self.marker is not None:
+            match = re.match(r'''(\S+)\s*((?:[!=<>]+)|(?:not in)|(?<!not )in)\s*[\"\']?([\d\.\s]+)[\"\']?''',
+                             self.marker)
+            if match:
+                self.name = match.group(1)
+                self.operator = match.group(2)
+                self.value = match.group(3).split(' ')
+                debug("EnvironmentMarker:\n  {marker}\n  raw='{raw}'".format(marker=self, raw=match.group(3)))
+
+    def __str__(self):
+        value_str = '"{v}"'.format(v=' '.join(self.value))
+        return "{name} {operator} {value}".format(name=self.name, operator=self.operator, value=value_str)
 
 
 class Requirement(ComparableMixin):
@@ -91,6 +114,7 @@ class Requirement(ComparableMixin):
     """
     def __init__(self, line):
         self.line = line.strip()
+        debug("Requirement: {line}".format(line=self.line))
         match = re.match(r'-e .*?#egg=(\S+)', self.line)
         if match:
             self.package = match.group(1).strip()
@@ -98,29 +122,38 @@ class Requirement(ComparableMixin):
             self.package = re.split(r'[^a-zA-Z0-9_\-]', self.line)[0].strip()
         self.qualified_package = re.split(r';', self.line)[0].strip()
         try:
-            self.marker = re.split(r';', self.line)[1].strip()
-            self.marker = self.marker.replace("'", '"')
+            self.markers = [EnvironmentMarker(re.split(r';', self.line)[1].strip().replace("'", '"'))]
         except IndexError:
-            self.marker = None
+            self.markers = []
 
-    def supported_python(self):
+    def merge(self, other):
         """
-        Is this requirement intended for the currently running version of python?
+        Merge the environment markers.  Assumes package and qualified_package are the same with other.
 
-        If this requirement has a marker (ex: 'foo; python_version == "2.7"') check if the
-        current python qualifies.  If this requirement does not have a marker then return True.
+        :param other: other requirement
+        :type other: Requirement
         """
-        debug("supported_python for: {line}".format(line=self.line))
-        if self.marker is not None:
-            match = re.match(r'''python_version\s*([!=<>]+)\s*["']?([\d\.]+)["']?''', self.marker)
-            if match:
-                ver_str = str(tuple([int(x) for x in re.split(r'\.', match.group(2))]))
-                import sys
-                code = "sys.version_info {operator} {version}".format(operator=match.group(1), version=str(ver_str))
-                result = eval(code)
-                info("{code} returned: {result}".format(code=code, result=str(result)))
-                return result
-        return True
+        new_markers = {}
+        for marker in self.markers:
+            key = "{name} {operator}".format(name=marker.name, operator=marker.operator)
+            if key not in new_markers:
+                new_markers[key] = []
+            new_markers[key].extend(marker.value)
+        for marker in other.markers:
+            key = "{name} {operator}".format(name=marker.name, operator=marker.operator)
+            if key not in new_markers:
+                new_markers[key] = []
+            new_markers[key].extend(marker.value)
+        self.markers = []
+        for key in new_markers:
+            name, operator = key.split(' ')
+            value = sorted(list(set(new_markers[key])))
+            debug("merge => {name} {operator} {value}".format(name=name,
+                                                              operator=operator,
+                                                              value=value))
+            self.markers.append(EnvironmentMarker("{name} {operator} {value}".format(name=name,
+                                                                                     operator=operator,
+                                                                                     value=' '.join(value))))
 
     def _cmpkey(self):
         return self.__str__()
@@ -129,16 +162,35 @@ class Requirement(ComparableMixin):
         return hash(self.line)
 
     def __str__(self):
-        if self.marker is None:
-            return self.package
-        else:
-            return "{package}; {marker}".format(package=self.package, marker=self.marker)
+        if self.markers:
+            marker_str = '; '.join([str(m) for m in self.markers])
+            return "{package}; {marker}".format(package=self.package, marker=marker_str)
+        return self.package
 
     def __repr__(self):
-        if self.marker is None:
-            return self.package
-        else:
-            return "{package}; {marker}".format(package=self.package, marker=self.marker)
+        if self.markers:
+            marker_str = '; '.join([str(m) for m in self.markers])
+            return "{package}; {marker}".format(package=self.package, marker=marker_str)
+        return self.package
+
+    def supported_python(self):
+        """
+        Is this requirement intended for the currently running version of python?
+
+        If this requirement has a marker (ex: 'foo; python_version == "2.7"') check if the
+        current python qualifies.  If this requirement does not have a marker then return True.
+        """
+        for marker in [m for m in self.markers if m.name == 'python_version']:
+            if marker.operator is not None and marker.value is not None:
+                # noinspection PyUnresolvedReferences
+                import sys
+
+                code = "sys.version_info {operator} {version}".format(operator=marker.operator,
+                                                                      version=str(marker.value))
+                result = eval(code)
+                debug("{code} returned: {result}".format(code=code, result=str(result)))
+                return result
+        return True
 
 
 class Requirements(object):
@@ -146,10 +198,26 @@ class Requirements(object):
     Object for managing requirements files.
     """
     REQUIREMENT_REGEX = r'(requirements\.txt)|requirements\-py(\d\d)\.txt|requirements\-py\[(\S+)\]\.txt'
-    ITEM_REGEX = r'\*\s+(.+)'
+    ITEM_REGEX = r'^\s*\*\s+(.+)\s*$'
 
     def __init__(self, project):
         self._project = project
+
+    # noinspection PyMethodMayBeStatic
+    def _reduce_by_version(self, requirements):
+        new_dict = {}
+        requirement_dict = {}
+        debug("requirements:\n" + pformat(requirements))
+        for filename in requirements:
+            for requirement in requirements[filename]:
+                if requirement.package not in requirement_dict:
+                    requirement_dict[requirement.package] = requirement
+                else:
+                    debug("merge {src} into {dest}".format(src=str(requirement),
+                                                           dest=str(requirement_dict[requirement.package])))
+                    requirement_dict[requirement.package].merge(requirement)
+            new_dict[filename] = requirement_dict.values()
+        return new_dict
 
     def _find_item_groups(self, lines):
         item_indexes = [i for i, item in enumerate(lines) if re.match(self.ITEM_REGEX, item)]
@@ -170,8 +238,10 @@ class Requirements(object):
                 if not is_sequence(value):
                     value = [value]
                 new_lines = []
-                for v in value:
-                    new_lines.append(re.sub(r'\[([^\]]+)]', self._project.ver_to_version(v), line))
+
+                line = re.sub(r"python_version\s*==\s*", r"python_version in ", line)
+                line = re.sub(r'\[([^\]]+)]', ' '.join([self._project.ver_to_version(v) for v in value]), line)
+                new_lines.append(line)
             else:
                 new_lines = [line]
 
@@ -192,6 +262,8 @@ class Requirements(object):
 
         :param doc_string: a module docstring
         :type: str
+        :return: requirements by requirement file
+        :rtype: dist(str,list(Requirement))
         """
         requirements = {}
 
@@ -240,6 +312,7 @@ class Requirements(object):
         debug("requirements:\n%s" % pformat(requirements))
         return requirements
 
+    # noinspection PyMethodMayBeStatic,PyUnusedLocal
     def _requirement_files_from_pattern(self, line):
         """
         Given a requirements file pattern ('requirements.txt')
@@ -250,20 +323,20 @@ class Requirements(object):
         :rtype: list[str]
         """
         requirement_files = ['requirements.txt']
-        versions = None
-        match = re.search(self.REQUIREMENT_REGEX, line)
-        if match:
-            debug("match.group(1): %s" % match.group(1))
-            debug("match.group(2): %s" % match.group(2))
-            debug("match.group(3): %s" % match.group(3))
-            if match.group(1) is not None:
-                requirement_files.append(match.group(1))
-
-            if match.group(2) is not None:
-                versions = [match.group(2)]
-
-            if match.group(3) is not None:
-                versions = getattr(self._project, match.group(3), None)
+        # versions = None
+        # match = re.search(self.REQUIREMENT_REGEX, line)
+        # if match:
+        #     debug("match.group(1): %s" % match.group(1))
+        #     debug("match.group(2): %s" % match.group(2))
+        #     debug("match.group(3): %s" % match.group(3))
+        #     if match.group(1) is not None:
+        #         requirement_files.append(match.group(1))
+        #
+        #     if match.group(2) is not None:
+        #         versions = [match.group(2)]
+        #
+        #     if match.group(3) is not None:
+        #         versions = getattr(self._project, match.group(3), None)
 
         return requirement_files
 
@@ -328,7 +401,7 @@ class Requirements(object):
         :return: set of missing packages.
         :rtype: dict[str,set[str]]
         """
-        requirements = self._get_requirements_dict_from_py_files()
+        requirements = self._reduce_by_version(self._get_requirements_dict_from_py_files())
         debug('requirements:')
         debug(pformat(requirements))
 
@@ -351,7 +424,7 @@ class Requirements(object):
                     existing = sorted(compress_list(unique_list(existing_requirements)))
                     difference = [req for req in needed[filename] if req not in existing]
                     diff[filename] = [req for req in difference
-                                      if req.marker is None or Requirement(req.package) not in needed[filename]]
+                                      if not req.markers or Requirement(req.package) not in needed[filename]]
         debug("find_missing_requirements.needed: {pkgs}".format(pkgs=pformat(needed)))
         debug("find_missing_requirements.diff: {pkgs}".format(pkgs=pformat(diff)))
         return diff
@@ -368,7 +441,7 @@ class Requirements(object):
             try:
                 requirements_filename = os.path.join(self._project.herringfile_dir, filename)
                 with open(requirements_filename, 'a') as req_file:
-                    for need in sorted(unique_list(needed[filename])):
+                    for need in sorted(unique_list(list(needed[filename]))):
                         req_file.write(str(need) + "\n")
             except IOError as ex:
                 warning("Can not add the following to the {filename} file: {needed}\n{err}".format(
