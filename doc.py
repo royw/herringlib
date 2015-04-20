@@ -22,7 +22,7 @@ Add the following to your *requirements.txt* file:
 * scp; python_version == "[doc_python_version]"
 * rst2pdf; python_version == "[doc_python_version]"
 * decorator; python_version == "[doc_python_version]"
-* PIL; python_version == "[doc_python_version]" and python_version < "3.0"
+* pillow; python_version == "[doc_python_version]" and python_version < "3.0"
 
 """
 import ast
@@ -36,6 +36,7 @@ from textwrap import dedent
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace, task_execute
 import sys
+from herringlib.is_newer import is_newer
 from herringlib.simple_logger import info, warning, error
 from herringlib.mkdir_p import mkdir_p
 from herringlib.project_tasks import packages_required
@@ -166,6 +167,9 @@ if packages_required(required_packages):
             def hack(self, exclude=None):
                 """
                 substitute full names into mod lines with base names.
+
+                :param exclude: list of files to exclude from generating inheritance diagrams
+                :type exclude: list(str)
                 """
                 if os.path.splitext(self.file_name)[1] != '.rst':
                     return
@@ -298,6 +302,7 @@ if packages_required(required_packages):
                                 continue
                         out_file.write(line)
 
+        # noinspection PyUnusedLocal
         def _create_module_diagrams(path):
             """
             create module UML diagrams
@@ -307,15 +312,17 @@ if packages_required(required_packages):
             """
             if not executables_available(['pyreverse']):
                 return
-            for module_path in [root for root, dirs, files in os.walk(path)]:
-                init_filename = os.path.join(module_path, '__init__.py')
-                if os.path.exists(init_filename):
-                    name = os.path.basename(module_path).split(".")[0]
-                    cmd_line = 'PYTHONPATH="{path}" pyreverse -o svg -p {name} {module}'.format(path=Project.pythonPath,
-                                                                                                name=name,
-                                                                                                module=module_path)
-                    info(cmd_line)
-                    os.system(cmd_line)
+            # TODO fixme hangs on tp-otto
+            # for module_path in [root for root, dirs, files in os.walk(path)]:
+            #     init_filename = os.path.join(module_path, '__init__.py')
+            #     if os.path.exists(init_filename):
+            #         name = os.path.basename(module_path).split(".")[0]
+            #         cmd_line = 'PYTHONPATH="{path}" pyreverse -o svg -p {name} ' \
+            #                    '{module}'.format(path=Project.pythonPath,
+            #                                                                                     name=name,
+            #                                                                                     module=module_path)
+            #         info(cmd_line)
+            #         os.system(cmd_line)
 
         def _create_class_diagrams(path):
             """
@@ -332,9 +339,10 @@ if packages_required(required_packages):
             for src_file in files:
                 name = src_file.replace(Project.herringfile_dir + '/', '').replace('.py', '.png').replace('/', '.')
                 output = "classes_{name}".format(name=name)
-                cmd_line = "pynsource -y {output} {source}".format(output=output, source=src_file)
-                info(cmd_line)
-                os.system(cmd_line)
+                if os.path.isfile(output) and is_newer(output, src_file):
+                    cmd_line = "pynsource -y {output} {source}".format(output=output, source=src_file)
+                    info(cmd_line)
+                    os.system(cmd_line)
 
         @task(depends=['api'], private=True)
         def diagrams():
@@ -536,6 +544,7 @@ if packages_required(required_packages):
 
             def _find_py_files(package_dir):
                 py_files = []
+                # noinspection PyArgumentEqualDefault
                 for root, dirs, files in os.walk(package_dir, topdown=True):
                     depth = root.count(os.path.sep) + 1
                     # print('depth={depth}  root={root}'.format(depth=depth, root=root))
@@ -637,9 +646,11 @@ if packages_required(required_packages):
                     error('Can not write {file} - {why}'.format(file=Project.readme_file, why=str(ex)))
 
             def _app_output(options):
+                # noinspection PyArgumentEqualDefault
                 with LocalShell(verbose=False) as local:
                     if Project.main is not None:
                         # noinspection PyBroadException
+                        executable = ''
                         try:
                             executable = os.path.join(Project.herringfile_dir, Project.package, Project.main)
                             text = local.system("{exe} {options}".format(exe=executable, options=options),
