@@ -197,7 +197,7 @@ class Requirements(object):
     """
     Object for managing requirements files.
     """
-    REQUIREMENT_REGEX = r'(requirements\.txt)|requirements\-py(\d\d)\.txt|requirements\-py\[(\S+)\]\.txt'
+    REQUIREMENT_REGEX = r'(requirements\.txt)'
     ITEM_REGEX = r'^\s*\*\s+(.+)\s*$'
 
     def __init__(self, project):
@@ -301,44 +301,16 @@ class Requirements(object):
             for item_group in item_groups:
                 if item_group[0] == index + 1:
                     # yes we have items for the requirement file
-                    for filename in self._requirement_files_from_pattern(lines[index]):
-                        debug("filename: %s" % filename)
-                        if filename not in requirements:
-                            requirements[filename] = []
-                        requirements[filename].extend([Requirement(re.match(self.ITEM_REGEX,
-                                                                            lines[item_index]).group(1))
-                                                       for item_index in item_group])
+                    filename = 'requirements.txt'
+                    debug("filename: %s" % filename)
+                    if filename not in requirements:
+                        requirements[filename] = []
+                    requirements[filename].extend([Requirement(re.match(self.ITEM_REGEX,
+                                                                        lines[item_index]).group(1))
+                                                   for item_index in item_group])
 
         debug("requirements:\n%s" % pformat(requirements))
         return requirements
-
-    # noinspection PyMethodMayBeStatic,PyUnusedLocal
-    def _requirement_files_from_pattern(self, line):
-        """
-        Given a requirements file pattern ('requirements.txt')
-        return the set of actual filenames ('requirements.txt').
-
-        :param line: a text line that should contain a requirements file pattern.
-        :returns: requirement filenames
-        :rtype: list[str]
-        """
-        requirement_files = ['requirements.txt']
-        # versions = None
-        # match = re.search(self.REQUIREMENT_REGEX, line)
-        # if match:
-        #     debug("match.group(1): %s" % match.group(1))
-        #     debug("match.group(2): %s" % match.group(2))
-        #     debug("match.group(3): %s" % match.group(3))
-        #     if match.group(1) is not None:
-        #         requirement_files.append(match.group(1))
-        #
-        #     if match.group(2) is not None:
-        #         versions = [match.group(2)]
-        #
-        #     if match.group(3) is not None:
-        #         versions = getattr(self._project, match.group(3), None)
-
-        return requirement_files
 
     # noinspection PyMethodMayBeStatic
     def _get_module_docstring(self, file_path):
@@ -440,6 +412,9 @@ class Requirements(object):
         for filename in needed.keys():
             try:
                 requirements_filename = os.path.join(self._project.herringfile_dir, filename)
+                if not os.path.isfile(requirements_filename):
+                    with open(requirements_filename, 'w') as req_file:
+                        req_file.write('-e .\n\n')
                 with open(requirements_filename, 'a') as req_file:
                     for need in sorted(unique_list(list(needed[filename]))):
                         req_file.write(str(need) + "\n")
