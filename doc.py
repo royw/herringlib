@@ -23,10 +23,12 @@ Add the following to your *requirements.txt* file:
 * rst2pdf; python_version == "[doc_python_version]"
 * decorator; python_version == "[doc_python_version]"
 * pillow; python_version == "[doc_python_version]" and python_version < "3.0"
+* mock; python_version in "[doc_python_version]"
 
 """
 import ast
 import os
+from pprint import pformat
 import re
 import shutil
 import fnmatch
@@ -65,12 +67,24 @@ try:
 except AttributeError:
     pass
 
+doc_errors = []
+
 if packages_required(required_packages):
     from herringlib.cd import cd
     from herringlib.clean import clean
     from herringlib.executables import executables_available
     from herringlib.recursively_remove import recursively_remove
     from herringlib.safe_edit import safe_edit, quick_edit
+
+    def run_python(cmd_line, env=None):
+        if env is None:
+            env = {'PYTHONPATH': Project.pythonPath}
+        with LocalShell() as local:
+            output = local.run(cmd_line, env=env, verbose=True)
+            doc.doc_errors.extend([line for line in output.splitlines()
+                                   if re.search(r'error', line, re.IGNORECASE) and
+                                   not re.search(r'error[a-zA-Z0-9/.]*\.(?!py)', line, re.IGNORECASE)])
+            return output
 
     @task()
     @venv_decorator(attr_name='doc_python_version')
@@ -93,6 +107,7 @@ if packages_required(required_packages):
             recursively_remove(os.path.join(Project.docs_dir, '_src'), '*')
             recursively_remove(os.path.join(Project.docs_dir, '_epy'), '*')
             recursively_remove(os.path.join(Project.docs_dir, '_build'), '*')
+            doc.doc_errors = []
 
         def _name_dict(file_name):
             """extract the name dictionary from the automodule lines in the sphinx src file"""
@@ -255,9 +270,9 @@ if packages_required(required_packages):
             """Generate API sphinx source files from code"""
             if Project.package is not None:
                 with cd(Project.docs_dir):
-                    cmd_line = "sphinx-apidoc -d 6 -o _src ../%s" % Project.package
-                    print(cmd_line)
-                    os.system(cmd_line)
+                    exclude = ' '.join(Project.exclude_from_docs)
+                    run_python("sphinx-apidoc -d 6 -o _src ../{pkg} {exclude}".format(pkg=Project.package,
+                                                                                      exclude=exclude))
 
         def _customize_doc_src_files(exclude=None):
             """change the auto-api generated sphinx src files to be more what we want"""
@@ -313,16 +328,11 @@ if packages_required(required_packages):
             if not executables_available(['pyreverse']):
                 return
             # TODO fixme hangs on tp-otto
-            # for module_path in [root for root, dirs, files in os.walk(path)]:
-            #     init_filename = os.path.join(module_path, '__init__.py')
-            #     if os.path.exists(init_filename):
-            #         name = os.path.basename(module_path).split(".")[0]
-            #         cmd_line = 'PYTHONPATH="{path}" pyreverse -o svg -p {name} ' \
-            #                    '{module}'.format(path=Project.pythonPath,
-            #                                                                                     name=name,
-            #                                                                                     module=module_path)
-            #         info(cmd_line)
-            #         os.system(cmd_line)
+            for module_path in [root for root, dirs, files in os.walk(path)]:
+                init_filename = os.path.join(module_path, '__init__.py')
+                if os.path.exists(init_filename):
+                    name = os.path.basename(module_path).split(".")[0]
+                    run_python('pyreverse -o svg -p {name} {module}'.format(name=name, module=module_path))
 
         def _create_class_diagrams(path):
             """
@@ -340,9 +350,7 @@ if packages_required(required_packages):
                 name = src_file.replace(Project.herringfile_dir + '/', '').replace('.py', '.png').replace('/', '.')
                 output = "classes_{name}".format(name=name)
                 if os.path.isfile(output) and is_newer(output, src_file):
-                    cmd_line = "pynsource -y {output} {source}".format(output=output, source=src_file)
-                    info(cmd_line)
-                    os.system(cmd_line)
+                    run_python("pynsource -y {output} {source}".format(output=output, source=src_file))
 
         @task(depends=['api'], private=True)
         def diagrams():
@@ -362,9 +370,8 @@ if packages_required(required_packages):
             if os.path.isdir(Project.docs_html_dir):
                 shutil.rmtree(Project.docs_html_dir)
             with cd(Project.docs_dir):
-                os.system('PYTHONPATH={pythonpath} sphinx-build -b html -d _build/doctrees -w docs.log '
-                          '-v -a -E . ../{htmldir}'.format(pythonpath=Project.pythonPath,
-                                                           htmldir=Project.docs_html_dir))
+                run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
+                           '-v -a -E . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
                 clean_doc_log('docs.log')
 
         @task(depends=['api', 'diagrams', 'logo::create', 'update'])
@@ -385,17 +392,16 @@ if packages_required(required_packages):
             exclude_from_inheritance_diagrams = getattr(Project, 'exclude_from_inheritance_diagrams', None)
             _customize_doc_src_files(exclude=exclude_from_inheritance_diagrams)
             with cd(Project.docs_dir):
-                os.system('PYTHONPATH={pythonpath} sphinx-build -b pdf -d _build/doctrees -w docs.log '
-                          '-a -E -n . ../{pdfdir}'.format(pythonpath=Project.pythonPath,
-                                                          pdfdir=Project.docs_pdf_dir))
+                run_python('sphinx-build -b pdf -d _build/doctrees -w docs.log '
+                           '-a -E -n . ../{pdfdir}'.format(pdfdir=Project.docs_pdf_dir))
                 clean_doc_log('docs.log')
 
         @task(private=True)
         def incremental():
             """Incremental build docs for testing purposes"""
             with cd(Project.docs_dir):
-                os.system('PYTHONPATH={pythonpath} sphinx-build -b html -d _build/doctrees -w docs.log '
-                          '-n . ../{htmldir}'.format(pythonpath=Project.pythonPath, htmldir=Project.docs_html_dir))
+                run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
+                           '-n . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
                 clean_doc_log('docs.log')
 
         @task(depends=['api'], private=True)
@@ -403,12 +409,14 @@ if packages_required(required_packages):
             """Generate epy API documents"""
             with cd(Project.docs_dir):
                 with LocalShell() as local:
-                    local.run('epydoc -v --output _epy --graph all bin db dst dut lab otto pc tests util')
+                    run_python('epydoc -v --output _epy --graph all bin db dst dut lab otto pc tests util')
 
         @task(depends=['sphinx'], private=True)
         def generate():
             """Generate API documents"""
-            pass
+            if doc.doc_errors:
+                error(pformat(doc.doc_errors))
+            info("{cnt} errors.".format(cnt=len(doc.doc_errors)))
 
         @task(depends=['generate'], private=True)
         def post_clean():
@@ -510,8 +518,7 @@ if packages_required(required_packages):
                     logo_file = _neon(Project.logo_name, Project.base_name)
                 shutil.copyfile(logo_file, os.path.join(Project.docs_dir, '_static', logo_file))
                 quick_edit(os.path.join(Project.docs_dir, 'conf.py'),
-                           {r'(\s*html_logo\s*=\s*\".*?\").*':
-                            ["html_logo = \"{logo}\"".format(logo=logo_file)]})
+                           {r'(\s*html_logo\s*=\s*\".*?\").*': ["html_logo = \"{logo}\"".format(logo=logo_file)]})
 
         with namespace('update'):
             @task(private=True)
