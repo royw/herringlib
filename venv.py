@@ -75,7 +75,8 @@ class VenvInfo(object):
     def mkvirtualenv(self):
         """Make a virtualenv"""
         new_env = Project.env_without_virtualenvwrapper()
-        info("new_env: {env}".format(env=pformat(new_env)))
+        debug("os.environ['PATH']: \"{path}\"".format(path=os.environ['PATH']))
+        debug("new_env: {env}".format(env=pformat(new_env)))
         with LocalShell() as local:
             venv_script = Project.virtualenvwrapper_script
             # noinspection PyArgumentEqualDefault

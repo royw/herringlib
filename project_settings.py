@@ -383,8 +383,9 @@ class ProjectSettings(object):
         hook_dir = env_value('VIRTUALENVWRAPPER_HOOK_DIR', None)
         new_parts = []
         for part in os.environ['PATH'].split(':'):
-            if hook_dir is not None and hook_dir not in part:
-                new_parts.append(str(part))
+            if hook_dir is not None and hook_dir in part:
+                continue
+            new_parts.append(str(part))
         new_path = ':'.join(new_parts)
         new_env = os.environ.copy()
         if 'VIRTUAL_ENV' in new_env:
