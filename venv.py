@@ -28,6 +28,7 @@ Add the following to your *requirements.txt* file:
 
 import os
 from functools import wraps
+from pprint import pformat
 import re
 from decorator import decorator
 
@@ -74,6 +75,7 @@ class VenvInfo(object):
     def mkvirtualenv(self):
         """Make a virtualenv"""
         new_env = Project.env_without_virtualenvwrapper()
+        info("new_env: {env}".format(env=pformat(new_env)))
         with LocalShell() as local:
             venv_script = Project.virtualenvwrapper_script
             # noinspection PyArgumentEqualDefault
