@@ -39,7 +39,7 @@ from textwrap import dedent
 from herring.herring_app import task, namespace, task_execute
 import sys
 from herringlib.is_newer import is_newer
-from herringlib.simple_logger import info, warning, error
+from herringlib.simple_logger import info, warning, error, debug
 from herringlib.mkdir_p import mkdir_p
 from herringlib.project_tasks import packages_required
 from herringlib.project_settings import Project
@@ -76,14 +76,15 @@ if packages_required(required_packages):
     from herringlib.recursively_remove import recursively_remove
     from herringlib.safe_edit import safe_edit, quick_edit
 
-    def run_python(cmd_line, env=None):
+    def run_python(cmd_line, env=None, verbose=True):
         if env is None:
             env = {'PYTHONPATH': Project.pythonPath}
         with LocalShell() as local:
-            output = local.run(cmd_line, env=env, verbose=True)
-            doc.doc_errors.extend([line for line in output.splitlines()
-                                   if re.search(r'error', line, re.IGNORECASE) and
-                                   not re.search(r'error[a-zA-Z0-9/.]*\.(?!py)', line, re.IGNORECASE)])
+            output = local.run(cmd_line, env=env, verbose=verbose)
+            error_lines = [line for line in output.splitlines()
+                           if re.search(r'error', line, re.IGNORECASE) and
+                           not re.search(r'error[a-zA-Z0-9/.]*\.(?!py)', line, re.IGNORECASE)]
+            doc.doc_errors.extend([line for line in error_lines if not re.search(r'Unexpected indentation', line)])
             return output
 
     @task()
@@ -221,7 +222,7 @@ if packages_required(required_packages):
             def _hack_mod(self, line):
                 match = re.match(r':mod:`(.+)`(.*)', line)
                 if match:
-                    info("matched :mod:")
+                    debug("matched :mod:")
                     key = match.group(1)
                     if key in self.name_dict:
                         value = self.name_dict[key]
@@ -234,7 +235,7 @@ if packages_required(required_packages):
             def _hack_module(self, line):
                 match = re.match(r'(.+)\s+module\s*', line)
                 if match:
-                    info("matched module")
+                    debug("matched module")
                     self.package = False
                     self.class_name = match.group(1).split('.')[-1]
                 return line
@@ -248,7 +249,7 @@ if packages_required(required_packages):
 
             def _hack_underline(self, line):
                 if re.match(r'[=\-\.][=\-\.][=\-\.]+', line):
-                    info("matched [=\-\.][=\-\.][=\-\.]+")
+                    debug("matched [=\-\.][=\-\.][=\-\.]+")
                     if self.line_length > 0:
                         line = "%s\n" % (line[0] * self.line_length)
                     if self.package:
@@ -332,7 +333,9 @@ if packages_required(required_packages):
                 init_filename = os.path.join(module_path, '__init__.py')
                 if os.path.exists(init_filename):
                     name = os.path.basename(module_path).split(".")[0]
-                    run_python('pyreverse -o svg -p {name} {module}'.format(name=name, module=module_path))
+                    output = run_python('pyreverse -o svg -p {name} {module}'.format(name=name, module=module_path),
+                                        verbose=False)
+                    info([line for line in output.splitlines() if not line.startswith('parsing')])
 
         def _create_class_diagrams(path):
             """
