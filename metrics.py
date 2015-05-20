@@ -316,6 +316,9 @@ if packages_required(required_packages):
         @task(private=True)
         def pep8():
             """Run pep8 checks"""
+            if not executables_available(['pep8']):
+                return
+            mkdir_p(Project.quality_dir)
             pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
             pep8_out = os.path.join(Project.quality_dir, 'pep8.out')
             os.system("rm -f %s" % pep8_text)
@@ -359,6 +362,7 @@ if packages_required(required_packages):
         @task(private=True)
         def violations():
             """Find the violations by inverting the results from the code analysis"""
+            mkdir_p(Project.quality_dir)
             pylint_log = os.path.join(Project.quality_dir, 'pylint.log')
             pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
 
@@ -422,6 +426,7 @@ if packages_required(required_packages):
               <body>
                 <h1>Violation Reports</h1>
             """]
+            mkdir_p(Project.quality_dir)
             pylint_log = os.path.join(Project.quality_dir, 'pylint.log')
             pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
             index_html = os.path.join(Project.quality_dir, 'index.html')
@@ -478,6 +483,7 @@ if packages_required(required_packages):
         """ Create Cyclomatic Complexity graphs. """
         from matplotlib import pyplot
 
+        mkdir_p(Project.quality_dir)
         graphic_type_ext = 'svg'
 
         with LocalShell() as local:
