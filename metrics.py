@@ -18,11 +18,14 @@ Add the following to your *requirements.txt* file:
 * radon; python_version == "[metrics_python_versions]"
 
 """
+import time
 import json
 import os
 import operator
+import sqlite3
 
 # noinspection PyUnresolvedReferences
+from pprint import pformat
 import six
 from herring.herring_app import task, namespace, task_execute
 import re
@@ -284,6 +287,52 @@ if packages_required(required_packages):
     from herringlib.local_shell import LocalShell
 
     with namespace('metrics'):
+        @task()
+        def sloc():
+            """Run sloccount to get the source lines of code."""
+            if not executables_available(['sloccount']):
+                return
+            mkdir_p(Project.quality_dir)
+            sloc_json = os.path.join(Project.quality_dir, 'sloc.json')
+            totals = _sloc_totals_by_language()
+            with open(sloc_json, 'w') as json_file:
+                json.dump(totals, json_file)
+            for lang in totals.keys():
+                info("{lang}: {total} ({percentage}%)".format(lang=lang,
+                                                              total=totals[lang][0],
+                                                              percentage=totals[lang][1]))
+            info("Total SLOC: {total}".format(total=_sloc_total()))
+
+
+        @task()
+        def sloc_graph():
+            """Graph SLOC over time"""
+            if not executables_available(['sloccount']):
+                return
+            mkdir_p(Project.quality_dir)
+
+            # from git import Repo
+            #
+            # repo = Repo(Project.herringfile_dir)
+            # master = repo.remotes.origin.head
+            # # master.commit
+            # commit_log = master.log()
+            # for log in commit_log:
+            #     info("{time} {commit_id} {message}".format(time=time.strftime("%a, %d %b %Y %H:%M",
+            #                                                                   time.gmtime(log.time[0])),
+            #                                                commit_id=log.newhexsha,
+            #                                                message=log.message))
+
+            with LocalShell() as local:
+                output = local.run('git log --pretty=format:" % H % cd"')
+                for line in output.splitlines():
+                    match = re.match(r"^(\S+)\s+(.+)$", line)
+                    if match:
+                        commit_id = match.group(1)
+                        commit_date = match.group(2)
+                        _add_to_sloc_db(commit_id, commit_date)
+
+
         @task(private=True)
         def cheesecake():
             """ Run the cheesecake kwalitee metric """
@@ -328,6 +377,7 @@ if packages_required(required_packages):
             # pep8 output:    "{file}:{line}:{column}: {err} {desc}"
             # pylint output:  "{file}:{line}: [{err}] {desc}"
 
+            # noinspection PyArgumentEqualDefault
             with open(pep8_text, 'r') as src_file:
                 lines = src_file.readlines()
 
@@ -481,8 +531,12 @@ if packages_required(required_packages):
     @task(namespace='metrics', help='To display graphs instead of creating png files, use --display')
     def graph_complexity():
         """ Create Cyclomatic Complexity graphs. """
+        import matplotlib
+        matplotlib.use('Agg')  # Must be before importing matplotlib.pyplot or pylab!
         from matplotlib import pyplot
 
+        if not executables_available(['radon']):
+            return
         mkdir_p(Project.quality_dir)
         graphic_type_ext = 'svg'
 
@@ -494,12 +548,14 @@ if packages_required(required_packages):
         components = {'function': {}, 'method': {}, 'class': {}}
         for path in data.keys():
             for component in data[path]:
-                # info(repr(component))
-                complexity_score = component['complexity']
-                if complexity_score not in components[component['type']]:
-                    components[component['type']][complexity_score] = []
-                # noinspection PyUnresolvedReferences
-                components[component['type']][complexity_score].append(component)
+                if isinstance(component, dict):
+                    complexity_score = component['complexity']
+                    if complexity_score not in components[component['type']]:
+                        components[component['type']][complexity_score] = []
+                    # noinspection PyUnresolvedReferences
+                    components[component['type']][complexity_score].append(component)
+                # else:
+                #     warning("{path}: {component}".format(path=path, component=pformat(component)))
 
         component_names = {
             'all': 'Components',
