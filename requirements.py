@@ -95,7 +95,7 @@ class EnvironmentMarker(object):
                 debug("EnvironmentMarker:\n  {marker}\n  raw='{raw}'".format(marker=self, raw=match.group(3)))
 
     def __str__(self):
-        value_str = '"{v}"'.format(v=' '.join(self.value))
+        value_str = "'{v}'".format(v=' '.join(self.value))
         return "{name} {operator} {value}".format(name=self.name, operator=self.operator, value=value_str)
 
 
@@ -114,6 +114,9 @@ class Requirement(ComparableMixin):
     """
     def __init__(self, line):
         self.line = line.strip()
+        # strip double quotes off of line
+        if self.line.startswith('"') and self.line.endswith('"'):
+            self.line = self.line[1:-1]
         debug("Requirement: {line}".format(line=self.line))
         match = re.match(r'-e .*?#egg=(\S+)', self.line)
         if match:
@@ -122,7 +125,7 @@ class Requirement(ComparableMixin):
             self.package = re.split(r'[^a-zA-Z0-9_\-]', self.line)[0].strip()
         self.qualified_package = re.split(r';', self.line)[0].strip()
         try:
-            self.markers = [EnvironmentMarker(re.split(r';', self.line)[1].strip().replace("'", '"'))]
+            self.markers = [EnvironmentMarker(re.split(r';', self.line)[1].strip().replace('"', "'"))]
         except IndexError:
             self.markers = []
 
@@ -164,13 +167,13 @@ class Requirement(ComparableMixin):
     def __str__(self):
         if self.markers:
             marker_str = '; '.join([str(m) for m in self.markers])
-            return "{package}; {marker}".format(package=self.package, marker=marker_str)
+            return '"{package}; {marker}"'.format(package=self.package, marker=marker_str)
         return self.package
 
     def __repr__(self):
         if self.markers:
             marker_str = '; '.join([str(m) for m in self.markers])
-            return "{package}; {marker}".format(package=self.package, marker=marker_str)
+            return '"{package}; {marker}"'.format(package=self.package, marker=marker_str)
         return self.package
 
     def supported_python(self):
