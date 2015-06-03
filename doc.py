@@ -36,6 +36,7 @@ from sys import version
 from textwrap import dedent
 
 # noinspection PyUnresolvedReferences
+from fullmonty.touch import touch
 from herring.herring_app import task, namespace, task_execute
 import sys
 from herringlib.is_newer import is_newer
@@ -604,6 +605,8 @@ if packages_required(required_packages):
                                     for class_ in classes:
                                         design_file.write("* {name}\n".format(name=class_))
                                     design_file.write("\n\n")
+                else:
+                    touch(Project.design_file)
 
             def _console_scripts():
                 # noinspection PyBroadException
