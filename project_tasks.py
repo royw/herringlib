@@ -25,7 +25,7 @@ from herring.herring_app import task, HerringFile
 from herringlib.simple_logger import info, debug
 from herringlib.local_shell import LocalShell
 from herringlib.requirements import Requirements, Requirement
-from herringlib.project_settings import Project
+from herringlib.project_settings import Project, ATTRIBUTES
 
 missing_modules = []
 
@@ -165,8 +165,8 @@ def describe():
     keys = Project.__dict__.keys()
     for key in sorted(keys):
         value = Project.__dict__[key]
-        if key in Project.ATTRIBUTES:
-            attrs = Project.ATTRIBUTES[key]
+        if key in ATTRIBUTES:
+            attrs = ATTRIBUTES[key]
             required = ''
             if 'required' in attrs:
                 if attrs['required']:
