@@ -37,7 +37,7 @@ class {name}Settings(ApplicationSettings):
     def __init__(self):
         super({name}Settings, self).__init__('{name}', '{package}', ['{name}'], self.HELP)
 
-    def _cli_options(self, parser):
+    def _cli_options(self, parser, defaults):
         """
         Adds application specific arguments to the parser.
 
@@ -53,7 +53,7 @@ class {name}Settings(ApplicationSettings):
                                   help=self._help['verbosity'])
         output_group.add_argument('--logfile', type=str, metavar='FILE', help=self._help['logfile'])
 
-    def _cli_validate(self, settings):
+    def _cli_validate(self, settings, remaining_argv):
         """
         Verify we have required options for commands.
 
