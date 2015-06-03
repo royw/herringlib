@@ -80,7 +80,7 @@ import os
 
 # used in requirement conditions
 # noinspection PyUnresolvedReferences
-import sys
+import re
 import site
 
 from pprint import pformat
@@ -128,6 +128,10 @@ ATTRIBUTES = {
     'description': {
         'required': True,
         'help': 'A short description of this project.'},
+    'deploy_python_version': {
+        'help': 'python version (defined in "python_versions") to deploy to pypi server.  '
+                'Defaults to first version in "python_versions"'
+    },
     'design_file': {
         'default': 'docs/design.rst',
         'help': 'The design documentation file relative to the herringfile_dir.'},
@@ -154,6 +158,12 @@ ATTRIBUTES = {
     'dist_host': {
         'default': env_value('LOCAL_PYPI_HOST', default_value='http://localhost'),
         'help': 'A host name to deploy the distribution files to.'},
+    'dist_user': {
+        'default': env_value('USER'),
+        'help': 'The user for uploading documentation'},
+    'doc_python_version': {
+        'default': '27',
+        'help': 'python version (defined in "python_versions") to build documentation with'},
     'docs_dir': {
         'default': 'docs',
         'help': 'The documentation directory relative to the herringfile_dir.'},
@@ -170,10 +180,13 @@ ATTRIBUTES = {
         'default': 'www-data',
         'help': 'The web server user that should own the documents when published.'},
     'docs_group': {
-        'default': 'users',
+        'default': 'www-data',
         'help': 'The web server group that should own the documents when published.'},
     'egg_dir': {
         'help': "The project's egg filename."},
+    'exclude_from_docs': {
+        'default': [],
+        'help': 'This files cause sphinx to barf, so do not include then in the documentation.'},
     'faq_file': {
         'default': 'docs/faq.rst',
         'help': 'The frequently asked question file.'},
@@ -196,9 +209,14 @@ ATTRIBUTES = {
         'help': 'The name used in the generated documentation logo image.'},
     'main': {
         'help': 'The source file with the main entry point.'},
+    'metrics_python_versions': {
+        'help': 'python versions (defined in "python_versions") to run metrics with.  '
+                'Defaults to "wheel_python_versions".'},
+    'min_python_version': {
+        'help': 'The minimum version of python required for the application'},
     'name': {
         'required': True,
-        'help': "The project's name.  Please no hyphens or underscores."},
+        'help': "The project's name.  Please no hyphens or spaces (they will be removed)."},
     'news_file': {
         'default': 'docs/news.rst',
         'help': 'The news documentation file relative to the herringfile_dir.'},
@@ -222,6 +240,9 @@ ATTRIBUTES = {
     'pypi_path': {
         'default': env_value('LOCAL_PYPI_PATH', default_value='/var/pypi/dev'),
         'help': 'The path on dist_host to place the distribution files.'},
+    'python_versions': {
+        'default': ('27', '34'),
+        'help': 'python versions for virtual environments.'},
     'pypiserver': {
         'help': 'When uploading to a pypyserver, the alias in the ~/.pypirc file to use.'},
     'pythonPath': {
@@ -246,6 +267,9 @@ ATTRIBUTES = {
     'templates_dir': {
         'default': 'docs/_templates',
         'help': 'The documentation templates directory relative to the herringfile_dir.'},
+    'test_python_versions': {
+        'help': 'python versions (defined in "python_versions") to unit test with.  '
+                'Defaults to "wheel_python_versions".'},
     'tests_dir': {
         'default': 'tests',
         'help': 'The unit tests directory relative to the herringfile_dir.'},
@@ -278,7 +302,7 @@ ATTRIBUTES = {
         'help': 'The absolute path to the virtualenvwrapper script.'},
     'wheel_python_versions': {
         'help': "A tuple containing short python versions (ex: ('34', '33', '27', '26') ) used to build "
-                "wheel distributions."},
+                "wheel distributions.  Defaults to 'python_versions'"},
 }
 
 
@@ -314,6 +338,8 @@ class ProjectSettings(object):
 
         self.__check_missing_required_attributes()
 
+        setattr(self, 'name', re.sub(r'[ -]', '', getattr(self, 'name', '')))
+
         from herringlib.version import get_project_version
 
         self.__setattr__('version', get_project_version(project_package=self.package))
@@ -335,6 +361,23 @@ class ProjectSettings(object):
 
         if Project.venv_base is None:
             Project.venv_base = Project.package
+
+        if getattr(self, 'test_python_versions', None) is None:
+            setattr(self, 'test_python_versions', getattr(self, 'python_versions'))
+
+        if getattr(self, 'metrics_python_versions', None) is None:
+            setattr(self, 'metrics_python_versions', getattr(self, 'python_versions'))
+
+        if getattr(self, 'sdist_python_version', None) is None:
+            setattr(self, 'sdist_python_version', getattr(self, 'python_versions')[0])
+
+        if getattr(self, 'deploy_python_version', None) is None:
+            setattr(self, 'deploy_python_version', getattr(self, 'python_versions')[0])
+
+        if getattr(self, 'min_python_version', None) is None:
+            setattr(self, 'min_python_version', min(getattr(self, 'python_versions')))
+
+        setattr(self, 'min_python_version_tuple', self.version_to_tuple(getattr(self, 'min_python_version', '26')))
 
         # load design header from file if available
         # noinspection PyBroadException
@@ -417,6 +460,39 @@ class ProjectSettings(object):
         :rtype: str
         """
         return '.'.join(list(ver))
+
+    def ver_to_tuple(self, ver):
+        """
+        Convert shorthand version (ex: 27" to version tuple (ex: (2, 7)).
+
+        :param ver: shorthand version without periods
+        :type ver: str
+        :return: tuple version
+        :rtype: tuple
+        """
+        return tuple(list(ver))
+
+    def version_to_ver(self, version):
+        """
+        Convert full dotted notation (ex: 2.7) to shorthand version (ex: 27)
+
+        :param version: full dotted version
+        :type version: str
+        :return: shorthand version
+        :rtype: str
+        """
+        return re.sub('[.]', '', version)
+
+    def version_to_tuple(self, version):
+        """
+        Convert full dotted notation (ex: 2.7) to version tuple (ex: (2, 7))
+
+        :param version: full dotted version
+        :type version: str
+        :return: tuple version
+        :rtype: tuple
+        """
+        return self.ver_to_tuple(self.version_to_ver(version))
 
 
 Project = ProjectSettings()
