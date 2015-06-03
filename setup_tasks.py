@@ -66,13 +66,13 @@ try:
 
         docs_html_dir = '{dir}'.format(dir=Project.docs_html_dir)
 
-        password = Project.password or getpass("password for {user}@{host}: ".format(user=Project.user,
+        password = Project.password or getpass("password for {user}@{host}: ".format(user=Project.dist_user,
                                                                                      host=Project.dist_host))
         Project.password = password
 
-        info("Publishing to {user}@{host}".format(user=Project.user, host=Project.dist_host))
+        info("Publishing to {user}@{host}".format(user=Project.dist_user, host=Project.dist_host))
 
-        with RemoteShell(user=Project.user, password=password, host=Project.dist_host, verbose=True) as remote:
+        with RemoteShell(user=Project.dist_user, password=password, host=Project.dist_host, verbose=True) as remote:
             remote.run('mkdir -p \"{dir}\"'.format(dir=Project.docs_path))
             remote.run('rm -rf \"{path}\"'.format(path=doc_latest))
             remote.run('rm -rf \"{path}\"'.format(path=doc_version))
