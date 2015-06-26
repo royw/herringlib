@@ -12,11 +12,11 @@ from herringlib.venv import VirtualenvInfo
 
 try:
     # python3
-    # noinspection PyUnresolvedReferences
+    # noinspection PyUnresolvedReferences,PyCompatibility
     from configparser import ConfigParser, NoSectionError
 except ImportError:
     # python2
-    # noinspection PyUnresolvedReferences
+    # noinspection PyUnresolvedReferences,PyCompatibility
     from ConfigParser import ConfigParser, NoSectionError
 
 # noinspection PyUnresolvedReferences
@@ -264,13 +264,12 @@ def check_requirements():
     """ Checks that herringfile and herringlib/* required packages are in requirements.txt file """
     debug("check_requirements")
     needed = Requirements(Project).find_missing_requirements()
-    for filename in sorted(needed.keys()):
-        requirements_filename = os.path.join(Project.herringfile_dir, filename)
-        if needed[filename]:
-            info("Please add the following to your %s:\n" % requirements_filename)
-            info("\n".join(needed[filename]))
-        else:
-            info("Your %s includes all known herringlib task requirements" % requirements_filename)
+    if needed:
+        info("Please add the following to your %s file:\n" % 'requirements.txt')
+        info("\n".join(str(needed)))
+    else:
+        info("Your %s includes all known herringlib task requirements" % 'requirements.txt')
+
 
 @task(namespace='project')
 def environment():

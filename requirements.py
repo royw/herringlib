@@ -362,7 +362,7 @@ class Requirements(object):
         Find the required packages that are not in the requirements.txt file.
 
         :return: set of missing packages.
-        :rtype: set[str]
+        :rtype: set[Requirement]
         """
         requirements = self._reduce_by_version(self._get_requirements_dict_from_py_files())
         debug('requirements:')
@@ -382,8 +382,8 @@ class Requirements(object):
                         existing_requirements.append(Requirement(line))
                 existing = sorted(compress_list(unique_list(existing_requirements)))
                 difference = [req for req in needed if req not in existing]
-                diff = [req for req in difference
-                        if not req.markers or Requirement(req.package) not in needed]
+                diff = sorted(set([req for req in difference
+                                  if not req.markers or Requirement(req.package) not in needed]))
         debug("find_missing_requirements.needed: {pkgs}".format(pkgs=pformat(needed)))
         debug("find_missing_requirements.diff: {pkgs}".format(pkgs=pformat(diff)))
         return diff
