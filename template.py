@@ -102,11 +102,7 @@ class Template(object):
             new_filename = tf.name
             tf.close()
 
-            rendered = template.format(name=kwargs['name'],
-                                       package=kwargs['package'],
-                                       author=kwargs['author'],
-                                       author_email=kwargs['author_email'],
-                                       description=kwargs['description'])
+            rendered = template.format(**kwargs)
             with open(new_filename, 'w') as out_file:
                 try:
                     out_file.write(rendered)

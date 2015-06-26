@@ -66,13 +66,16 @@ try:
 
         docs_html_dir = '{dir}'.format(dir=Project.docs_html_dir)
 
-        password = Project.password or getpass("password for {user}@{host}: ".format(user=Project.dist_user,
-                                                                                     host=Project.dist_host))
-        Project.password = password
+        password = Project.docs_password or getpass("password for {user}@{host}: ".format(user=Project.docs_user,
+                                                                                          host=Project.docs_host))
+        Project.docs_password = password
 
-        info("Publishing to {user}@{host}".format(user=Project.dist_user, host=Project.dist_host))
+        info("Publishing to {user}@{host}".format(user=Project.docs_user, host=Project.docs_host))
 
-        with RemoteShell(user=Project.dist_user, password=password, host=Project.dist_host, verbose=True) as remote:
+        with RemoteShell(user=Project.docs_user,
+                         password=Project.docs_password,
+                         host=Project.docs_host,
+                         verbose=True) as remote:
             remote.run('mkdir -p \"{dir}\"'.format(dir=Project.docs_path))
             remote.run('rm -rf \"{path}\"'.format(path=doc_latest))
             remote.run('rm -rf \"{path}\"'.format(path=doc_version))
@@ -126,12 +129,12 @@ try:
 
         else:
             version = Project.version
-            project_version_name = "{name}-{version}.tar.gz".format(name=Project.base_name, version=version)
-            project_latest_name = "{name}-latest.tar.gz".format(name=Project.base_name)
+            project_version_name = "{name}-{version}.tar.gz".format(name=Project.base_title, version=version)
+            project_latest_name = "{name}-latest.tar.gz".format(name=Project.base_title)
 
             pypi_dir = Project.pypi_path
             dist_host = Project.dist_host
-            dist_dir = '{dir}/{name}'.format(dir=pypi_dir, name=Project.base_name)
+            dist_dir = '{dir}/{name}'.format(dir=pypi_dir, name=Project.base_title)
             # dist_url = '{host}:{path}/'.format(host=dist_host, path=dist_dir)
             dist_version = '{dir}/{file}'.format(dir=dist_dir, file=project_version_name)
             dist_latest = '{dir}/{file}'.format(dir=dist_dir, file=project_latest_name)
@@ -140,12 +143,19 @@ try:
             dist_wheels = _dist_wheels(dist_dir=dist_dir)
             dist_wheel_files = _dist_wheel_files()
 
-            password = Project.password or getpass("password for {user}@{host}: ".format(user=Project.user,
-                                                                                         host=Project.dist_host))
-            Project.password = password
+            password = Project.dist_password or getpass("password for {user}@{host}: ".format(user=Project.user,
+                                                                                              host=Project.dist_host))
+            Project.dist_password = password
 
-            with RemoteShell(user=Project.user, password=password, host=dist_host, verbose=True) as remote:
+            with RemoteShell(user=Project.user,
+                             password=Project.dist_password,
+                             host=dist_host,
+                             verbose=True) as remote:
                 remote.run('mkdir -p {dir}'.format(dir=dist_dir))
+                remote.run('sudo chown www-data:www-data {dest}'.format(dest=dist_dir),
+                           accept_defaults=True, timeout=10)
+                remote.run('sudo chmod 777 {dest}'.format(dest=dist_dir),
+                           accept_defaults=True, timeout=10)
                 remote.run('rm {path}'.format(path=dist_latest))
                 remote.run('rm {path}'.format(path=dist_version))
                 for dist_wheel in dist_wheels:

@@ -167,13 +167,13 @@ class Requirement(ComparableMixin):
     def __str__(self):
         if self.markers:
             marker_str = '; '.join([str(m) for m in self.markers])
-            return '"{package}; {marker}"'.format(package=self.package, marker=marker_str)
+            return '{package}; {marker}'.format(package=self.package, marker=marker_str)
         return self.package
 
     def __repr__(self):
         if self.markers:
             marker_str = '; '.join([str(m) for m in self.markers])
-            return '"{package}; {marker}"'.format(package=self.package, marker=marker_str)
+            return '{package}; {marker}'.format(package=self.package, marker=marker_str)
         return self.package
 
     def supported_python(self):

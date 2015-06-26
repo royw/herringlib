@@ -109,7 +109,8 @@ except AttributeError:
 ATTRIBUTES = {
     'api_dir': {
         'default': 'docs/api',
-        'help': 'The directory where the API docs are placed relative to the herringfile_dir.'},
+        'help': 'The directory where the API docs are placed relative to the herringfile_dir.  '
+                'Defaults to "{herringfile_dir}/docs/api".'},
     'author': {
         'required': True,
         'help': "The primary author's real name."},
@@ -118,13 +119,16 @@ ATTRIBUTES = {
         'help': "The primary author's email address."},
     'bin_dir': {
         'default': '~/bin',
-        'help': "The path to the user's bin directory."},
+        'help': 'The path to the user\'s bin directory.  '
+                'Defaults to "{herringfile_dir}/docs/usage.rst".'},
     'build_dir': {
         'default': 'build',
-        'help': 'The directory to build into relative to the herringfile_dir.'},
+        'help': 'The directory to build into relative to the herringfile_dir.  '
+                'Defaults to "{herringfile_dir}/build".'},
     'changelog_file': {
         'default': "docs/CHANGES.rst",
-        'help': 'The change log filespec.'},
+        'help': 'The change log filespec.  '
+                'Defaults to "{herringfile_dir}/docs/CHANGES.rst".'},
     'description': {
         'required': True,
         'help': 'A short description of this project.'},
@@ -134,7 +138,8 @@ ATTRIBUTES = {
     },
     'design_file': {
         'default': 'docs/design.rst',
-        'help': 'The design documentation file relative to the herringfile_dir.'},
+        'help': 'The design documentation file relative to the herringfile_dir.  '
+                'Defaults to "{herringfile_dir}/docs/design.rst".'},
     'design_header': {
         'default': """\
                 The application is a non-interactive CLI utility.
@@ -151,75 +156,101 @@ ATTRIBUTES = {
                 'herringfile_dir'},
     'design_levels': {
         'default': 1,
-        'help': 'The number of package levels to include in the design file.'},
+        'help': 'The number of package levels to include in the design file.  Default is "1".'},
     'dist_dir': {
         'default': 'dist',
-        'help': 'The directory where the distribution files are placed relative to the herringfile_dir.'},
+        'help': 'The directory where the distribution files are placed relative to the herringfile_dir.  '
+                'Defaults to {herringfile_dir}/dist.'},
     'dist_host': {
         'default': env_value('LOCAL_PYPI_HOST', default_value='http://localhost'),
-        'help': 'A host name to deploy the distribution files to.'},
+        'help': 'A host name to deploy the distribution files to.  '
+                'Defaults to the value of the LOCAL_PYPI_HOST environment variable or "http://localhost".'},
+    'dist_password': {
+        'default': None,
+        'help': 'The password for logging into the dist_host.  Prompts once on need if not defined.'},
     'dist_user': {
         'default': env_value('USER'),
-        'help': 'The user for uploading documentation'},
+        'help': 'The user for uploading documentation.  Defaults to the value of the USER environment variable.'},
     'doc_python_version': {
         'default': '27',
-        'help': 'python version (defined in "python_versions") to build documentation with'},
+        'help': 'python version (defined in "python_versions") to build documentation with.  '
+                'Defaults to "27".'},
     'docs_dir': {
         'default': 'docs',
-        'help': 'The documentation directory relative to the herringfile_dir.'},
+        'help': 'The documentation directory relative to the herringfile_dir.  '
+                'Defaults to "{herringfile_dir}/docs".'},
+    'docs_host': {
+        'help': 'A host name to publish documentation files to.  Defaults to "dist_host"'},
     'docs_html_dir': {
         'default': 'build/docs',
-        'help': 'The directory to write HTML documentation to.'},
+        'help': 'The directory to write HTML documentation to.  '
+                'Defaults to "{herringfile_dir}/build/docs".'},
+    'docs_password': {
+        'default': None,
+        'help': 'The password for logging into the docs_host.  Prompts once on need if not defined.'},
     'docs_path': {
         'default': env_value('LOCAL_DOCS_PATH', default_value='/var/www/docs'),
-        'help': 'The path on dist_host to place the documentation files.'},
+        'help': 'The path on docs_host to place the documentation files.  '
+                'Default is the value of LOCAL_DOCS_PATH environment variable or "/var/www/docs".'},
     'docs_pdf_dir': {
         'default': 'build/pdf',
-        'help': 'The directory to write PDF documentation to relative to the herringfile_dir.'},
+        'help': 'The directory to write PDF documentation to relative to the herringfile_dir.  '
+                'Defaults to "{herringfile_dir}/build/pdf".'},
     'docs_user': {
         'default': 'www-data',
-        'help': 'The web server user that should own the documents when published.'},
+        'help': 'The web server user that should own the documents when published.  '
+                'Default is "www-data".'},
     'docs_group': {
         'default': 'www-data',
-        'help': 'The web server group that should own the documents when published.'},
+        'help': 'The web server group that should own the documents when published.  '
+                'Default is "www-data".'},
     'egg_dir': {
-        'help': "The project's egg filename."},
+        'help': 'The project\'s egg filename.  Default is generate from the project\'s "name"'},
     'exclude_from_docs': {
         'default': [],
-        'help': 'This files cause sphinx to barf, so do not include then in the documentation.'},
+        'help': 'These files cause sphinx to barf, so do not include them in the documentation.'},
     'faq_file': {
         'default': 'docs/faq.rst',
-        'help': 'The frequently asked question file.'},
+        'help': 'The frequently asked question file.  '
+                'Defaults to "{herringfile_dir}/docs/faq.rst".'},
     'features_dir': {
         'default': 'features',
-        'help': 'The directory for lettuce features relative to the herringfile_dir.'},
+        'help': 'The directory for lettuce features relative to the herringfile_dir.  Defaults to "{'
+                'herringfile_dir}/features".'},
     'herringfile_dir': {
         'help': 'The directory where the herringfile is located.'},
     'install_file': {
         'default': 'docs/install.rst',
-        'help': 'The installation documentation file relative to the herringfile_dir.'},
+        'help': 'The installation documentation file relative to the herringfile_dir.  '
+                'Defaults to "{herringfile_dir}/docs/install.rst".'},
     'license_file': {
         'default': 'docs/license.rst',
-        'help': 'The license documentation file relative to the herringfile_dir.'},
+        'help': 'The license documentation file relative to the herringfile_dir.  '
+                'Defaults to "{herringfile_dir}/docs/license.rst".'},
     'logo_image': {
         'default': None,
-        'help': "The project's logo image."},
+        'help': 'The project\'s logo image.  The default is generated from the project\'s "name".'},
     'logo_name': {
         'default': None,
-        'help': 'The name used in the generated documentation logo image.'},
+        'help': 'The name used in the generated documentation logo image.  The default is the project\'s "name"'},
     'main': {
         'help': 'The source file with the main entry point.'},
     'metrics_python_versions': {
         'help': 'python versions (defined in "python_versions") to run metrics with.  '
                 'Defaults to "wheel_python_versions".'},
     'min_python_version': {
+        'default': '26',
         'help': 'The minimum version of python required for the application'},
+    'min_python_version_tuple': {
+        'default': (2, 6),
+        'help': 'The minimum version as a tuple of python required for the application'},
     'name': {
         'required': True,
         'help': "The project's name.  Please no hyphens or spaces (they will be removed)."},
     'news_file': {
         'default': 'docs/news.rst',
-        'help': 'The news documentation file relative to the herringfile_dir.'},
+        'help': 'The news documentation file relative to the herringfile_dir.  '
+                'Defaults to "{herringfile_dir}/docs/news.rst".'},
     'package': {
         'default': None,
         'required': True,
@@ -227,36 +258,42 @@ ATTRIBUTES = {
                 'no hyphens or underscores.'},
     'password': {
         'default': None,
-        'help': 'The password for logging into the dist_host.'},
+        'help': 'The password for logging into the dist_host.  Prompts once on need if not defined.'},
     'pip_options': {
         'default': '',
         'help': 'Command line options to pass to pip install.'},
     'port': {
         'default': 22,
-        'help': 'The SSH port for transferring files to the dist_host.'},
+        'help': 'The SSH port for transferring files to the dist_host.  '
+                'Defaults to port 22.'},
     'pylintrc': {
         'default': os.path.join(HerringFile.directory, 'pylint.rc'),
-        'help': 'Full pathspec to the pylintrc file to use.'},
+        'help': 'Full pathspec to the pylintrc file to use.  '
+                'Defaults to "{herringfile_dir}/pylint.rc".'},
     'pypi_path': {
         'default': env_value('LOCAL_PYPI_PATH', default_value='/var/pypi/dev'),
-        'help': 'The path on dist_host to place the distribution files.'},
+        'help': 'The path on dist_host to place the distribution files.  Defaults to the value of '
+                'the LOCAL_PYPI_PATH environment variable or "/var/pypi/dev".'},
     'python_versions': {
         'default': ('27', '34'),
-        'help': 'python versions for virtual environments.'},
+        'help': 'python versions for virtual environments.  Defaults to "(\'27\', \'34\')".'},
     'pypiserver': {
         'help': 'When uploading to a pypyserver, the alias in the ~/.pypirc file to use.'},
     'pythonPath': {
         'default': ".:%s" % HerringFile.directory,
-        'help': 'The pythonpath to use.'},
+        'help': 'The pythonpath to use.  Defaults to the current directory then "{herringfile_dir}".'},
     'quality_dir': {
         'default': 'quality',
-        'help': 'The directory to place quality reports relative to the herringfile_dir.'},
+        'help': 'The directory to place quality reports relative to the herringfile_dir.  '
+                'Defaults to "{herringfile_dir}/quality".'},
     'readme_file': {
         'default': "README.rst",
-        'help': 'The README documentation file relative to the herringfile_dir.'},
+        'help': 'The README documentation file relative to the herringfile_dir.  '
+                'Defaults to "{herringfile_dir}/README.rst".'},
     'report_dir': {
         'default': 'report',
-        'help': 'The directory to place the reports in relative to the herringfile_dir'},
+        'help': 'The directory to place the reports in relative to the herringfile_dir.  '
+                'Defaults to "{herringfile_dir}/report".'},
     'script': {
         'help': 'tptqa'},
     'sdist_python_version': {
@@ -266,25 +303,32 @@ ATTRIBUTES = {
         'help': "A list of paths to the project's site packages."},
     'templates_dir': {
         'default': 'docs/_templates',
-        'help': 'The documentation templates directory relative to the herringfile_dir.'},
+        'help': 'The documentation templates directory relative to "herringfile_dir".  '
+                'Defaults to "{herringfile_dir}/docs/_templates".'},
     'test_python_versions': {
         'help': 'python versions (defined in "python_versions") to unit test with.  '
                 'Defaults to "wheel_python_versions".'},
     'tests_dir': {
         'default': 'tests',
-        'help': 'The unit tests directory relative to the herringfile_dir.'},
+        'help': 'The unit tests directory relative to the "herringfile_dir".  '
+                'Defaults to "{herringfile_dir}/tests".'},
+    'title': {
+        'help': 'The human preferred title for the application, defaults to "name".'},
     'todo_file': {
         'default': 'docs/todo.rst',
-        'help': 'The TODO documentation file relative to the herringfile_dir.'},
+        'help': 'The TODO documentation file relative to the "herringfile_dir".  '
+                'Defaults to "{herringfile_dir}/docs/todo.rst".'},
     'uml_dir': {
         'default': 'docs/_src/uml',
-        'help': 'The directory where documentation UML files are written relative to the herringfile_dir.'},
+        'help': 'The directory where documentation UML files are written relative to the "herringfile_dir".  '
+                'Defaults to "{herringfile_dir}/docs/_src/uml".'},
     'usage_file': {
         'default': 'docs/usage.rst',
-        'help': 'The usage documentation file relative to the herringfile_dir.'},
+        'help': 'The usage documentation file relative to the "herringfile_dir".  '
+                'Defaults to "{herringfile_dir}/docs/usage.rst".'},
     'user': {
         'default': env_value('USER'),
-        'help': 'The dist_host user.'},
+        'help': 'The dist_host user.  Defaults to the value of the "USER" environment variable.'},
     'venv_base': {
         'default': None,
         'help': 'The base name for the virtual environments.  Defaults to Settings["package"].',
@@ -299,7 +343,8 @@ ATTRIBUTES = {
     'virtualenvwrapper_script': {
         'default': env_value(name='VIRTUALENVWRAPPER_SCRIPT',
                              default_value='/usr/share/virtualenvwrapper/virtualenvwrapper.sh'),
-        'help': 'The absolute path to the virtualenvwrapper script.'},
+        'help': 'The absolute path to the virtualenvwrapper script.  '
+                'Defaults to "/usr/share/virtualenvwrapper/virtualenvwrapper.sh".'},
     'wheel_python_versions': {
         'help': "A tuple containing short python versions (ex: ('34', '33', '27', '26') ) used to build "
                 "wheel distributions.  Defaults to 'python_versions'"},
@@ -323,6 +368,17 @@ class ProjectSettings(object):
     def __str__(self):
         return pformat(self.__dict__)
 
+    def attributes(self):
+        """
+        :return: the attributes in a dictionary
+        :rtype: dict
+        """
+        attrs = {}
+        for name in ATTRIBUTES.keys():
+            value = getattr(self, name, None)
+            attrs[name] = value
+        return attrs
+
     def metadata(self, data_dict):
         """
         Set the project's environment attributes
@@ -339,6 +395,8 @@ class ProjectSettings(object):
         self.__check_missing_required_attributes()
 
         setattr(self, 'name', re.sub(r'[ -]', '', getattr(self, 'name', '')))
+        if getattr(self, 'title', None) is None:
+            setattr(self, 'title', getattr(self, 'name', None))
 
         from herringlib.version import get_project_version
 
@@ -378,6 +436,15 @@ class ProjectSettings(object):
             setattr(self, 'min_python_version', min(getattr(self, 'python_versions')))
 
         setattr(self, 'min_python_version_tuple', self.version_to_tuple(getattr(self, 'min_python_version', '26')))
+
+        if getattr(self, 'docs_host', None) is None:
+            setattr(self, 'docs_host', getattr(self, 'dist_host', None))
+
+        if getattr(self, 'docs_user', None) is None:
+            setattr(self, 'docs_user', getattr(self, 'dist_user', None))
+
+        if getattr(self, 'docs_password', None) is None:
+            setattr(self, 'docs_password', getattr(self, 'dist_password', None))
 
         # load design header from file if available
         # noinspection PyBroadException
@@ -443,6 +510,14 @@ class ProjectSettings(object):
         :rtype: str
         """
         return self.name.replace(' ', '_').replace('-', '_')
+
+    @property
+    def base_title(self):
+        """
+        :returns: the normalized name attribute (hyphens and spaces converted to underscores).
+        :rtype: str
+        """
+        return self.title.replace(' ', '_').replace('-', '_')
 
     def required_files(self):
         """

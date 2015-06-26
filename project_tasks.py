@@ -74,7 +74,8 @@ def _project_defaults():
         'package': os.path.basename(os.path.abspath(os.curdir)),
         'name': os.path.basename(os.path.abspath(os.curdir)).capitalize(),
         'description': 'The greatest project there ever was or will be!',
-        'author': 'author'
+        'author': 'author',
+        'title': os.path.basename(os.path.abspath(os.curdir)).capitalize(),
     }
     if 'USER' in os.environ:
         defaults['author'] = os.environ['USER']
@@ -102,7 +103,9 @@ def _project_defaults():
             defaults[key] = value
 
     # override defaults from herringfile
-    for key in ['name', 'author', 'author_email', 'description']:
+    # for key in ['name', 'author', 'author_email', 'description']:
+    attributes = Project.attributes()
+    for key in [key for key in attributes.keys() if attributes[key] is not None]:
         # noinspection PyBroadException
         try:
             value = getattr(Project, key, None)
@@ -126,6 +129,8 @@ def init():
     defaults['author'] = prompt("Enter the project's author:", defaults['author'])
     defaults['author_email'] = prompt("Enter the project's author's email:", defaults['author_email'])
     defaults['description'] = prompt("Enter the project's description:", defaults['description'])
+
+    # print("defaults:\n{defaults}".format(defaults=pformat(defaults)))
 
     template = Template()
 

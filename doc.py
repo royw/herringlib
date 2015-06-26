@@ -77,15 +77,16 @@ if packages_required(required_packages):
     from herringlib.recursively_remove import recursively_remove
     from herringlib.safe_edit import safe_edit, quick_edit
 
-    def run_python(cmd_line, env=None, verbose=True):
+    def run_python(cmd_line, env=None, verbose=True, ignore_errors=False):
         if env is None:
             env = {'PYTHONPATH': Project.pythonPath}
         with LocalShell() as local:
             output = local.run(cmd_line, env=env, verbose=verbose)
-            error_lines = [line for line in output.splitlines()
-                           if re.search(r'error', line, re.IGNORECASE) and
-                           not re.search(r'error[a-zA-Z0-9/.]*\.(?!py)', line, re.IGNORECASE)]
-            doc.doc_errors.extend([line for line in error_lines if not re.search(r'Unexpected indentation', line)])
+            if not ignore_errors:
+                error_lines = [line for line in output.splitlines()
+                               if re.search(r'error', line, re.IGNORECASE) and
+                               not re.search(r'error[a-zA-Z0-9/.]*\.(?!py)', line, re.IGNORECASE)]
+                doc.doc_errors.extend([line for line in error_lines if not re.search(r'Unexpected indentation', line)])
             return output
 
     @task()
@@ -319,7 +320,7 @@ if packages_required(required_packages):
                                 continue
                         out_file.write(line)
 
-        # noinspection PyUnusedLocal
+        # noinspection PyUnusedLocal,PyArgumentEqualDefault
         def _create_module_diagrams(path):
             """
             create module UML diagrams
@@ -327,17 +328,21 @@ if packages_required(required_packages):
             :param path: the module path
              :type path: str
             """
+            info("_create_module_diagrams")
             if not executables_available(['pyreverse']):
                 return
             # TODO fixme hangs on tp-otto
             for module_path in [root for root, dirs, files in os.walk(path)]:
+                debug("module_path: {path}".format(path=module_path))
                 init_filename = os.path.join(module_path, '__init__.py')
                 if os.path.exists(init_filename):
+                    debug(init_filename)
                     name = os.path.basename(module_path).split(".")[0]
                     output = run_python('pyreverse -o svg -p {name} {module}'.format(name=name, module=module_path),
-                                        verbose=False)
+                                        verbose=False, ignore_errors=True)
                     info([line for line in output.splitlines() if not line.startswith('parsing')])
 
+        # noinspection PyArgumentEqualDefault
         def _create_class_diagrams(path):
             """
             Create class UML diagram
@@ -345,16 +350,21 @@ if packages_required(required_packages):
             :param path: path to the module file.
             :type path: str
             """
+            info("_create_class_diagrams")
             if not executables_available(['pynsource']):
                 return
             files = [os.path.join(dir_path, f)
                      for dir_path, dir_names, files in os.walk(path)
                      for f in fnmatch.filter(files, '*.py')]
+            debug("files: {files}".format(files=repr(files)))
             for src_file in files:
+                debug(src_file)
                 name = src_file.replace(Project.herringfile_dir + '/', '').replace('.py', '.png').replace('/', '.')
                 output = "classes_{name}".format(name=name)
-                if os.path.isfile(output) and is_newer(output, src_file):
-                    run_python("pynsource -y {output} {source}".format(output=output, source=src_file))
+                debug(output)
+                if not os.path.isfile(output) or (os.path.isfile(output) and is_newer(output, src_file)):
+                    run_python("pynsource -y {output} {source}".format(output=output, source=src_file),
+                               verbose=False, ignore_errors=True)
 
         @task(depends=['api'], private=True)
         def diagrams():
@@ -362,7 +372,7 @@ if packages_required(required_packages):
             if Project.package is not None:
                 path = os.path.join(Project.herringfile_dir, Project.package)
                 mkdir_p(Project.uml_dir)
-                with cd(Project.uml_dir):
+                with cd(Project.uml_dir, verbose=True):
                     _create_module_diagrams(path)
                     _create_class_diagrams(path)
 
@@ -520,7 +530,9 @@ if packages_required(required_packages):
                     logo_file = _image(Project.logo_name, Project.logo_image, Project.base_name)
                 else:
                     logo_file = _neon(Project.logo_name, Project.base_name)
-                shutil.copyfile(logo_file, os.path.join(Project.docs_dir, '_static', logo_file))
+                src = os.path.join(Project.herringfile_dir, logo_file)
+                dest = os.path.join(Project.docs_dir, '_static', logo_file)
+                shutil.copyfile(src, dest)
                 quick_edit(os.path.join(Project.docs_dir, 'conf.py'),
                            {r'(\s*html_logo\s*=\s*\".*?\").*': ["html_logo = \"{logo}\"".format(logo=logo_file)]})
 
@@ -637,6 +649,10 @@ if packages_required(required_packages):
                             usage_file.write("\n\n")
                             usage_file.write("Usage\n")
                             usage_file.write("=====\n\n")
+                            parser = "{pkg}.{pkg}_settings:{name}Settings().parse()[0]\n".format(
+                                pkg=Project.package, name=Project.name)
+                            usage_file.write(".. autoprogram:: {parser}".format(parser=parser))
+                            usage_file.write("    :prog: git_sloc\n\n")
                             usage_file.write("::\n\n")
                             for script in console_scripts:
                                 text = local.run("python -m %s --help" % script)
