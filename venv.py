@@ -69,7 +69,7 @@ class VenvInfo(object):
             match = re.match(r'.*(\d+)', venv)
             if match is not None:
                 self.ver = match.group(1)
-                self.python = '/usr/bin/python{v}'.format(v='.'.join(list(ver)))
+                self.python = 'python{v}'.format(v='.'.join(list(ver)))
             self.venv = venv
 
     def mkvirtualenv(self):
@@ -85,9 +85,10 @@ class VenvInfo(object):
                               verbose=False,
                               env=new_env).strip().split("\n")
             if self.venv not in venvs:
+                python_path = local.system('which {python}'.format(python=self.python)).strip()
                 local.run('/bin/bash -c "source {venv_script} ; '
                           'mkvirtualenv -p {python} {venv}"'.format(venv_script=venv_script,
-                                                                    python=self.python,
+                                                                    python=python_path,
                                                                     venv=self.venv),
                           verbose=True,
                           env=new_env)
