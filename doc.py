@@ -64,7 +64,9 @@ try:
                 'sphinxcontrib-blockdiag',
                 'sphinxcontrib-actdiag',
                 'sphinxcontrib-nwdiag',
-                'sphinxcontrib-seqdiag'])
+                'sphinxcontrib-seqdiag',
+                'sphinxcontrib-autoprogram',
+            ])
 except AttributeError:
     pass
 
@@ -649,10 +651,11 @@ if packages_required(required_packages):
                             usage_file.write("\n\n")
                             usage_file.write("Usage\n")
                             usage_file.write("=====\n\n")
-                            parser = "{pkg}.{pkg}_settings:{name}Settings().parse()[0]\n".format(
-                                pkg=Project.package, name=Project.name)
-                            usage_file.write(".. autoprogram:: {parser}".format(parser=parser))
-                            usage_file.write("    :prog: git_sloc\n\n")
+                            if Project.usage_autoprogram:
+                                parser = "{pkg}.{pkg}_settings:{name}Settings().parse()[0]\n".format(
+                                    pkg=Project.package, name=Project.name)
+                                usage_file.write(".. autoprogram:: {parser}".format(parser=parser))
+                                usage_file.write("    :prog: git_sloc\n\n")
                             usage_file.write("::\n\n")
                             for script in console_scripts:
                                 text = local.run("python -m %s --help" % script)

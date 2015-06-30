@@ -322,6 +322,9 @@ ATTRIBUTES = {
         'default': 'docs/_src/uml',
         'help': 'The directory where documentation UML files are written relative to the "herringfile_dir".  '
                 'Defaults to "{herringfile_dir}/docs/_src/uml".'},
+    'usage_autoprogram': {
+        'default': True,
+        'help': 'Use the sphinx autoprogram extension to document the command line application.'},
     'usage_file': {
         'default': 'docs/usage.rst',
         'help': 'The usage documentation file relative to the "herringfile_dir".  '
