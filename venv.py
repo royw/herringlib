@@ -244,6 +244,7 @@ def mkvenvs():
             install_lines = [
                 'pip install --upgrade {pip_options} pip ; '.format(pip_options=Project.pip_options),
                 'pip install --upgrade {pip_options} setuptools ; '.format(pip_options=Project.pip_options),
+                'pip install --upgrade {pip_options} requests[security] ;'.format(pip_options=Project.pip_options),
             ]
             if 'numpy' in requirements:
                 install_lines.append('pip install {pip_options} numpy ; '.format(pip_options=Project.pip_options))
