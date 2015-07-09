@@ -12,10 +12,11 @@ Add the following to your *requirements.txt* file:
 * cheesecake; python_version == "[metrics_python_versions]"
 * matplotlib; python_version == "[metrics_python_versions]"
 * numpy; python_version == "[metrics_python_versions]"
-* pycabehtml; python_version == "[metrics_python_versions]"
 * pylint; python_version == "[metrics_python_versions]"
 * pymetrics; python_version == "[metrics_python_versions]"
 * radon; python_version == "[metrics_python_versions]"
+
+**** #####pycabehtml; python_version == "[metrics_python_versions]"
 
 """
 import time

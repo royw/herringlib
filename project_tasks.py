@@ -81,6 +81,18 @@ def _project_defaults():
         defaults['author'] = os.environ['USER']
     defaults['author_email'] = '{author}@example.com'.format(author=defaults['author'])
 
+    # override defaults from herringfile
+    # for key in ['name', 'author', 'author_email', 'description']:
+    # attributes = Project.attributes()
+    # for key in [key for key in attributes.keys() if attributes[key] is not None]:
+    #     # noinspection PyBroadException
+    #     try:
+    #         value = getattr(Project, key, None)
+    #         if value is not None:
+    #             defaults[key] = value
+    #     except:
+    #         pass
+
     # override defaults from any config files
     settings = HerringFile.settings
     if settings is not None:
@@ -101,18 +113,6 @@ def _project_defaults():
         value = value_from_setup_py(key)
         if value is not None:
             defaults[key] = value
-
-    # override defaults from herringfile
-    # for key in ['name', 'author', 'author_email', 'description']:
-    attributes = Project.attributes()
-    for key in [key for key in attributes.keys() if attributes[key] is not None]:
-        # noinspection PyBroadException
-        try:
-            value = getattr(Project, key, None)
-            if value is not None:
-                defaults[key] = value
-        except:
-            pass
 
     return defaults
 

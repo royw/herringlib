@@ -92,6 +92,7 @@ from herringlib.mkdir_p import mkdir_p
 from herringlib.requirements import Requirements
 from herringlib.simple_logger import debug, info, error
 from herringlib.env import env_value
+import sys
 
 
 __docformat__ = 'restructuredtext en'
@@ -105,6 +106,19 @@ try:
 except AttributeError:
     # virtualenv uses site.py from python2.6 instead of python2.7 where getsitepackages() was introduced.
     pass
+
+
+def get_python_path():
+    """
+    Handle system specific file location for the python executables.
+
+    :return: directory where python executable resides
+    :rtype: str
+    """
+    # HACK: this is dumb, hard coding paths.  Need to get smarter here.
+    if sys.platform == 'darwin':
+	return '/usr/local/bin'
+    return '/usr/bin'
 
 ATTRIBUTES = {
     'api_dir': {
@@ -259,6 +273,9 @@ ATTRIBUTES = {
     'password': {
         'default': None,
         'help': 'The password for logging into the dist_host.  Prompts once on need if not defined.'},
+    'path_to_python': {
+	'default': get_python_path(),
+	'help': 'The path to the python executables to use when making virtual environments.'},
     'pip_options': {
         'default': '',
         'help': 'Command line options to pass to pip install.'},
@@ -371,16 +388,16 @@ class ProjectSettings(object):
     def __str__(self):
         return pformat(self.__dict__)
 
-    def attributes(self):
-        """
-        :return: the attributes in a dictionary
-        :rtype: dict
-        """
-        attrs = {}
-        for name in ATTRIBUTES.keys():
-            value = getattr(self, name, None)
-            attrs[name] = value
-        return attrs
+    # def attributes(self):
+    #     """
+    #     :return: the attributes in a dictionary
+    #     :rtype: dict
+    #     """
+    #     attrs = {}
+    #     for name in ATTRIBUTES.keys():
+    #         value = getattr(self, name, None)
+    #         attrs[name] = value
+    #     return attrs
 
     def metadata(self, data_dict):
         """
@@ -389,7 +406,7 @@ class ProjectSettings(object):
         :param data_dict: the project's attributes
         :type data_dict: dict
         """
-        debug("metadata(%s)" % repr(data_dict))
+	# print("metadata(%s)" % repr(data_dict))
         for key, value in data_dict.items():
             self.__setattr__(key, value)
             if key.endswith('_dir'):
@@ -457,6 +474,8 @@ class ProjectSettings(object):
                 self.design_header = in_file.read()
         except:
             pass
+
+	# info(str(self))
 
     def __check_missing_required_attributes(self):
         missing_keys = self.__missing_required_attributes()

@@ -64,7 +64,7 @@ class VenvInfo(object):
         if ver is not None:
             self.ver = ver
             self.venv = '{base}{ver}'.format(base=Project.venv_base, ver=ver)
-            self.python = '/usr/bin/python{v}'.format(v='.'.join(list(ver)))
+	    self.python = os.path.join(Project.path_to_python, 'python{v}'.format(v='.'.join(list(ver))))
         if venv is not None:
             match = re.match(r'.*(\d+)', venv)
             if match is not None:
