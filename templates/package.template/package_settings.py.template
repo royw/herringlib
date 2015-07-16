@@ -2,9 +2,7 @@
 """
 {name}Settings adds application specific information to the generic ApplicationSettings class.
 """
-from {package}.utils.application_settings import ApplicationSettings
-from {package}.utils.find_directory import find_directory
-from {package}.utils.simple_logger import info
+from fullmonty.application_settings import ApplicationSettings
 
 __docformat__ = 'restructuredtext en'
 __all__ = ("{name}Settings",)

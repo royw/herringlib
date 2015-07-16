@@ -18,6 +18,7 @@ Add the following to your *requirements.txt* file:
 * sphinxcontrib-actdiag; python_version == "[doc_python_version]"
 * sphinxcontrib-nwdiag; python_version == "[doc_python_version]"
 * sphinxcontrib-seqdiag; python_version == "[doc_python_version]"
+* sphinxcontrib-autoprogram; python_version == "[doc_python_version]"
 * paramiko; python_version == "[doc_python_version]"
 * scp; python_version == "[doc_python_version]"
 * rst2pdf; python_version == "[doc_python_version]"
@@ -550,6 +551,7 @@ if packages_required(required_packages):
                         output = local.run("git log --pretty=%s --graph")
                         for line in output.strip().split("\n"):
                             changelog_file.write("    {line}\n".format(line=line))
+                        changelog_file.write("\n")
 
             @task(private=True)
             def todo():

@@ -211,7 +211,7 @@ ATTRIBUTES = {
         'help': 'The directory to write PDF documentation to relative to the herringfile_dir.  '
                 'Defaults to "{herringfile_dir}/build/pdf".'},
     'docs_user': {
-        'default': 'www-data',
+        'default': env_value('USER'),
         'help': 'The web server user that should own the documents when published.  '
                 'Default is "www-data".'},
     'docs_group': {

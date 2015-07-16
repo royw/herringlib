@@ -6,7 +6,7 @@ The command line interface for the {name} application.
 __docformat__ = 'restructuredtext en'
 
 from {package}.{package}_settings import {name}Settings
-from {package}.utils.simple_logger import error, info
+from fullmonty.simple_logger import error, info
 
 __all__ = ("ArgumentError", "{name}CLI")
 

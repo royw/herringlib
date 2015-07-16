@@ -3,8 +3,8 @@
 The {name} application.
 
 """
-from {package}.utils.graceful_interrupt_handler import GracefulInterruptHandler
-from {package}.utils.simple_logger import Logger, info, error, FileLogger, debug
+from fullmonty.graceful_interrupt_handler import GracefulInterruptHandler
+from fullmonty.simple_logger import Logger, info, error, FileLogger, debug
 
 __docformat__ = 'restructuredtext en'
 __all__ = ("{name}App",)
