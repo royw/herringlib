@@ -18,8 +18,9 @@ def env_value(name, default_value=None, warn_if_unset=False):
     :param warn_if_unset: issue a warning if the environment variable is not set
     :type warn_if_unset: bool
     """
-    if name in os.environ:
-        return os.environ[name]
+    value = os.environ.get(name)
+    if value is not None:
+        return value
     if warn_if_unset:
         warning("The \"{name}\" environment variable is not set".format(name=name))
     return default_value
