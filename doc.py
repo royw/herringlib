@@ -657,7 +657,7 @@ if packages_required(required_packages):
                                 parser = "{pkg}.{pkg}_settings:{name}Settings().parse()[0]\n".format(
                                     pkg=Project.package, name=Project.name)
                                 usage_file.write(".. autoprogram:: {parser}".format(parser=parser))
-                                usage_file.write("    :prog: git_sloc\n\n")
+                                usage_file.write("    :prog: {name}\n\n".format(name=Project.package))
                             usage_file.write("::\n\n")
                             for script in console_scripts:
                                 text = local.run("python -m %s --help" % script)
