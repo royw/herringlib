@@ -90,7 +90,7 @@ from herring.herring_app import HerringFile
 
 from herringlib.mkdir_p import mkdir_p
 from herringlib.requirements import Requirements
-from herringlib.simple_logger import debug, info, error
+from herringlib.simple_logger import info, error
 from herringlib.env import env_value
 import sys
 
@@ -117,7 +117,7 @@ def get_python_path():
     """
     # HACK: this is dumb, hard coding paths.  Need to get smarter here.
     if sys.platform == 'darwin':
-	return '/usr/local/bin'
+        return '/usr/local/bin'
     return '/usr/bin'
 
 ATTRIBUTES = {
@@ -195,6 +195,9 @@ ATTRIBUTES = {
                 'Defaults to "{herringfile_dir}/docs".'},
     'docs_host': {
         'help': 'A host name to publish documentation files to.  Defaults to "dist_host"'},
+    'doc_host_prompt_for_sudo_password': {
+        'default': False,
+        'help': 'prompt for doc_user password to use for sudo commands on the doc_host'},
     'docs_html_dir': {
         'default': 'build/docs',
         'help': 'The directory to write HTML documentation to.  '
@@ -274,8 +277,8 @@ ATTRIBUTES = {
         'default': None,
         'help': 'The password for logging into the dist_host.  Prompts once on need if not defined.'},
     'path_to_python': {
-	'default': get_python_path(),
-	'help': 'The path to the python executables to use when making virtual environments.'},
+        'default': get_python_path(),
+        'help': 'The path to the python executables to use when making virtual environments.'},
     'pip_options': {
         'default': '',
         'help': 'Command line options to pass to pip install.'},
@@ -406,7 +409,7 @@ class ProjectSettings(object):
         :param data_dict: the project's attributes
         :type data_dict: dict
         """
-	# print("metadata(%s)" % repr(data_dict))
+        # print("metadata(%s)" % repr(data_dict))
         for key, value in data_dict.items():
             self.__setattr__(key, value)
             if key.endswith('_dir'):
@@ -475,7 +478,7 @@ class ProjectSettings(object):
         except:
             pass
 
-	# info(str(self))
+        # info(str(self))
 
     def __check_missing_required_attributes(self):
         missing_keys = self.__missing_required_attributes()

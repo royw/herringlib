@@ -66,8 +66,9 @@ try:
 
         docs_html_dir = '{dir}'.format(dir=Project.docs_html_dir)
 
-        password = Project.docs_password or getpass("password for {user}@{host}: ".format(user=Project.docs_user,
-                                                                                          host=Project.docs_host))
+        password = Project.docs_password
+        if password is None and Project.doc_host_prompt_for_sudo_password:
+            password = getpass("password for {user}@{host}: ".format(user=Project.docs_user, host=Project.docs_host))
         Project.docs_password = password
 
         info("Publishing to {user}@{host}".format(user=Project.docs_user, host=Project.docs_host))
