@@ -573,7 +573,7 @@ pdf_fit_background_mode = 'scale'
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {{
 	'http://docs.python.org/': None,
-	'python27': ('http://docs.python.org/2.7', None)
+	'python27': ('http://docs.python.org/2.7', None),
 	'python34': ('https://docs.python.org/3.4', None),
     'FullMonty': ('http://tpcvm143.austin.hp.com/docs/FullMonty-latest/', None),
     'six': ('http://pythonhosted.org/six/', None),
