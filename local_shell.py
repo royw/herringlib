@@ -41,6 +41,7 @@ required_packages = [
 ]
 
 
+# noinspection PyArgumentEqualDefault
 class LocalShell(AShell):
     """
         Provides run interface on local system.
@@ -295,7 +296,7 @@ class LocalShell(AShell):
         fd = output.fileno()
         fl = fcntl.fcntl(fd, fcntl.F_GETFL)
         fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-        #noinspection PyBroadException
+        # noinspection PyBroadException
         try:
             return output.read().decode()
         except:
