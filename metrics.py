@@ -19,11 +19,9 @@ Add the following to your *requirements.txt* file:
 **** #####pycabehtml; python_version == "[metrics_python_versions]"
 
 """
-import time
 import json
 import os
 import operator
-import sqlite3
 
 # noinspection PyUnresolvedReferences
 from pprint import pformat
@@ -288,6 +286,18 @@ if packages_required(required_packages):
     from herringlib.local_shell import LocalShell
 
     with namespace('metrics'):
+
+        def _sloc_totals_by_language():
+            totals_by_language = {}
+
+            with LocalShell() as local:
+                output = local.run("sloccount --wide {src}".format(src=Project.package))
+                for line in output.splitlines():
+                    match = re.match(r"(\S+):\s+(\d+)\s+\(([\d.]+)%\)", line)
+                    if match:
+                        totals_by_language[match.group(1)] = (int(match.group(2)), float(match.group(3)))
+            return totals_by_language
+
         @task()
         def sloc():
             """Run sloccount to get the source lines of code."""
@@ -295,43 +305,46 @@ if packages_required(required_packages):
                 return
             mkdir_p(Project.quality_dir)
             sloc_json = os.path.join(Project.quality_dir, 'sloc.json')
-            totals = _sloc_totals_by_language()
+            totals_by_language = _sloc_totals_by_language()
+            total_sloc = 0
+            for value in totals_by_language.values():
+                total_sloc += value[0]
             with open(sloc_json, 'w') as json_file:
-                json.dump(totals, json_file)
-            for lang in totals.keys():
+                json.dump(totals_by_language, json_file)
+            for lang in totals_by_language.keys():
                 info("{lang}: {total} ({percentage}%)".format(lang=lang,
-                                                              total=totals[lang][0],
-                                                              percentage=totals[lang][1]))
-            info("Total SLOC: {total}".format(total=_sloc_total()))
+                                                              total=totals_by_language[lang][0],
+                                                              percentage=totals_by_language[lang][1]))
+            info("Total SLOC: {total}".format(total=total_sloc))
 
 
-        @task()
-        def sloc_graph():
-            """Graph SLOC over time"""
-            if not executables_available(['sloccount']):
-                return
-            mkdir_p(Project.quality_dir)
-
-            # from git import Repo
-            #
-            # repo = Repo(Project.herringfile_dir)
-            # master = repo.remotes.origin.head
-            # # master.commit
-            # commit_log = master.log()
-            # for log in commit_log:
-            #     info("{time} {commit_id} {message}".format(time=time.strftime("%a, %d %b %Y %H:%M",
-            #                                                                   time.gmtime(log.time[0])),
-            #                                                commit_id=log.newhexsha,
-            #                                                message=log.message))
-
-            with LocalShell() as local:
-                output = local.run('git log --pretty=format:" % H % cd"')
-                for line in output.splitlines():
-                    match = re.match(r"^(\S+)\s+(.+)$", line)
-                    if match:
-                        commit_id = match.group(1)
-                        commit_date = match.group(2)
-                        _add_to_sloc_db(commit_id, commit_date)
+        # @task()
+        # def sloc_graph():
+        #     """Graph SLOC over time"""
+        #     if not executables_available(['sloccount']):
+        #         return
+        #     mkdir_p(Project.quality_dir)
+        #
+        #     # from git import Repo
+        #     #
+        #     # repo = Repo(Project.herringfile_dir)
+        #     # master = repo.remotes.origin.head
+        #     # # master.commit
+        #     # commit_log = master.log()
+        #     # for log in commit_log:
+        #     #     info("{time} {commit_id} {message}".format(time=time.strftime("%a, %d %b %Y %H:%M",
+        #     #                                                                   time.gmtime(log.time[0])),
+        #     #                                                commit_id=log.newhexsha,
+        #     #                                                message=log.message))
+        #
+        #     with LocalShell() as local:
+        #         output = local.run('git log --pretty=format:" % H % cd"')
+        #         for line in output.splitlines():
+        #             match = re.match(r"^(\S+)\s+(.+)$", line)
+        #             if match:
+        #                 commit_id = match.group(1)
+        #                 commit_date = match.group(2)
+        #                 _add_to_sloc_db(commit_id, commit_date)
 
 
         @task(private=True)
