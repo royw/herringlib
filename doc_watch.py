@@ -42,12 +42,8 @@ class Watcher(QtCore.QThread):
 
     def run(self):
         self._stop = False
-        docs_path = os.path.join(Project.herringfile_dir, Project.docs_dir)
-        package_path = os.path.join(Project.herringfile_dir, Project.package)
-        watch_command = 'inotifywait -rq -e close_write --exclude \'"*.html"\' ' \
-                        '{docs} {pkg}'.format(docs=docs_path, pkg=package_path).split()
-        info(watch_command)
-        make_command = 'herring doc::incremental'.split()
+        watch_command = 'inotifywait -rq -e close_write --exclude \'"*.html"\' .'.split()
+        make_command = 'herring doc'.split()
         while not self._stop:
             # Perhaps should put notifier access in a mutex - not bothering yet
             self.notifier = subprocess.Popen(watch_command)

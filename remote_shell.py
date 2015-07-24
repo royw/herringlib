@@ -8,7 +8,6 @@ Add the following to your *requirements.txt* file:
 * scp; python_version == "[python_versions]"
 
 """
-from pexpect.pxssh import ExceptionPxssh
 from herringlib.simple_logger import info
 
 __docformat__ = 'restructuredtext en'
@@ -63,20 +62,17 @@ class RemoteShell(AShell):
         super(RemoteShell, self).__init__(is_remote=True, verbose=verbose)
         if not user:
             user = Project.user
+        if not password:
+            password = Project.password
         if not host:
             host = Project.address
+        if not password:
+            password = getpass('password for {user}@{host}: '.format(user=user, host=host))
         Project.user = user
         Project.password = password
         Project.address = host
         self.ssh = pxssh(timeout=1200)
-        try:
-            self.ssh.login(host, user)
-        except ExceptionPxssh:
-            if not password:
-                password = Project.password
-            if not password:
-                password = getpass('password for {user}@{host}: '.format(user=user, host=host))
-            self.ssh.login(host, user, password)
+        self.ssh.login(host, user, password)
         self.accept_defaults = False
         self.logfile = logfile
         self.prefix = []
