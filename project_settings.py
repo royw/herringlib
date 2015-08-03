@@ -189,6 +189,18 @@ ATTRIBUTES = {
         'default': '27',
         'help': 'python version (defined in "python_versions") to build documentation with.  '
                 'Defaults to "27".'},
+    'docker_applications_dir': {
+        'default': 'applications',
+        'help': 'The directory that contains docker applications relative to the docker_dir.'},
+    'docker_containers_dir': {
+        'default': 'containers',
+        'help': 'The directory that contains docker containers relative to the docker_dir.'},
+    'docker_dir': {
+        'default': 'docker',
+        'help': 'The directory that contains docker files relative to the herringfile_dir.'},
+    'docker_project': {
+        'default': None,
+        'help': 'The first part of a docker tag (project/repo).  Defaults to the package name.'},
     'docs_dir': {
         'default': 'docs',
         'help': 'The documentation directory relative to the herringfile_dir.  '
@@ -468,6 +480,9 @@ class ProjectSettings(object):
 
         if getattr(self, 'docs_password', None) is None:
             setattr(self, 'docs_password', getattr(self, 'dist_password', None))
+
+        if getattr(self, 'docker_project', None) is None:
+            setattr(self, 'docker_project', getattr(self, 'package', None))
 
         # load design header from file if available
         # noinspection PyBroadException
