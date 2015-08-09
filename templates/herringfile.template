@@ -128,9 +128,6 @@ if HerringFile.uninstalled_packages:
     print("You have missing packages.  You may install using the following command:")
     print("\n  pip install %s" % ' '.join(HerringFile.uninstalled_packages))
 
-info("Python version: {{version}}".format(version=version))
-debug("Python path: {{path}}".format(path=pformat(path)))
-
 
 @task(depends=['build', 'doc', 'test'])
 def default():
