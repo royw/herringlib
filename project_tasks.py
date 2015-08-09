@@ -114,21 +114,30 @@ def _project_defaults():
         if value is not None:
             defaults[key] = value
 
+    # now add any attributes that are not already in defaults
+    for key in ATTRIBUTES:
+        if key not in defaults:
+            value = getattr(Project, key, None)
+            if value is not None:
+                defaults[key] = value
+
     return defaults
 
 
-@task(namespace='project', help='Available options: --name, --package, --author, --author_email, --description')
+@task(namespace='project', help='Available options: --name, --package, --author, --author_email, --description',
+      kwargs=['name', 'package', 'author', 'author_email', 'description'])
 def init():
     """
     Initialize a new python project with default files.  Default values from herring.conf and directory name.
     """
     defaults = _project_defaults()
 
-    defaults['name'] = prompt("Enter the project's name:", defaults['name'])
-    defaults['package'] = prompt("Enter the project's package:", defaults['package'])
-    defaults['author'] = prompt("Enter the project's author:", defaults['author'])
-    defaults['author_email'] = prompt("Enter the project's author's email:", defaults['author_email'])
-    defaults['description'] = prompt("Enter the project's description:", defaults['description'])
+    if Project.prompt:
+        defaults['name'] = prompt("Enter the project's name:", defaults['name'])
+        defaults['package'] = prompt("Enter the project's package:", defaults['package'])
+        defaults['author'] = prompt("Enter the project's author:", defaults['author'])
+        defaults['author_email'] = prompt("Enter the project's author's email:", defaults['author_email'])
+        defaults['description'] = prompt("Enter the project's description:", defaults['description'])
 
     # print("defaults:\n{defaults}".format(defaults=pformat(defaults)))
 

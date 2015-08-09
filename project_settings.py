@@ -86,11 +86,11 @@ import site
 from pprint import pformat
 
 # noinspection PyUnresolvedReferences
-from herring.herring_app import HerringFile
+from herring.herring_app import HerringFile, task
 
 from herringlib.mkdir_p import mkdir_p
 from herringlib.requirements import Requirements
-from herringlib.simple_logger import info, error
+from herringlib.simple_logger import error, debug
 from herringlib.env import env_value
 import sys
 
@@ -298,6 +298,10 @@ ATTRIBUTES = {
         'default': 22,
         'help': 'The SSH port for transferring files to the dist_host.  '
                 'Defaults to port 22.'},
+    'prompt': {
+        'default': True,
+        'help': 'Allow interactive prompt.  If andy task kwargs are given, then prompt is set to False.  '
+                'Defaults to True.'},
     'pylintrc': {
         'default': os.path.join(HerringFile.directory, 'pylint.rc'),
         'help': 'Full pathspec to the pylintrc file to use.  '
@@ -399,6 +403,7 @@ class ProjectSettings(object):
             attrs = ATTRIBUTES[key]
             if 'default' in attrs:
                 self.__setattr__(key, attrs['default'])
+        setattr(self, 'prompt', not task.kwargs)
 
     def __str__(self):
         return pformat(self.__dict__)
@@ -436,7 +441,7 @@ class ProjectSettings(object):
         from herringlib.version import get_project_version
 
         self.__setattr__('version', get_project_version(project_package=self.package))
-        info("{name} version: {version}".format(name=getattr(self, 'name', ''), version=self.version))
+        debug("{name} version: {version}".format(name=getattr(self, 'name', ''), version=self.version))
 
         if Project.package is None:
             Project.main = None
