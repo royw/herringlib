@@ -90,7 +90,7 @@ from herring.herring_app import HerringFile, task
 
 from herringlib.mkdir_p import mkdir_p
 from herringlib.requirements import Requirements
-from herringlib.simple_logger import error, debug
+from herringlib.simple_logger import error, debug, warning
 from herringlib.env import env_value
 import sys
 
@@ -614,5 +614,16 @@ class ProjectSettings(object):
         """
         return self.ver_to_tuple(self.version_to_ver(version))
 
+    def configured(self):
+        """
+        Check if herring has been configured.
+
+        :return: Asserted if it looks like herringfile has been configured.
+        :rtype: bool
+        """
+        if getattr(self, "herringfile_dir", None) is None:
+            warning("Your herringfile must set up herringfile_dir.")
+            return False
+        return True
 
 Project = ProjectSettings()

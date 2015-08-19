@@ -110,7 +110,6 @@ if packages_required(required_packages):
     @venv_decorator(attr_name='doc_python_version')
     def doc():
         """generate project documentation"""
-
         venvs = VirtualenvInfo('doc_python_version')
         info("venvs: {venvs}".format(venvs=repr(venvs.__dict__)))
         if not venvs.in_virtualenv and venvs.defined:

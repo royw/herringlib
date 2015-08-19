@@ -125,7 +125,7 @@ def _project_defaults():
 
 
 @task(namespace='project', help='Available options: --name, --package, --author, --author_email, --description',
-      kwargs=['name', 'package', 'author', 'author_email', 'description'])
+      kwargs=['name', 'package', 'author', 'author_email', 'description'], configured='no')
 def init():
     """
     Initialize a new python project with default files.  Default values from herring.conf and directory name.
@@ -167,13 +167,13 @@ def update():
         template.generate(template_dir, defaults, overwrite=True)
 
 
-@task(namespace='project')
+@task(namespace='project', configured='optional')
 def show():
     """Show all project settings"""
     info(str(Project))
 
 
-@task(namespace='project')
+@task(namespace='project', configured='optional')
 def describe():
     """Show all project settings with descriptions"""
     keys = Project.__dict__.keys()
@@ -258,7 +258,7 @@ def packages_required(package_names):
         return False
 
 
-@task()
+@task(configured='optional')
 def show_missing():
     """Show modules that if installed would enable additional tasks."""
     if missing_modules:
@@ -280,7 +280,7 @@ def check_requirements():
         info("Your %s includes all known herringlib task requirements" % 'requirements.txt')
 
 
-@task(namespace='project')
+@task(namespace='project', configured='required')
 def environment():
     """ Display project environment """
     venvs = VirtualenvInfo('python_versions')

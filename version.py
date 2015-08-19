@@ -37,7 +37,6 @@ Add the following to your *requirements.txt* file:
 * versio
 
 """
-from herringlib.touch import touch
 
 __docformat__ = 'restructuredtext en'
 
@@ -53,7 +52,7 @@ from versio.version import Version
 from herring.herring_app import task, namespace
 
 from herringlib.safe_edit import safe_edit
-from herringlib.simple_logger import info, error, debug
+from herringlib.simple_logger import info, error, debug, warning
 from herringlib.project_settings import Project
 
 
@@ -248,4 +247,5 @@ def bump_field(field):
 @task()
 def version():
     """Show the current version"""
-    info("Current version is: %s" % get_project_version(project_package=Project.package))
+    if Project.configured():
+        info("Current version is: %s" % get_project_version(project_package=Project.package))
