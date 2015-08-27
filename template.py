@@ -158,3 +158,5 @@ class Template(object):
                     if os.path.join(template_dir, '__init__.py') != template_filename and os.path.join(
                             template_dir, 'bin', '__init__.py') != template_filename:
                         shutil.copyfile(template_filename, dest_filename)
+            if os.path.exists(template_filename) and os.path.exists(dest_filename):
+                shutil.copymode(template_filename, dest_filename)
