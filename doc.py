@@ -426,7 +426,7 @@ if packages_required(required_packages):
                            '-a -E -n . ../{pdfdir}'.format(pdfdir=Project.docs_pdf_dir))
                 clean_doc_log('docs.log')
 
-        @task(private=True)
+        @task(depends=['api', 'diagrams', 'update'], private=True)
         def incremental():
             """Incremental build docs for testing purposes"""
             with cd(Project.docs_dir):
