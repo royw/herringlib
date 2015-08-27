@@ -8,6 +8,11 @@ Based on Roberto Alsina's 128-line web browser, see
 http://lateral.netmanagers.com.ar/weblog/posts/BB948.html
 
 Adopted to herringlib from:  http://pymolurus.blogspot.com/2012/01/documentation-viewer-for-sphinx.html
+
+Add the following to your *requirements.txt* file:
+
+* python-daemon; python_version == "[doc_python_version]"
+
 """
 import os
 import subprocess
@@ -153,17 +158,44 @@ def watch():
             # very simplistic sanity check. Works for me, as I generally use
             # sphinx-quickstart defaults
             print('You must run this application from a Sphinx directory containing _build')
-            rc = 1
         else:
-            app = QtGui.QApplication(sys.argv)
-            path = os.path.join(Project.herringfile_dir, Project.docs_html_dir, 'index.html')
-            info(path)
-            url = 'file:///' + pathname2url(os.path.abspath(path))
-            url = QtCore.QUrl(url)
-            wb = MainWindow(url)
-            wb.show()
-            rc = app.exec_()
-        return rc
+            # create_daemon()
+            do_task()
+
+
+# noinspection PyProtectedMember
+def create_daemon():
+    """
+        This function create a service/Daemon that will execute a det. task
+    """
+
+    try:
+        # Store the Fork PID
+        pid = os.fork()
+
+        if pid > 0:
+            print('PID: %d' % pid)
+            os._exit(0)
+
+    except OSError as error:
+        print('Unable to fork. Error: %d (%s)' % (error.errno, error.strerror))
+        os._exit(1)
+
+    do_task()
+
+
+def do_task():
+    """
+        This function create a task that will be a daemon
+    """
+    app = QtGui.QApplication(sys.argv)
+    path = os.path.join(Project.herringfile_dir, Project.docs_html_dir, 'index.html')
+    info(path)
+    url = 'file:///' + pathname2url(os.path.abspath(path))
+    url = QtCore.QUrl(url)
+    wb = MainWindow(url)
+    wb.show()
+    app.exec_()
 
 
 if __name__ == "__main__":
