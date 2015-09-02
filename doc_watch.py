@@ -9,10 +9,6 @@ http://lateral.netmanagers.com.ar/weblog/posts/BB948.html
 
 Adopted to herringlib from:  http://pymolurus.blogspot.com/2012/01/documentation-viewer-for-sphinx.html
 
-Add the following to your *requirements.txt* file:
-
-* python-daemon; python_version == "[doc_python_version]"
-
 """
 import os
 import subprocess
@@ -159,29 +155,7 @@ def watch():
             # sphinx-quickstart defaults
             print('You must run this application from a Sphinx directory containing _build')
         else:
-            # create_daemon()
             do_task()
-
-
-# noinspection PyProtectedMember
-def create_daemon():
-    """
-        This function create a service/Daemon that will execute a det. task
-    """
-
-    try:
-        # Store the Fork PID
-        pid = os.fork()
-
-        if pid > 0:
-            print('PID: %d' % pid)
-            os._exit(0)
-
-    except OSError as error:
-        print('Unable to fork. Error: %d (%s)' % (error.errno, error.strerror))
-        os._exit(1)
-
-    do_task()
 
 
 def do_task():
