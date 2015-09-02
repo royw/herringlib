@@ -1,0 +1,278 @@
+# See the Dockerfile Best Practices guide for more information.
+# ref: https://docs.docker.com/articles/dockerfile_best-practices/
+
+# ref: https://docs.docker.com/reference/builder/#from
+#
+# FROM <image>
+#
+# Or
+#
+# FROM <image>:<tag>
+#
+# Or
+#
+# FROM <image>@<digest>
+#
+# The FROM instruction sets the Base Image for subsequent instructions. As such, a valid Dockerfile must have FROM as
+# its first instruction. The image can be any valid image – it is especially easy to start by pulling an image from the
+# Public Repositories.
+#
+# FROM must be the first non-comment instruction in the Dockerfile.
+#
+# FROM can appear multiple times within a single Dockerfile in order to create multiple images. Simply make a note of
+# the last image ID output by the commit before each new FROM command.
+#
+# The tag or digest values are optional. If you omit either of them, the builder assumes a latest by default. The
+# builder returns an error if it cannot match the tag value.
+#
+FROM
+
+# MAINTAINER
+#
+# MAINTAINER <name>
+#
+# The MAINTAINER instruction allows you to set the Author field of the generated images.
+#
+MAINTAINER
+
+# RUN
+#
+# RUN has 2 forms:
+#
+#     RUN <command> (the command is run in a shell - /bin/sh -c - shell form)
+#     RUN ["executable", "param1", "param2"] (exec form)
+#
+# The RUN instruction will execute any commands in a new layer on top of the current image and commit the results.
+# The resulting committed image will be used for the next step in the Dockerfile.
+#
+#
+# CMD
+#
+# The CMD instruction has three forms:
+#
+#     CMD ["executable","param1","param2"] (exec form, this is the preferred form)
+#     CMD ["param1","param2"] (as default parameters to ENTRYPOINT)
+#     CMD command param1 param2 (shell form)
+#
+# There can only be one CMD instruction in a Dockerfile. If you list more than one CMD then only the last CMD will
+# take effect.
+#
+# The main purpose of a CMD is to provide defaults for an executing container. These defaults can include an
+# executable, or they can omit the executable, in which case you must specify an ENTRYPOINT instruction as well.
+#
+
+# LABEL
+#
+# LABEL <key>=<value> <key>=<value> <key>=<value> ...
+#
+# The LABEL instruction adds metadata to an image. A LABEL is a key-value pair. To include spaces within a LABEL
+# value, use quotes and backslashes as you would in command-line parsing.
+#
+# LABEL "com.example.vendor"="ACME Incorporated"
+#
+# An image can have more than one label. To specify multiple labels, separate each key-value pair with whitespace.
+#
+# LABEL com.example.label-with-value="foo"
+# LABEL version="1.0"
+# LABEL description="This text illustrates \
+# that label-values can span multiple lines."
+#
+# Docker recommends combining labels in a single LABEL instruction where possible. Each LABEL instruction produces
+# a new layer which can result in an inefficient image if you use many labels. This example results in four image
+# layers.
+#
+# LABEL multi.label1="value1" multi.label2="value2" other="value3"
+#
+
+# EXPOSE
+#
+# EXPOSE <port> [<port>...]
+#
+# The EXPOSE instructions informs Docker that the container will listen on the specified network ports at runtime.
+# Docker uses this information to interconnect containers using links (see the Docker User Guide) and to determine
+# which ports to expose to the host when using the -P flag.
+#
+#     Note: EXPOSE doesn’t define which ports can be exposed to the host or make ports accessible from the host by
+#           default. To expose ports to the host, at runtime, use the -p flag or the -P flag.
+#
+
+# ENV
+#
+# ENV <key> <value>
+# ENV <key>=<value> ...
+#
+# The ENV instruction sets the environment variable <key> to the value <value>. This value will be in the environment
+# of all “descendent” Dockerfile commands and can be replaced inline in many as well.
+#
+# The ENV instruction has two forms. The first form, ENV <key> <value>, will set a single variable to a value. The
+# entire string after the first space will be treated as the <value> - including characters such as spaces and quotes.
+#
+# The second form, ENV <key>=<value> ..., allows for multiple variables to be set at one time. Notice that the second
+# form uses the equals sign (=) in the syntax, while the first form does not. Like command line parsing, quotes and
+# backslashes can be used to include spaces within values.
+#
+
+# ADD
+#
+# ADD has two forms:
+#
+#     ADD <src>... <dest>
+#     ADD ["<src>",... "<dest>"] (this form is required for paths containing whitespace)
+#
+# The ADD instruction copies new files, directories or remote file URLs from <src> and adds them to the filesystem
+# of the container at the path <dest>.
+#
+# Multiple <src> resource may be specified but if they are files or directories then they must be relative to the
+# source directory that is being built (the context of the build).
+#
+# Each <src> may contain wildcards and matching will be done using Go’s filepath.Match rules. For most command line
+# uses this should act as expected, for example:
+#
+# ADD hom* /mydir/        # adds all files starting with "hom"
+# ADD hom?.txt /mydir/    # ? is replaced with any single character
+#
+# The <dest> is an absolute path, or a path relative to WORKDIR, into which the source will be copied inside the
+# destination container.
+#
+# ADD test aDir/          # adds "test" to `WORKDIR`/aDir/
+#
+# All new files and directories are created with a UID and GID of 0.
+#
+
+# COPY
+#
+# COPY has two forms:
+#
+#     COPY <src>... <dest>
+#     COPY ["<src>",... "<dest>"] (this form is required for paths containing whitespace)
+#
+# The COPY instruction copies new files or directories from <src> and adds them to the filesystem of the container
+# at the path <dest>.
+#
+# Multiple <src> resource may be specified but they must be relative to the source directory that is being built
+# (the context of the build).
+#
+# Each <src> may contain wildcards and matching will be done using Go’s filepath.Match rules. For most command line
+# uses this should act as expected, for example:
+#
+# COPY hom* /mydir/        # adds all files starting with "hom"
+# COPY hom?.txt /mydir/    # ? is replaced with any single character
+#
+# The <dest> is an absolute path, or a path relative to WORKDIR, into which the source will be copied inside the
+# destination container.
+#
+# COPY test aDir/          # adds "test" to `WORKDIR`/aDir/
+#
+# All new files and directories are created with a UID and GID of 0.
+#
+#     Note: If you build using STDIN (docker build - < somefile), there is no build context, so COPY can’t be used.
+#
+
+# ENTRYPOINT
+#
+# ENTRYPOINT has two forms:
+#
+#     ENTRYPOINT ["executable", "param1", "param2"] (the preferred exec form)
+#     ENTRYPOINT command param1 param2 (shell form)
+#
+# An ENTRYPOINT allows you to configure a container that will run as an executable.
+#
+# For example, the following will start nginx with its default content, listening on port 80:
+#
+# docker run -i -t --rm -p 80:80 nginx
+#
+# Command line arguments to docker run <image> will be appended after all elements in an exec form ENTRYPOINT, and
+# will override all elements specified using CMD. This allows arguments to be passed to the entry point, i.e., docker
+# run <image> -d will pass the -d argument to the entry point. You can override the ENTRYPOINT instruction using the
+# docker run --entrypoint flag.
+#
+# The shell form prevents any CMD or run command line arguments from being used, but has the disadvantage that your
+# ENTRYPOINT will be started as a subcommand of /bin/sh -c, which does not pass signals. This means that the executable
+# will not be the container’s PID 1 - and will not receive Unix signals - so your executable will not receive a SIGTERM
+# from docker stop <container>.
+#
+# Only the last ENTRYPOINT instruction in the Dockerfile will have an effect.
+
+# VOLUME
+#
+# VOLUME ["/data"]
+#
+# The VOLUME instruction creates a mount point with the specified name and marks it as holding externally mounted
+# volumes from native host or other containers. The value can be a JSON array, VOLUME ["/var/log/"], or a plain
+# string with multiple arguments, such as VOLUME /var/log or VOLUME /var/log /var/db. For more information/examples
+# and mounting instructions via the Docker client, refer to Share Directories via Volumes documentation.
+#
+# The docker run command initializes the newly created volume with any data that exists at the specified location
+# within the base image. For example, consider the following Dockerfile snippet:
+#
+# FROM ubuntu
+# RUN mkdir /myvol
+# RUN echo "hello world" > /myvol/greeting
+# VOLUME /myvol
+#
+# This Dockerfile results in an image that causes docker run, to create a new mount point at /myvol and copy the
+# greeting file into the newly created volume.
+#
+#     Note: If any build steps change the data within the volume after it has been declared, those changes will
+#           be discarded.
+#
+#     Note: The list is parsed as a JSON array, which means that you must use double-quotes (“) around words not
+#           single-quotes (‘).
+#
+
+# USER
+#
+# USER daemon
+#
+# The USER instruction sets the user name or UID to use when running the image and for any RUN, CMD and ENTRYPOINT
+# instructions that follow it in the Dockerfile.
+#
+
+# WORKDIR
+#
+# WORKDIR /path/to/workdir
+#
+# The WORKDIR instruction sets the working directory for any RUN, CMD, ENTRYPOINT, COPY and ADD instructions that
+# follow it in the Dockerfile.
+#
+# It can be used multiple times in the one Dockerfile. If a relative path is provided, it will be relative to the
+# path of the previous WORKDIR instruction. For example:
+#
+# WORKDIR /a
+# WORKDIR b
+# WORKDIR c
+# RUN pwd
+#
+# The output of the final pwd command in this Dockerfile would be /a/b/c.
+#
+# The WORKDIR instruction can resolve environment variables previously set using ENV. You can only use environment
+# variables explicitly set in the Dockerfile. For example:
+#
+# ENV DIRPATH /path
+# WORKDIR $DIRPATH/$DIRNAME
+#
+# The output of the final pwd command in this Dockerfile would be /path/$DIRNAME
+#
+
+# ONBUILD
+#
+# ONBUILD [INSTRUCTION]
+#
+# The ONBUILD instruction adds to the image a trigger instruction to be executed at a later time, when the image is
+# used as the base for another build. The trigger will be executed in the context of the downstream build, as if it
+# had been inserted immediately after the FROM instruction in the downstream Dockerfile.
+#
+# Any build instruction can be registered as a trigger.
+#
+# This is useful if you are building an image which will be used as a base to build other images, for example an
+# application build environment or a daemon which may be customized with user-specific configuration.
+#
+# For example, if your image is a reusable Python application builder, it will require application source code to
+# be added in a particular directory, and it might require a build script to be called after that. You can’t just
+# call ADD and RUN now, because you don’t yet have access to the application source code, and it will be different
+# for each application build. You could simply provide application developers with a boilerplate Dockerfile to
+# copy-paste into their application, but that is inefficient, error-prone and difficult to update because it mixes
+# with application-specific code.
+#
+# The solution is to use ONBUILD to register advance instructions to run later, during the next build stage.
+#
