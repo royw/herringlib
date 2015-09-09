@@ -6,6 +6,7 @@ import ast
 import os
 from pprint import pformat
 import shutil
+import textwrap
 from herringlib.prompt import prompt
 from herringlib.template import Template
 from herringlib.venv import VirtualenvInfo
@@ -181,15 +182,18 @@ def describe():
         value = Project.__dict__[key]
         if key in ATTRIBUTES:
             attrs = ATTRIBUTES[key]
-            required = ''
+            required = False
             if 'required' in attrs:
                 if attrs['required']:
-                    required = 'REQUIRED - '
+                    required = True
             if 'help' in attrs:
-                info("'{key}' - {required}{description}\n    current value: '{value}'".format(key=key,
-                                                                                              required=required,
-                                                                                              description=attrs['help'],
-                                                                                              value=value))
+                info("# {key}".format(key=key))
+                if required:
+                    info("# REQUIRED")
+                for line in textwrap.wrap(attrs['help'], width=100):
+                    info("# {line}".format(line=line))
+                info("# '{key}': '{value}'".format(key=key, value=value))
+                info('')
         else:
             info("'{key}': '{value}'".format(key=key, value=value))
 
