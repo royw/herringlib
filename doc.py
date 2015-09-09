@@ -554,6 +554,40 @@ if packages_required(required_packages):
                            {r'(\s*html_logo\s*=\s*\".*?\").*': ["html_logo = \"{logo}\"".format(logo=logo_file)]})
 
         with namespace('update'):
+
+            def obscure_urls(line):
+                url_regex = r"""(?xi)
+                    \b
+                    (                           # Capture 1: entire matched URL
+                      (?:
+                        [a-z][\w-]+:                # URL protocol and colon
+                        (?:
+                          /{1,3}                        # 1-3 slashes
+                          |                             #   or
+                          [a-z0-9%]                     # Single letter or digit or '%'
+                                                        # (Trying not to match e.g. "URI::Escape")
+                        )
+                        |                           #   or
+                        www\d{0,3}[.]               # "www.", "www1.", "www2." … "www999."
+                        |                           #   or
+                        [a-z0-9.\-]+[.][a-z]{2,4}/  # looks like domain name followed by a slash
+                      )
+                      (?:                                   # One or more:
+                        [^\s()<>]+                          # Run of non-space, non-()<>
+                        |                                   #   or
+                        \(([^\s()<>]+|(\([^\s()<>]+\)))*\)  # balanced parens, up to 2 levels
+                      )+
+                      (?:                                   # End with:
+                        \(([^\s()<>]+|(\([^\s()<>]+\)))*\)  # balanced parens, up to 2 levels
+                        |                                   #   or
+                        [^\s`!()\[\]{};:'".,<>?«»“”‘’]      # not a space or one of these punct chars
+                      )
+                    )
+                """
+                new_line = re.sub(url_regex, "********", line)
+                info(new_line)
+                return new_line
+
             @task(private=True)
             def changelog():
                 """rewrite the changelog to CHANGES.rst"""
@@ -564,7 +598,7 @@ if packages_required(required_packages):
                     with LocalShell() as local:
                         output = local.run("git log --pretty=%s --graph")
                         for line in output.strip().split("\n"):
-                            changelog_file.write("    {line}\n".format(line=line))
+                            changelog_file.write("    {line}\n".format(line=obscure_urls(line)))
                         changelog_file.write("\n")
 
             @task(private=True)
