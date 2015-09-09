@@ -144,8 +144,9 @@ try:
             dist_wheels = _dist_wheels(dist_dir=dist_dir)
             dist_wheel_files = _dist_wheel_files()
 
-            password = Project.dist_password or getpass("password for {user}@{host}: ".format(user=Project.user,
-                                                                                              host=Project.dist_host))
+            password = Project.dist_password
+            if password is None and Project.dist_host_prompt_for_sudo_password:
+                password = getpass("password for {user}@{host}: ".format(user=Project.user, host=Project.dist_host))
             Project.dist_password = password
 
             with RemoteShell(user=Project.user,
