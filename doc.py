@@ -25,9 +25,11 @@ Add the following to your *requirements.txt* file:
 * decorator; python_version == "[doc_python_version]"
 * pillow; python_version == "[doc_python_version]" and python_version < "3.0"
 * mock; python_version in "[doc_python_version]"
+* importlib; python_version < '2.7'
 
 """
 import ast
+import importlib
 import os
 from pprint import pformat
 import re
@@ -37,7 +39,6 @@ from sys import version
 from textwrap import dedent
 
 # noinspection PyUnresolvedReferences
-from fullmonty.touch import touch
 from herring.herring_app import task, namespace, task_execute
 import sys
 from herringlib.is_newer import is_newer
@@ -46,6 +47,7 @@ from herringlib.mkdir_p import mkdir_p
 from herringlib.project_tasks import packages_required
 from herringlib.project_settings import Project
 from herringlib.local_shell import LocalShell
+from herringlib.touch import touch
 from herringlib.venv import VirtualenvInfo, venv_decorator
 from herringlib.indent import indent
 
@@ -679,12 +681,26 @@ if packages_required(required_packages):
                 except:
                     pass
 
-            @task(private=True)
+            @task(private=False)
             def readme():
-                """Update the README.rst from the application's --longhelp output"""
+                """Update the README.rst from the application's package docstring"""
                 # noinspection PyBroadException
                 try:
-                    text = _app_output("--longhelp")
+                    # make sure the project's directory is on the system path so python can find import modules
+                    this_dir = os.path.abspath(Project.herringfile_dir)
+                    parent_dir = os.path.dirname(this_dir)
+                    if this_dir in sys.path:
+                        sys.path.remove(this_dir)
+                    if parent_dir in sys.path:
+                        sys.path.remove(parent_dir)
+                    sys.path.insert(0, parent_dir)
+                    sys.path.insert(1, this_dir)
+
+                    debug("sys.path: %s" % pformat(sys.path))
+                    debug("package: {pkg}".format(pkg=Project.package))
+                    app_module = importlib.import_module(Project.package)
+                    text = app_module.__doc__
+                    debug(text)
                     if text:
                         with open(Project.readme_file, 'w') as readme_file:
                             readme_file.write(text)
