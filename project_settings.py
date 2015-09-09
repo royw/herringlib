@@ -179,6 +179,9 @@ ATTRIBUTES = {
         'default': env_value('LOCAL_PYPI_HOST', default_value='http://localhost'),
         'help': 'A host name to deploy the distribution files to.  '
                 'Defaults to the value of the LOCAL_PYPI_HOST environment variable or "http://localhost".'},
+    'dist_host_prompt_for_sudo_password': {
+        'default': False,
+        'help': 'prompt for user password to use for sudo commands on the dist_host'},
     'dist_password': {
         'default': None,
         'help': 'The password for logging into the dist_host.  Prompts once on need if not defined.'},
