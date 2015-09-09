@@ -119,6 +119,7 @@ Project.metadata(
         # Defaults to first 'python_versions'.
         'deploy_python_version': '27',
 
+        # For a full list of available configuration items, run: herring project::describe
     }}
 )
 
