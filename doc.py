@@ -29,6 +29,10 @@ Add the following to your *requirements.txt* file:
 
 """
 import ast
+from datetime import datetime
+from distutils import dir_util
+from getpass import getpass
+# noinspection PyCompatibility
 import importlib
 import os
 from pprint import pformat
@@ -36,12 +40,15 @@ import re
 import shutil
 import fnmatch
 from sys import version
+import tempfile
 from textwrap import dedent
 
 # noinspection PyUnresolvedReferences
+import errno
 from herring.herring_app import task, namespace, task_execute
 import sys
 from herringlib.is_newer import is_newer
+from herringlib.remote_shell import RemoteShell
 from herringlib.simple_logger import info, warning, error, debug
 from herringlib.mkdir_p import mkdir_p
 from herringlib.project_tasks import packages_required
@@ -82,6 +89,7 @@ if packages_required(required_packages):
     from herringlib.recursively_remove import recursively_remove
     from herringlib.safe_edit import safe_edit, quick_edit
 
+
     def run_python(cmd_line, env=None, verbose=True, ignore_errors=False):
         """
         Setup PYTHONPATH environment variable then run the given command line.  Parse results for python style errors.
@@ -108,6 +116,7 @@ if packages_required(required_packages):
                 doc_errors.extend([line for line in error_lines if not re.search(r'Unexpected indentation', line)])
             return output
 
+
     @task()
     @venv_decorator(attr_name='doc_python_version')
     def doc():
@@ -121,6 +130,7 @@ if packages_required(required_packages):
             info('Generating documentation using the current python environment')
             task_execute('doc::generate')
 
+
     with namespace('doc'):
         @task(depends=['clean'], private=True)
         def clean():
@@ -129,6 +139,7 @@ if packages_required(required_packages):
             recursively_remove(os.path.join(Project.docs_dir, '_epy'), '*')
             recursively_remove(os.path.join(Project.docs_dir, '_build'), '*')
             doc.doc_errors = []
+
 
         def _name_dict(file_name):
             """extract the name dictionary from the automodule lines in the sphinx src file"""
@@ -143,6 +154,7 @@ if packages_required(required_packages):
                         if '__init__' not in value:
                             name_dict[key] = value
             return name_dict
+
 
         def _package_line(module_name):
             """create the package figure lines for the given module"""
@@ -163,6 +175,7 @@ if packages_required(required_packages):
                 warning("%s does not exist!" % image_path)
             return line
 
+
         def _class_line(module_name, class_name):
             """create the class figure lines for the given module and class"""
             info("_class_line(%s, %s)" % (module_name, class_name))
@@ -177,6 +190,7 @@ if packages_required(required_packages):
             else:
                 warning("%s does not exist!" % image_path)
             return line
+
 
         class SourceFile(object):
             """
@@ -286,6 +300,7 @@ if packages_required(required_packages):
                     line += "    :exclude-members: __dict__,__weakref__,__module__\n"
                 return line
 
+
         @task(depends=['clean'], private=True)
         def api():
             """Generate API sphinx source files from code"""
@@ -294,6 +309,7 @@ if packages_required(required_packages):
                     exclude = ' '.join(Project.exclude_from_docs)
                     run_python("sphinx-apidoc -d 6 -o _src ../{pkg} {exclude}".format(pkg=Project.package,
                                                                                       exclude=exclude))
+
 
         def _customize_doc_src_files(exclude=None):
             """change the auto-api generated sphinx src files to be more what we want"""
@@ -310,6 +326,7 @@ if packages_required(required_packages):
                 for name in dirs:
                     if name.startswith('.'):
                         dirs.remove(name)
+
 
         def clean_doc_log(file_name):
             """
@@ -384,6 +401,7 @@ if packages_required(required_packages):
                     run_python("pynsource -y {output} {source}".format(output=output, source=src_file),
                                verbose=False, ignore_errors=True)
 
+
         @task(depends=['api'], private=True)
         def diagrams():
             """Create UML diagrams"""
@@ -393,6 +411,7 @@ if packages_required(required_packages):
                 with cd(Project.uml_dir, verbose=True):
                     _create_module_diagrams(path)
                     _create_class_diagrams(path)
+
 
         @task(depends=['api', 'diagrams', 'logo::create', 'update'], private=True)
         def sphinx():
@@ -406,6 +425,7 @@ if packages_required(required_packages):
                            '-v -a -E . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
                 clean_doc_log('docs.log')
 
+
         @task(depends=['api', 'diagrams', 'logo::create', 'update'])
         def pdf():
             """Generate PDF API documents"""
@@ -418,6 +438,7 @@ if packages_required(required_packages):
                 info('Generating documentation using the current python environment')
                 task_execute('doc::pdf_generate')
 
+
         @task()
         def pdf_generate():
             """generate PDF using current python environment"""
@@ -428,6 +449,7 @@ if packages_required(required_packages):
                            '-a -E -n . ../{pdfdir}'.format(pdfdir=Project.docs_pdf_dir))
                 clean_doc_log('docs.log')
 
+
         @task(depends=['api', 'diagrams', 'update'], private=True)
         def incremental():
             """Incremental build docs for testing purposes"""
@@ -436,11 +458,13 @@ if packages_required(required_packages):
                            '-n . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
                 clean_doc_log('docs.log')
 
+
         @task(depends=['api'], private=True)
         def epy():
             """Generate epy API documents"""
             with cd(Project.docs_dir):
                 run_python('epydoc -v --output _epy --graph all bin db dst dut lab otto pc tests util')
+
 
         @task(depends=['sphinx'], private=True)
         def generate():
@@ -449,10 +473,12 @@ if packages_required(required_packages):
                 error(pformat(doc.doc_errors))
             info("{cnt} errors.".format(cnt=len(doc.doc_errors)))
 
+
         @task(depends=['generate'], private=True)
         def post_clean():
             """Generate docs then clean up afterwards"""
             clean()
+
 
         @task(depends=['clean'])
         def rstlint():
@@ -474,6 +500,7 @@ if packages_required(required_packages):
                     if not re.search(r'No problems found', result):
                         info(cmd_line)
                         info(result)
+
 
         with namespace('logo'):
 
@@ -525,12 +552,14 @@ if packages_required(required_packages):
 
                 return "{file}_animated.gif".format(file=file_name)
 
+
             def _image(logo_name, logo_image, file_name):
                 label = "montage -label {name} {image} -geometry +0+0 -pointsize 16 " \
                         "-background grey {file}.gif".format(name=logo_name, image=logo_image, file=file_name)
                 with LocalShell() as local:
                     local.run(label)
                 return "{file}.gif".format(file=file_name)
+
 
             @task()
             def display():
@@ -539,6 +568,7 @@ if packages_required(required_packages):
                 # noinspection PyArgumentEqualDefault
                 with LocalShell(verbose=False) as local:
                     local.run('bash -c "display {logo_file} &"'.format(logo_file=logo_file))
+
 
             @task()
             def create():
@@ -556,6 +586,14 @@ if packages_required(required_packages):
         with namespace('update'):
 
             def obscure_urls(line):
+                """
+                replace URLs in string with asterisks.
+
+                ref: http://daringfireball.net/2010/07/improved_regex_for_matching_urls
+
+                :param line: source line that may contain URLs
+                :type line: str
+                """
                 url_regex = r"""(?xi)
                     \b
                     (                           # Capture 1: entire matched URL
@@ -588,6 +626,7 @@ if packages_required(required_packages):
                 info(new_line)
                 return new_line
 
+
             @task(private=True)
             def changelog():
                 """rewrite the changelog to CHANGES.rst"""
@@ -600,6 +639,7 @@ if packages_required(required_packages):
                         for line in output.strip().split("\n"):
                             changelog_file.write("    {line}\n".format(line=obscure_urls(line)))
                         changelog_file.write("\n")
+
 
             @task(private=True)
             def todo():
@@ -617,6 +657,7 @@ if packages_required(required_packages):
                             todo_file.write("\n")
                         todo_file.write("\n")
 
+
             def _find_py_files(package_dir):
                 py_files = []
                 # noinspection PyArgumentEqualDefault
@@ -629,6 +670,7 @@ if packages_required(required_packages):
                                      if file_.endswith('.py') and file_ != '__init__.py'])
                 return py_files
 
+
             def _parse_py_file(py_file):
                 tree = ast.parse(''.join(open(py_file)))
                 # noinspection PyArgumentEqualDefault
@@ -636,6 +678,7 @@ if packages_required(required_packages):
                 functions = [node.name for node in tree.body if type(node) == ast.FunctionDef]
                 classes = [node.name for node in tree.body if type(node) == ast.ClassDef]
                 return docstring, functions, classes
+
 
             @task(private=True)
             def design():
@@ -672,6 +715,7 @@ if packages_required(required_packages):
                 else:
                     touch(Project.design_file)
 
+
             def _console_scripts():
                 # noinspection PyBroadException
                 try:
@@ -688,6 +732,7 @@ if packages_required(required_packages):
                 except:
                     pass
                 return []
+
 
             @task(private=True)
             def usage():
@@ -715,6 +760,7 @@ if packages_required(required_packages):
                 except:
                     pass
 
+
             @task(private=False)
             def readme():
                 """Update the README.rst from the application's package docstring"""
@@ -740,6 +786,7 @@ if packages_required(required_packages):
                             readme_file.write(text)
                 except Exception as ex:
                     error('Can not write {file} - {why}'.format(file=Project.readme_file, why=str(ex)))
+
 
             def _app_output(options):
                 # noinspection PyArgumentEqualDefault
@@ -769,6 +816,7 @@ if packages_required(required_packages):
                             error('Error running "{exe}" - {ex}'.format(exe=script, ex=str(ex)))
                     return '\n'.join(output)
 
+
             @task(private=True)
             def install():
                 """Update the install.rst"""
@@ -783,8 +831,128 @@ if packages_required(required_packages):
 
                     """.format(url="http://{host}/pypi/simple/".format(host=Project.dist_host), name=Project.name)))
 
+
         @task(depends=['update::readme', 'update::changelog', 'update::todo',
                        'update::usage', 'update::design', 'update::install'])
         def update():
             """Update generated document files"""
             pass
+
+
+        @task()
+        def publish():
+            """ copy latest docs to a linux base web server """
+            project_version_name = "{name}-{version}".format(name=Project.base_name, version=Project.version)
+            project_latest_name = "{name}-latest".format(name=Project.base_name)
+            doc_version = '{dir}/{file}'.format(dir=Project.docs_path, file=project_version_name)
+            doc_latest = '{dir}/{file}'.format(dir=Project.docs_path, file=project_latest_name)
+
+            docs_html_dir = '{dir}'.format(dir=Project.docs_html_dir)
+
+            password = Project.docs_password
+            if password is None and Project.doc_host_prompt_for_sudo_password:
+                password = getpass("password for {user}@{host}: ".format(user=Project.docs_user,
+                                                                         host=Project.docs_host))
+            Project.docs_password = password
+
+            info("Publishing to {user}@{host}".format(user=Project.docs_user, host=Project.docs_host))
+
+            with RemoteShell(user=Project.docs_user,
+                             password=Project.docs_password,
+                             host=Project.docs_host,
+                             verbose=True) as remote:
+                remote.run('mkdir -p \"{dir}\"'.format(dir=Project.docs_path))
+                remote.run('rm -rf \"{path}\"'.format(path=doc_latest))
+                remote.run('rm -rf \"{path}\"'.format(path=doc_version))
+                remote.run('mkdir -p \"{dir}\"'.format(dir=doc_version))
+                for file_ in [os.path.join(docs_html_dir, file_) for file_ in os.listdir(docs_html_dir)]:
+                    remote.put(file_, doc_version)
+                remote.run('ln -s \"{src}\" \"{dest}\"'.format(src=doc_version, dest=doc_latest))
+                remote.run('sudo chown -R {user}:{group} \"{dest}\"'.format(user=Project.docs_user,
+                                                                            group=Project.docs_group,
+                                                                            dest=doc_version),
+                           accept_defaults=True, timeout=10)
+                remote.run('sudo chmod -R g+w \"{dest}\"'.format(dest=doc_version),
+                           accept_defaults=True, timeout=10)
+
+
+        def clean_directory(directory):
+            """
+            remove all files and directories from the target html directory
+
+            :param directory: the directory to clean
+            :type directory: str
+            """
+            info("clean_directory Project.docs_html_path = {dir}".format(dir=directory))
+            if os.path.isdir(directory):
+                for the_file in os.listdir(directory):
+                    if the_file.startswith('.'):
+                        continue
+                    file_path = os.path.join(directory, the_file)
+                    try:
+                        if os.path.isfile(file_path):
+                            info("unlink {file}".format(file=file_path))
+                            os.unlink(file_path)
+                        elif os.path.isdir(file_path):
+                            info("rmtree {file}".format(file=file_path))
+                            shutil.rmtree(file_path)
+                    except Exception as e:
+                        error(str(e))
+
+
+        @task()
+        def publish_gh_pages():
+            """copy documentation to github pages"""
+            if Project.github_url is not None:
+                tmp_repo_path = None
+                try:
+                    tmp_repo_path = tempfile.mkdtemp()
+
+                    with LocalShell(verbose=True) as local:
+                        # clone repo selecting gh-pages branch
+                        #   git clone {git_url} {directory}
+                        #   git branch --list
+                        local.run("git clone {url} {dir}".format(url=Project.github_url, dir=tmp_repo_path))
+                        with cd(tmp_repo_path, verbose=True):
+                            remote_branches = [line.lstrip(r"[*\s]*").strip() for line in
+                                               local.run("git branch --list -r").splitlines()]
+
+                            if 'origin/gh-pages' in remote_branches:
+                                local.run("git pull origin")
+
+                                local.run("git checkout -b gh-pages origin/gh-pages")
+
+                                # select branch
+                                #   git checkout gh-pages
+                                local.run("git checkout gh-pages")
+
+                                # remove github pages clone directory
+                                # clean_directory(tmp_repo_path)
+
+                                # touch .nojekyl
+                                touch(".nojekyll")
+
+                                # copy documentation
+                                if os.path.isdir(Project.docs_html_path):
+                                    dir_util.copy_tree(Project.docs_html_path, tmp_repo_path)
+
+                                # commit and push to github
+                                local.run("git add --all")
+                                local.run("git status")
+                                now = datetime.now().strftime("%c")
+                                message = "{project} Documentation {version} {date}".format(project=Project.title,
+                                                                                            version=Project.version,
+                                                                                            date=now)
+                                local.run("git commit -m '{message}'".format(message=message))
+                                local.run("git push origin gh-pages")
+                            else:
+                                info("Please create a 'gh-pages' branch on the github repository.")
+
+                finally:
+                    if tmp_repo_path is not None:
+                        try:
+                            info("removing {repo}".format(repo=tmp_repo_path))
+                            shutil.rmtree(tmp_repo_path)
+                        except OSError as ex:
+                            if ex.errno != errno.ENOENT:
+                                raise

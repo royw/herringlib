@@ -215,8 +215,12 @@ ATTRIBUTES = {
         'help': 'prompt for doc_user password to use for sudo commands on the doc_host'},
     'docs_html_dir': {
         'default': 'build/docs',
-        'help': 'The directory to write HTML documentation to.  '
+        'help': 'The relative path to the directory to write HTML documentation to.  '
                 'Defaults to "{herringfile_dir}/build/docs".'},
+    'docs_html_path': {
+        'default': None,
+        'help': 'The absolute path to the directory to write HTML documentation to.  '
+                'Defaults to "{herringfile_dir}/{docs_html_dir}".'},
     'docs_password': {
         'default': None,
         'help': 'The password for logging into the docs_host.  Prompts once on need if not defined.'},
@@ -249,6 +253,9 @@ ATTRIBUTES = {
         'default': 'features',
         'help': 'The directory for lettuce features relative to the herringfile_dir.  Defaults to "{'
                 'herringfile_dir}/features".'},
+    'github_url': {
+        'default': None,
+        'help': 'The URL for the project on github.  Defaults to None.'},
     'herringfile_dir': {
         'help': 'The directory where the herringfile is located.'},
     'install_file': {
@@ -479,6 +486,10 @@ class ProjectSettings(object):
             setattr(self, 'min_python_version', min(getattr(self, 'python_versions')))
 
         setattr(self, 'min_python_version_tuple', self.version_to_tuple(getattr(self, 'min_python_version', '26')))
+
+        if getattr(self, 'docs_html_path', None) is None:
+            setattr(self, 'docs_html_path', os.path.join(getattr(self, 'herringfile_dir', None),
+                                                         getattr(self, 'docs_html_dir', None)))
 
         if getattr(self, 'docs_host', None) is None:
             setattr(self, 'docs_host', getattr(self, 'dist_host', None))

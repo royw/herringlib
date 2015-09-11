@@ -56,41 +56,6 @@ try:
         with LocalShell() as local:
             local.run('git tag -a v{ver} -m "version {ver}"'.format(ver=Project.version))
 
-    @task(namespace='doc')
-    def publish():
-        """ copy latest docs to the server """
-        project_version_name = "{name}-{version}".format(name=Project.base_name, version=Project.version)
-        project_latest_name = "{name}-latest".format(name=Project.base_name)
-        doc_version = '{dir}/{file}'.format(dir=Project.docs_path, file=project_version_name)
-        doc_latest = '{dir}/{file}'.format(dir=Project.docs_path, file=project_latest_name)
-
-        docs_html_dir = '{dir}'.format(dir=Project.docs_html_dir)
-
-        password = Project.docs_password
-        if password is None and Project.doc_host_prompt_for_sudo_password:
-            password = getpass("password for {user}@{host}: ".format(user=Project.docs_user, host=Project.docs_host))
-        Project.docs_password = password
-
-        info("Publishing to {user}@{host}".format(user=Project.docs_user, host=Project.docs_host))
-
-        with RemoteShell(user=Project.docs_user,
-                         password=Project.docs_password,
-                         host=Project.docs_host,
-                         verbose=True) as remote:
-            remote.run('mkdir -p \"{dir}\"'.format(dir=Project.docs_path))
-            remote.run('rm -rf \"{path}\"'.format(path=doc_latest))
-            remote.run('rm -rf \"{path}\"'.format(path=doc_version))
-            remote.run('mkdir -p \"{dir}\"'.format(dir=doc_version))
-            for file_ in [os.path.join(docs_html_dir, file_) for file_ in os.listdir(docs_html_dir)]:
-                remote.put(file_, doc_version)
-            remote.run('ln -s \"{src}\" \"{dest}\"'.format(src=doc_version, dest=doc_latest))
-            remote.run('sudo chown -R {user}:{group} \"{dest}\"'.format(user=Project.docs_user,
-                                                                        group=Project.docs_group,
-                                                                        dest=doc_version),
-                       accept_defaults=True, timeout=10)
-            remote.run('sudo chmod -R g+w \"{dest}\"'.format(dest=doc_version),
-                       accept_defaults=True, timeout=10)
-
     def _dist_wheel_files():
         pattern = "{name}-{version}-*.whl".format(name=Project.base_name, version=Project.version)
         project_wheel_names = [os.path.basename(path) for path in glob(os.path.join(Project.herringfile_dir,
