@@ -42,6 +42,9 @@ project_package = u'{package}'
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
 
+# -- extensions -----------------------------------------------------
+# http://sphinx-doc.org/extensions.html
+
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
@@ -54,7 +57,8 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.graphviz',
     'sphinx.ext.inheritance_diagram',
-	'sphinx.ext.napoleon',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.extlinks',
     # 'sphinx_pyreverse',
     # 'rst2pdf.pdfbuilder',     # python2.x only
     'sphinxcontrib.plantuml',
@@ -65,6 +69,8 @@ extensions = [
     'sphinxcontrib.packetdiag',
     'sphinxcontrib.seqdiag',
     'sphinxcontrib.autoprogram',
+    'sphinxcontrib.aafigure',
+    'sphinxcontrib.httpdomain',
     'ext.ditaa',
 ]
 
@@ -167,6 +173,64 @@ pygments_style = 'sphinx'
 
 # If true, keep warnings as "system message" paragraphs in the built documents.
 # keep_warnings = False
+
+# -- Options for httpdomain -----------------------------------------------------
+# https://pythonhosted.org/sphinxcontrib-httpdomain/
+
+# http_headers_ignore_prefixes
+#     List of HTTP header prefixes which should be ignored in strict mode:
+#     http_headers_ignore_prefixes = ['X-']
+#     New in version 1.4.0.
+# http_headers_ignore_prefixes = ['X-']
+
+# http_index_ignore_prefixes
+#     Strips the leading segments from the endpoint paths by given list of prefixes:
+#     http_index_ignore_prefixes = ['/internal', '/_proxy']
+#     New in version 1.3.0.
+# http_index_ignore_prefixes = ['/internal', '/_proxy']
+
+# http_index_shortname
+#     Short name of the index which will appears on every page:
+#     http_index_shortname = 'api'
+#     New in version 1.3.0.
+# http_index_shortname = 'api'
+
+# http_index_localname
+#     Full index name which is used on index page:
+#     http_index_localname = "My Project HTTP API"
+#     New in version 1.3.0.
+# http_index_localname = "My Project HTTP API"
+
+# http_strict_mode
+#     When True (default) emits build errors when status codes, methods and headers are looks non-standard:
+#     http_strict_mode = True
+#     New in version 1.4.0.
+# http_strict_mode = True
+
+# -- Options for aafigure -----------------------------------------------------
+# https://launchpad.net/aafigure
+# http://pythonhosted.org/aafigure/
+# usage:
+#  ..aafig::
+#
+#       o--->
+#
+
+# -- Options for extlinks -----------------------------------------------------
+# http://sphinx-doc.org/ext/extlinks.html
+extlinks = {
+    # usage:
+    #   :bugzilla:`12345`
+    #   :bugzilla:`this bug <12345>`
+    #
+    # examples:
+    #   The bug 12345 should not be a link.
+    #   The :bugzilla:`12345` should be a link with the link caption "bug 12345".
+    #   The :bugzilla:`very important bug <12345>` should be a link with the link caption "very important bug".
+
+    'bugzilla': ('https://bugzilla.austin.hp.com/show_bug.cgi?id=%s',
+                 'bug '),
+}
 
 # -- Options for PlantUML --------------------------------------------------
 # plantuml
@@ -574,10 +638,10 @@ pdf_fit_background_mode = 'scale'
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {{
-	'http://docs.python.org/': None,
-	'python27': ('http://docs.python.org/2.7', None),
-	'python34': ('https://docs.python.org/3.4', None),
-    'FullMonty': ('http://tpcvm143.austin.hp.com/docs/FullMonty-latest/', None),
+    'http://docs.python.org/': None,
+    'python27': ('http://docs.python.org/2.7', None),
+    'python34': ('https://docs.python.org/3.4', None),
+    'FullMonty': ('royw.github.io/fullmonty', None),
     'six': ('http://pythonhosted.org/six/', None),
     'dateutil': ('https://dateutil.readthedocs.org/en/latest/', None),
     'matplotlib': ('http://matplotlib.org/', None),

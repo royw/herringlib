@@ -19,6 +19,8 @@ Add the following to your *requirements.txt* file:
 * sphinxcontrib-nwdiag; python_version == "[doc_python_version]"
 * sphinxcontrib-seqdiag; python_version == "[doc_python_version]"
 * sphinxcontrib-autoprogram; python_version == "[doc_python_version]"
+* sphinxcontrib-aafigure; python_version == "[doc_python_version]"
+* sphinxcontrib-httpdomain; python_version == "[doc_python_version]"
 * paramiko; python_version == "[doc_python_version]"
 * scp; python_version == "[doc_python_version]"
 * rst2pdf; python_version == "[doc_python_version]"
@@ -129,6 +131,20 @@ if packages_required(required_packages):
         else:
             info('Generating documentation using the current python environment')
             task_execute('doc::generate')
+
+
+    @task()
+    @venv_decorator(attr_name='doc_python_version')
+    def doc_watch():
+        """generate project documentation"""
+        venvs = VirtualenvInfo('doc_python_version')
+        info("venvs: {venvs}".format(venvs=repr(venvs.__dict__)))
+        if not venvs.in_virtualenv and venvs.defined:
+            for venv_info in venvs.infos():
+                venv_info.run('herring doc::watch --python-tag py{ver}'.format(ver=venv_info.ver))
+        else:
+            info('Generating documentation using the current python environment')
+            task_execute('doc::watch')
 
 
     with namespace('doc'):
