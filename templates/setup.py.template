@@ -77,6 +77,11 @@ if sys.version_info < (3, 2):
         "configparser",  # back port from py32
     ])
 
+# if sys.version_info < (3, 5):
+#     required_imports.extend([
+#         "scandir",  # new in py35
+#     ])
+
 # noinspection PyBroadException
 try:
     long_description = open('README.rst').read()
