@@ -10,6 +10,7 @@ Normal usage is to invoke the *doc* task.
 Add the following to your *requirements.txt* file:
 
 * Pygments; python_version == "[doc_python_version]"
+* PIL; python_version == "[doc_python_version]"
 * Sphinx; python_version == "[doc_python_version]"
 * sphinx-bootstrap-theme; python_version == "[doc_python_version]"
 * sphinx-pyreverse; python_version == "[doc_python_version]"
@@ -19,8 +20,9 @@ Add the following to your *requirements.txt* file:
 * sphinxcontrib-nwdiag; python_version == "[doc_python_version]"
 * sphinxcontrib-seqdiag; python_version == "[doc_python_version]"
 * sphinxcontrib-autoprogram; python_version == "[doc_python_version]"
-* sphinxcontrib-aafigure; python_version == "[doc_python_version]"
+* sphinxcontrib-aafig; python_version == "[doc_python_version]"
 * sphinxcontrib-httpdomain; python_version == "[doc_python_version]"
+* recommonmark; python_version == "[doc_python_version]"
 * paramiko; python_version == "[doc_python_version]"
 * scp; python_version == "[doc_python_version]"
 * rst2pdf; python_version == "[doc_python_version]"
@@ -570,7 +572,7 @@ if packages_required(required_packages):
 
 
             def _image(logo_name, logo_image, file_name):
-                label = "montage -label {name} {image} -geometry +0+0 -pointsize 16 " \
+                label = "montage -label {name} {image} -geometry +0+0 -resize 240 -pointsize 16 " \
                         "-background grey {file}.gif".format(name=logo_name, image=logo_image, file=file_name)
                 with LocalShell() as local:
                     local.run(label)
