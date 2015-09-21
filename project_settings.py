@@ -135,6 +135,10 @@ ATTRIBUTES = {
         'default': '~/bin',
         'help': 'The path to the user\'s bin directory.  '
                 'Defaults to "{herringfile_dir}/docs/usage.rst".'},
+    'bugzilla_url': {
+        'default': env_value('BUGZILLA_URL', default_value='http://localhost'),
+        'help': 'A URL to bugzilla.'
+                'Defaults to the value of the BUGZILLA_URL environment variable or "http://localhost".'},
     'build_dir': {
         'default': 'build',
         'help': 'The directory to build into relative to the herringfile_dir.  '
@@ -256,6 +260,9 @@ ATTRIBUTES = {
     'github_url': {
         'default': None,
         'help': 'The URL for the project on github.  Defaults to None.'},
+    'herring': {
+        'default': 'herring',
+        'help': 'The herring executable to use when invoking a command in a virtualenv.'},
     'herringfile_dir': {
         'help': 'The directory where the herringfile is located.'},
     'install_file': {

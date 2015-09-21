@@ -18,12 +18,14 @@ Templates have the extension '.template'.
 """
 
 import os
+from pprint import pformat
 import shutil
 import tempfile
+import traceback
 from herringlib.backup import next_backup_filename
 from herringlib.md5 import md5sum
 from herringlib.mkdir_p import mkdir_p
-from herringlib.simple_logger import error
+from herringlib.simple_logger import error, info
 from herringlib.split_all import split_all
 
 
@@ -89,9 +91,9 @@ class Template(object):
         :param src_filename: the template file
         :param dest_filename: the rendered file
         """
-        # info("creating {dest} from {src} with options: {options}".format(dest=dest_filename,
-        # src=src_filename,
-        # options=repr(kwargs)))
+        info("creating {dest} from {src} with options: {options}".format(dest=dest_filename,
+                                                                         src=src_filename,
+                                                                         options=pformat(kwargs)))
         with open(src_filename) as in_file:
             template = in_file.read()
 
@@ -136,7 +138,9 @@ class Template(object):
             shutil.copyfile(new_filename, dest_filename)
 
         except Exception as ex:
-            error("Error rendering template ({file}) - {err}".format(file=src_filename, err=str(ex)))
+            error("Error rendering template ({file}) - {err}\n{trace}".format(file=src_filename,
+                                                                              err=str(ex),
+                                                                              trace=traceback.format_exc()))
         finally:
             if new_filename is not None:
                 if os.path.isfile(new_filename):

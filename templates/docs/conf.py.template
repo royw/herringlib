@@ -50,9 +50,9 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 try:
     from recommonmark.parser import CommonMarkParser
 
-    source_parsers = {
+    source_parsers = {{
         '.md': CommonMarkParser,
-    }
+    }}
 
     source_suffix = ['.rst', '.md']
 except ImportError:
@@ -76,6 +76,7 @@ project_author = u'{author}'
 project_author_email = u'{author_email}'
 project_description = u'{description}'
 project_package = u'{package}'
+project_bugzilla_url = u'{bugzilla_url}'
 
 # -- General configuration -----------------------------------------------------
 
@@ -109,7 +110,7 @@ extensions = [
     'sphinxcontrib.packetdiag',
     'sphinxcontrib.seqdiag',
     'sphinxcontrib.autoprogram',
-    'sphinxcontrib.aafigure',
+    'sphinxcontrib.aafig',
     'sphinxcontrib.httpdomain',
     'ext.ditaa',
 ]
@@ -258,7 +259,7 @@ pygments_style = 'sphinx'
 
 # -- Options for extlinks -----------------------------------------------------
 # http://sphinx-doc.org/ext/extlinks.html
-extlinks = {
+extlinks = {{
     # usage:
     #   :bugzilla:`12345`
     #   :bugzilla:`this bug <12345>`
@@ -268,9 +269,9 @@ extlinks = {
     #   The :bugzilla:`12345` should be a link with the link caption "bug 12345".
     #   The :bugzilla:`very important bug <12345>` should be a link with the link caption "very important bug".
 
-    'bugzilla': ('https://bugzilla.austin.hp.com/show_bug.cgi?id=%s',
+    'bugzilla': ('{{url}}/show_bug.cgi?id=%s'.format(url=project_bugzilla_url),
                  'bug '),
-}
+}}
 
 # -- Options for PlantUML --------------------------------------------------
 # plantuml
@@ -405,7 +406,7 @@ autodoc_default_flags = ['members', 'undoc-members', 'inherited-members', 'show-
 # a list of builtin themes.
 # html_theme = 'default'
 # html_theme = 'solar'
-html_theme = 'nature'
+# html_theme = 'nature'
 # html_theme = 'scrolls'    # crashes
 
 # html_theme = 'bootstrap'  # crashes

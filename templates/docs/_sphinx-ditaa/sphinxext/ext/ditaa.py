@@ -15,33 +15,38 @@ import re
 import codecs
 import posixpath
 from os import path
-from math import ceil
+# from math import ceil
 from subprocess import Popen, PIPE
+
 try:
+    # hashlib new in python 2.5
     from hashlib import sha1 as sha
 except ImportError:
+    # noinspection PyCompatibility
     from sha import sha
 
 from docutils import nodes
 from docutils.parsers.rst import directives
 
 from sphinx.errors import SphinxError
-from sphinx.util.osutil import ensuredir, ENOENT, EPIPE
+from sphinx.util.osutil import ensuredir, ENOENT, EPIPE, EINVAL
 from sphinx.util.compat import Directive
-
 
 mapname_re = re.compile(r'<map id="(.*?)"')
 svg_dim_re = re.compile(r'<svg\swidth="(\d+)pt"\sheight="(\d+)pt"', re.M)
 
 
+# noinspection PyDocstring
 class DitaaError(SphinxError):
     category = 'Ditaa error'
 
 
+# noinspection PyAbstractClass,PyAbstractClass,PyDocstring,PyPep8Naming
 class ditaa(nodes.General, nodes.Element):
     pass
 
 
+# noinspection PyDocstring
 class Ditaa(Directive):
     """
     Directive to insert ditaa markup.
@@ -58,7 +63,7 @@ class Ditaa(Directive):
 
     def run(self):
         if self.arguments:
-            print self.arguments
+            print(self.arguments)
             document = self.state.document
             if self.content:
                 return [document.reporter.warning(
@@ -93,11 +98,11 @@ class Ditaa(Directive):
         node['inline'] = 'inline' in self.options
         return [node]
 
+
+# noinspection PyPep8Naming,PyDocstring,PyUnusedLocal,PyArgumentEqualDefault,PyUnboundLocalVariable
 def render_ditaa(self, code, options, prefix='ditaa'):
     """Render ditaa code into a PNG output file."""
-    hashkey = code.encode('utf-8') + str(options) + \
-              str(self.builder.config.ditaa) + \
-              str(self.builder.config.ditaa_args)
+    hashkey = code.encode('utf-8') + str(options) + str(self.builder.config.ditaa) + str(self.builder.config.ditaa_args)
     infname = '%s-%s.%s' % (prefix, sha(hashkey).hexdigest(), "ditaa")
     outfname = '%s-%s.%s' % (prefix, sha(hashkey).hexdigest(), "png")
 
@@ -119,8 +124,8 @@ def render_ditaa(self, code, options, prefix='ditaa'):
     ditaa_args = [self.builder.config.ditaa]
     ditaa_args.extend(self.builder.config.ditaa_args)
     ditaa_args.extend(options)
-    ditaa_args.extend( [infullfn] )
-    ditaa_args.extend( [outfullfn] )
+    ditaa_args.extend([infullfn])
+    ditaa_args.extend([outfullfn])
 
     f = open(infullfn, 'w')
     f.write(code)
@@ -129,8 +134,8 @@ def render_ditaa(self, code, options, prefix='ditaa'):
     try:
         self.builder.warn(ditaa_args)
         p = Popen(ditaa_args, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-    except OSError, err:
-        if err.errno != ENOENT:   # No such file or directory
+    except OSError as err:
+        if err.errno != ENOENT:  # No such file or directory
             raise
         self.builder.warn('ditaa command %r cannot be run (needed for ditaa '
                           'output), check the ditaa setting' %
@@ -142,11 +147,11 @@ def render_ditaa(self, code, options, prefix='ditaa'):
         # Ditaa may close standard input when an error occurs,
         # resulting in a broken pipe on communicate()
         stdout, stderr = p.communicate(code)
-    except OSError, err:
+    except OSError as err:
         if err.errno != EPIPE:
             raise
         wentWrong = True
-    except IOError, err:
+    except IOError as err:
         if err.errno != EINVAL:
             raise
         wentWrong = True
@@ -157,15 +162,16 @@ def render_ditaa(self, code, options, prefix='ditaa'):
         p.wait()
     if p.returncode != 0:
         raise DitaaError('ditaa exited with error:\n[stderr]\n%s\n'
-                            '[stdout]\n%s' % (stderr, stdout))
+                         '[stdout]\n%s' % (stderr, stdout))
     return outrelfn, outfullfn
 
 
+# noinspection PyDocstring,PyUnusedLocal
 def render_ditaa_html(self, node, code, options, prefix='ditaa',
-                    imgcls=None, alt=None):
+                      imgcls=None, alt=None):
     try:
         fname, outfn = render_ditaa(self, code, options, prefix)
-    except DitaaError, exc:
+    except DitaaError as exc:
         raise nodes.SkipNode
 
     inline = node.get('inline', False)
@@ -186,14 +192,16 @@ def render_ditaa_html(self, node, code, options, prefix='ditaa',
     raise nodes.SkipNode
 
 
+# noinspection PyDocstring
 def html_visit_ditaa(self, node):
     render_ditaa_html(self, node, node['code'], node['options'])
 
 
+# noinspection PyDocstring,PyUnusedLocal
 def render_ditaa_latex(self, node, code, options, prefix='ditaa'):
     try:
         fname, outfn = render_ditaa(self, code, options, prefix)
-    except DitaaError, exc:
+    except DitaaError as exc:
         raise nodes.SkipNode
 
     if fname is not None:
@@ -201,10 +209,12 @@ def render_ditaa_latex(self, node, code, options, prefix='ditaa'):
     raise nodes.SkipNode
 
 
+# noinspection PyDocstring
 def latex_visit_ditaa(self, node):
     render_ditaa_latex(self, node, node['code'], node['options'])
 
 
+# noinspection PyDocstring
 def setup(app):
     app.add_node(ditaa,
                  html=(html_visit_ditaa, None),

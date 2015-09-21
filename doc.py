@@ -20,8 +20,9 @@ Add the following to your *requirements.txt* file:
 * sphinxcontrib-nwdiag; python_version == "[doc_python_version]"
 * sphinxcontrib-seqdiag; python_version == "[doc_python_version]"
 * sphinxcontrib-autoprogram; python_version == "[doc_python_version]"
-* sphinxcontrib-aafig; python_version == "[doc_python_version]"
+* git+https://github.com/cawka/sphinxcontrib-aafig.git#egg=sphinxcontrib-aafig; python_version == "[doc_python_version]"
 * sphinxcontrib-httpdomain; python_version == "[doc_python_version]"
+* sphinx-rtd-theme; python_version == "[doc_python_version]"
 * recommonmark; python_version == "[doc_python_version]"
 * paramiko; python_version == "[doc_python_version]"
 * scp; python_version == "[doc_python_version]"
@@ -129,7 +130,8 @@ if packages_required(required_packages):
         info("venvs: {venvs}".format(venvs=repr(venvs.__dict__)))
         if not venvs.in_virtualenv and venvs.defined:
             for venv_info in venvs.infos():
-                venv_info.run('herring doc::generate --python-tag py{ver}'.format(ver=venv_info.ver))
+                venv_info.run('{herring} doc::generate --python-tag py{ver}'.format(herring=Project.herring,
+                                                                                    ver=venv_info.ver))
         else:
             info('Generating documentation using the current python environment')
             task_execute('doc::generate')
@@ -143,7 +145,8 @@ if packages_required(required_packages):
         info("venvs: {venvs}".format(venvs=repr(venvs.__dict__)))
         if not venvs.in_virtualenv and venvs.defined:
             for venv_info in venvs.infos():
-                venv_info.run('herring doc::watch --python-tag py{ver}'.format(ver=venv_info.ver))
+                venv_info.run('{herring} doc::watch --python-tag py{ver}'.format(herring=Project.herring,
+                                                                                 ver=venv_info.ver))
         else:
             info('Generating documentation using the current python environment')
             task_execute('doc::watch')
@@ -451,7 +454,7 @@ if packages_required(required_packages):
             venvs = VirtualenvInfo('doc_python_version')
             if not venvs.in_virtualenv and venvs.defined:
                 for venv_info in venvs.infos():
-                    venv_info.run('herring doc::pdf_generate')
+                    venv_info.run('{herring} doc::pdf_generate'.format(herring=Project.herring))
             else:
                 info('Generating documentation using the current python environment')
                 task_execute('doc::pdf_generate')

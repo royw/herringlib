@@ -155,7 +155,8 @@ def init():
 @task(namespace='project')
 def update():
     """
-    Regenerate files (except herringfile) from current templates.  WARNING: Backup or commit files before running!!!
+    Regenerate files (except herringfile) from current templates.
+    Delete the file(s) you want to update, then run this task.
     """
     defaults = _project_defaults()
 
@@ -165,7 +166,8 @@ def update():
                          for herringlib in HerringFile.herringlib_paths]:
 
         info("template directory: %s" % template_dir)
-        template.generate(template_dir, defaults, overwrite=True)
+        # noinspection PyArgumentEqualDefault
+        template.generate(template_dir, defaults, overwrite=False)
 
 
 @task(namespace='project', configured='optional')

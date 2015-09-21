@@ -95,12 +95,12 @@ try:
 
         else:
             version = Project.version
-            project_version_name = "{name}-{version}.tar.gz".format(name=Project.base_title, version=version)
-            project_latest_name = "{name}-latest.tar.gz".format(name=Project.base_title)
+            project_version_name = "{name}-{version}.tar.gz".format(name=Project.base_name, version=version)
+            project_latest_name = "{name}-latest.tar.gz".format(name=Project.base_name)
 
             pypi_dir = Project.pypi_path
             dist_host = Project.dist_host
-            dist_dir = '{dir}/{name}'.format(dir=pypi_dir, name=Project.base_title)
+            dist_dir = '{dir}/{name}'.format(dir=pypi_dir, name=Project.base_name)
             # dist_url = '{host}:{path}/'.format(host=dist_host, path=dist_dir)
             dist_version = '{dir}/{file}'.format(dir=dist_dir, file=project_version_name)
             dist_latest = '{dir}/{file}'.format(dir=dist_dir, file=project_latest_name)
@@ -185,7 +185,8 @@ if Project.package:
                     warning('To use wheels, you must disable universal in setup.cfg:\n    [wheel]\n    universal=0\n')
                     return
                 for venv_info in venvs.infos():
-                    venv_info.run('herring build::wheel --python-tag py{ver}'.format(ver=venv_info.ver))
+                    venv_info.run('{herring} build::wheel --python-tag py{ver}'.format(herring=Project.herring,
+                                                                                       ver=venv_info.ver))
             else:
                 info("To build wheels, in your herringfile you must set Project.wheel_python_versions to a list"
                      "of compact version, for example: ['27', '33', '34'] will build wheels for "

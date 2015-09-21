@@ -118,11 +118,11 @@ class Requirement(ComparableMixin):
         if self.line.startswith('"') and self.line.endswith('"'):
             self.line = self.line[1:-1]
         debug("Requirement: {line}".format(line=self.line))
-        match = re.match(r'-e .*?#egg=(\S+)', self.line)
+        match = re.match(r'(.*?#egg=[^\s;]+)', self.line)
         if match:
-            self.package = match.group(1).strip()
+            self.package = match.group(1).strip().strip(';')
         else:
-            self.package = re.split(r'[^a-zA-Z0-9_\-]', self.line)[0].strip()
+            self.package = re.split(r'[^a-zA-Z0-9_\-]', self.line)[0].strip().strip(';')
         self.qualified_package = re.split(r';', self.line)[0].strip()
         try:
             self.markers = [EnvironmentMarker(re.split(r';', self.line)[1].strip().replace('"', "'"))]
