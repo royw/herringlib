@@ -8,19 +8,9 @@ Welcome to {name}'s documentation!
 
 Contents:
 
-* :ref:`api`
 * :ref:`user-docs`
-
-.. _api:
-
-.. toctree::
-   :maxdepth: 2
-   :caption: {name} API
-
-   _src/modules
-
-* :ref:`genindex`
-* :ref:`modindex`
+* :ref:`api`
+* :ref:`project`
 
 .. _user-docs:
 
@@ -32,9 +22,28 @@ Contents:
    design
    install
    usage
+   faq
+
+.. _api:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Harvester API
+
+   _src/modules
+
+.. _project:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Project Info
+
    todo
    license
    news
-   faq
    CHANGES
+
+
+* :ref:`genindex`
+* :ref:`modindex`
 
