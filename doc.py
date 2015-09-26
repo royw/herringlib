@@ -10,7 +10,6 @@ Normal usage is to invoke the *doc* task.
 Add the following to your *requirements.txt* file:
 
 * Pygments; python_version == "[doc_python_version]"
-* PIL; python_version == "[doc_python_version]"
 * Sphinx; python_version == "[doc_python_version]"
 * sphinx-bootstrap-theme; python_version == "[doc_python_version]"
 * sphinx-pyreverse; python_version == "[doc_python_version]"
@@ -31,6 +30,10 @@ Add the following to your *requirements.txt* file:
 * pillow; python_version == "[doc_python_version]" and python_version < "3.0"
 * mock; python_version in "[doc_python_version]"
 * importlib; python_version < '2.7'
+
+.. note::
+
+    Using pillow instead of PIL because pillow supports python2/3 while PIL is python2 only.
 
 """
 import ast
@@ -561,7 +564,7 @@ if packages_required(required_packages):
                 """.format(text=text, file=file_name, pre=pre, post=post)
 
                 animated = """convert \
-                    -adjoin -delay 100 {file}_on.png {file}_off.png {file}_animated.gif
+                    -adjoin -delay 100 -resize 240 {file}_on.png {file}_off.png {file}_animated.gif
                 """.format(file=file_name)
 
                 # noinspection PyArgumentEqualDefault
@@ -571,7 +574,8 @@ if packages_required(required_packages):
                     local.run(animated)
                     local.run('bash -c "rm -f {file}_on.png {file}_off.png"'.format(file=file_name))
 
-                return "{file}_animated.gif".format(file=file_name)
+                logo_image = "{file}_animated.gif".format(file=file_name)
+                return logo_image
 
 
             def _image(logo_name, logo_image, file_name):
@@ -778,6 +782,7 @@ if packages_required(required_packages):
                                 if text:
                                     usage_file.write("    ➤ {app} --help\n".format(app=script))
                                     usage_file.write(indent(text, indent_spaces=4))
+                                    usage_file.write("\n\n")
                 except:
                     pass
 
