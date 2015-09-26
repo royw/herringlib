@@ -70,12 +70,17 @@ class RemoteShell(AShell):
         Project.address = host
         self.ssh = pxssh(timeout=1200)
         try:
-            self.ssh.login(host, user)
+            if password:
+                self.ssh.login(host, user, password)
+            else:
+                self.ssh.login(host, user)
         except ExceptionPxssh:
             if not password:
                 password = Project.password
             if not password:
                 password = getpass('password for {user}@{host}: '.format(user=user, host=host))
+            self.ssh.close()
+            self.ssh = pxssh(timeout=1200)
             self.ssh.login(host, user, password)
         self.accept_defaults = False
         self.logfile = logfile
