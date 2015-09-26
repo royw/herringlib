@@ -100,8 +100,6 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'sphinx.ext.napoleon',
     'sphinx.ext.extlinks',
-    # 'sphinx_pyreverse',
-    # 'rst2pdf.pdfbuilder',     # python2.x only
     'sphinxcontrib.plantuml',
     'sphinxcontrib.blockdiag',
     'sphinxcontrib.actdiag',
@@ -110,10 +108,16 @@ extensions = [
     'sphinxcontrib.packetdiag',
     'sphinxcontrib.seqdiag',
     'sphinxcontrib.autoprogram',
-    'sphinxcontrib.aafig',
     'sphinxcontrib.httpdomain',
     'ext.ditaa',
 ]
+
+if sys.version_info < (3, 0):
+    # python2.x only
+    extensions.append('sphinx_pyreverse')
+    extensions.append('sphinxcontrib.aafig')
+    extensions.append('rst2pdf.pdfbuilder')
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
