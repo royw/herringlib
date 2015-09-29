@@ -216,6 +216,7 @@ if packages_required(required_packages):
             return line
 
 
+        # noinspection PyMethodMayBeStatic
         class SourceFile(object):
             """
             autodoc generates:
@@ -260,18 +261,34 @@ if packages_required(required_packages):
                     self.package = False
                     self.class_name = ''
 
+                    headers_to_remove = ['Subpackages', 'Submodules', 'Module contents']
+
+                    out_file.write(".. include:: ../icons.rst")
+                    out_file.write("\n\n")
+
+                    delete_next_line = False
                     for line in in_file.readlines():
+                        if delete_next_line and line.startswith('---'):
+                            info("removing " + line.strip())
+                            delete_next_line = False
+                            continue
+                        delete_next_line = False
                         line = self._hack_mod(line)
+                        line = self._hack_package(line)
                         line = self._hack_module(line)
                         line = self._hack_init(line)
                         line = self._hack_underline(line)
                         line = self._hack_members(line)
+                        if line.strip() in headers_to_remove:
+                            info("removing " + line.strip())
+                            delete_next_line = True
+                            continue
                         out_file.write(line)
 
                     out_file.write("\n\n")
-                    title = "%s Inheritance Diagrams" % self.module_name
-                    out_file.write("%s\n" % title)
-                    out_file.write('-' * len(title) + "\n\n")
+                    # title = "%s Inheritance Diagrams" % self.module_name
+                    # out_file.write("%s\n" % title)
+                    # out_file.write('-' * len(title) + "\n\n")
                     for value in sorted(self.name_dict.values()):
                         if value not in exclude:
                             out_file.write(".. inheritance-diagram:: %s\n" % value)
@@ -290,12 +307,24 @@ if packages_required(required_packages):
                     self.class_name = key
                 return line
 
+            def _hack_package(self, line):
+                match = re.match(r'(.+)\s+package\s*', line)
+                if match:
+                    debug("matched package")
+                    line = '|package| ' + match.group(1)
+                    self.line_length = len(line)
+                    line += '\n'
+                return line
+
             def _hack_module(self, line):
                 match = re.match(r'(.+)\s+module\s*', line)
                 if match:
                     debug("matched module")
                     self.package = False
                     self.class_name = match.group(1).split('.')[-1]
+                    line = '|module| ' + match.group(1)
+                    self.line_length = len(line)
+                    line += '\n'
                 return line
 
             def _hack_init(self, line):
@@ -331,8 +360,12 @@ if packages_required(required_packages):
             if Project.package is not None:
                 with cd(Project.docs_dir):
                     exclude = ' '.join(Project.exclude_from_docs)
-                    run_python("sphinx-apidoc -d 6 -o _src ../{pkg} {exclude}".format(pkg=Project.package,
-                                                                                      exclude=exclude))
+                    run_python("sphinx-apidoc "
+                               "--separate "
+                               "-d 6 "
+                               "-o _src "
+                               "--force "
+                               "../{pkg} {exclude}".format(pkg=Project.package, exclude=exclude))
 
 
         def _customize_doc_src_files(exclude=None):
@@ -392,13 +425,13 @@ if packages_required(required_packages):
                 return
             # TODO fixme hangs on tp-otto
             for module_path in [root for root, dirs, files in os.walk(path)]:
-                debug("module_path: {path}".format(path=module_path))
+                info("module_path: {path}".format(path=module_path))
                 init_filename = os.path.join(module_path, '__init__.py')
                 if os.path.exists(init_filename):
-                    debug(init_filename)
+                    info(init_filename)
                     name = os.path.basename(module_path).split(".")[0]
                     output = run_python('pyreverse -o svg -p {name} {module}'.format(name=name, module=module_path),
-                                        verbose=False, ignore_errors=True)
+                                        verbose=True, ignore_errors=True)
                     info([line for line in output.splitlines() if not line.startswith('parsing')])
 
         # noinspection PyArgumentEqualDefault
@@ -440,14 +473,20 @@ if packages_required(required_packages):
         @task(depends=['api', 'diagrams', 'logo::create', 'update'], private=True)
         def sphinx():
             """Generate sphinx HTML API documents"""
-            exclude_from_inheritance_diagrams = getattr(Project, 'exclude_from_inheritance_diagrams', None)
-            _customize_doc_src_files(exclude=exclude_from_inheritance_diagrams)
+            hack()
             if os.path.isdir(Project.docs_html_dir):
                 shutil.rmtree(Project.docs_html_dir)
             with cd(Project.docs_dir):
                 run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
                            '-v -a -E . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
                 clean_doc_log('docs.log')
+
+
+        @task()
+        def hack():
+            """hack the RST files generated by apidoc"""
+            exclude_from_inheritance_diagrams = getattr(Project, 'exclude_from_inheritance_diagrams', None)
+            _customize_doc_src_files(exclude=exclude_from_inheritance_diagrams)
 
 
         @task(depends=['api', 'diagrams', 'logo::create', 'update'])
