@@ -204,15 +204,20 @@ if packages_required(required_packages):
             """create the class figure lines for the given module and class"""
             info("_class_line(%s, %s)" % (module_name, class_name))
             line = ''
-            classes_image = "uml/classes_{module}.{name}.png".format(module=module_name, name=class_name)
-            image_path = os.path.join(Project.docs_dir, '_src', classes_image)
-            if os.path.exists(image_path):
-                info("adding figure %s" % image_path)
-                line += "\n.. figure:: {image}\n\n    {name} Class\n\n".format(
-                    image=classes_image,
-                    name=class_name)
-            else:
-                warning("%s does not exist!" % image_path)
+            classes_images = [
+                "uml/classes_{module}.{name}.png".format(module=module_name, name=class_name),
+                "uml/classes_{module}.png".format(module=module_name),
+            ]
+            for classes_image in classes_images:
+                image_path = os.path.join(Project.docs_dir, '_src', classes_image)
+                if os.path.exists(image_path):
+                    info("adding figure %s" % image_path)
+                    line += "\n.. figure:: {image}\n\n    {name} Class\n\n".format(
+                        image=classes_image,
+                        name=class_name)
+                    break
+                else:
+                    warning("%s does not exist!" % image_path)
             return line
 
 
@@ -422,17 +427,20 @@ if packages_required(required_packages):
             """
             info("_create_module_diagrams")
             if not executables_available(['pyreverse']):
+                warning('pyreverse not available')
                 return
-            # TODO fixme hangs on tp-otto
-            for module_path in [root for root, dirs, files in os.walk(path)]:
-                info("module_path: {path}".format(path=module_path))
+
+            for module_path in [root for root, dirs, files in os.walk(path) if os.path.basename(root) != '__pycache__']:
+                debug("module_path: {path}".format(path=module_path))
                 init_filename = os.path.join(module_path, '__init__.py')
                 if os.path.exists(init_filename):
                     info(init_filename)
                     name = os.path.basename(module_path).split(".")[0]
                     output = run_python('pyreverse -o svg -p {name} {module}'.format(name=name, module=module_path),
                                         verbose=True, ignore_errors=True)
-                    info([line for line in output.splitlines() if not line.startswith('parsing')])
+                    errors = [line for line in output.splitlines() if not line.startswith('parsing')]
+                    if errors:
+                        info(errors)
 
         # noinspection PyArgumentEqualDefault
         def _create_class_diagrams(path):
@@ -444,7 +452,9 @@ if packages_required(required_packages):
             """
             info("_create_class_diagrams")
             if not executables_available(['pynsource']):
+                warning('pynsource not available')
                 return
+
             files = [os.path.join(dir_path, f)
                      for dir_path, dir_names, files in os.walk(path)
                      for f in fnmatch.filter(files, '*.py')]
@@ -478,7 +488,7 @@ if packages_required(required_packages):
                 shutil.rmtree(Project.docs_html_dir)
             with cd(Project.docs_dir):
                 run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
-                           '-v -a -E . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
+                           '-a -E . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
                 clean_doc_log('docs.log')
 
 
@@ -691,6 +701,7 @@ if packages_required(required_packages):
                 return new_line
 
 
+            # noinspection PyArgumentEqualDefault
             @task(private=True)
             def changelog():
                 """rewrite the changelog to CHANGES.rst"""
@@ -698,8 +709,8 @@ if packages_required(required_packages):
                     changelog_file.write("Change Log\n")
                     changelog_file.write("==========\n\n")
                     changelog_file.write("::\n\n")
-                    with LocalShell() as local:
-                        output = local.run("git log --pretty=%s --graph")
+                    with LocalShell(verbose=False) as local:
+                        output = local.run("git log --pretty=%s --graph", verbose=False)
                         for line in output.strip().split("\n"):
                             changelog_file.write("    {line}\n".format(line=obscure_urls(line)))
                         changelog_file.write("\n")
