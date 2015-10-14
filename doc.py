@@ -577,7 +577,7 @@ if packages_required(required_packages):
 
         with namespace('logo'):
 
-            def _neon(text, file_name):
+            def _neon(text, file_name, animate_logo):
                 pre = """\
                     -size 500x200 \
                     xc:lightblue \
@@ -618,12 +618,18 @@ if packages_required(required_packages):
 
                 # noinspection PyArgumentEqualDefault
                 with LocalShell(verbose=False) as local:
-                    local.run(on)
-                    local.run(off)
-                    local.run(animated)
-                    local.run('bash -c "rm -f {file}_on.png {file}_off.png"'.format(file=file_name))
+                    if animate_logo:
+                        local.run(on)
+                        local.run(off)
+                        local.run(animated)
+                        local.run('bash -c "rm -f {file}_on.png {file}_off.png"'.format(file=file_name))
+                        logo_image = "{file}_animated.gif".format(file=file_name)
+                    else:
+                        local.run(on)
+                        on_image = "{file}_on.png".format(file=file_name)
+                        logo_image = "{file}.png".format(file=file_name)
+                        os.rename(on_image, logo_image)
 
-                logo_image = "{file}_animated.gif".format(file=file_name)
                 return logo_image
 
 
@@ -650,7 +656,7 @@ if packages_required(required_packages):
                 if Project.logo_image:
                     logo_file = _image(Project.logo_name, Project.logo_image, Project.base_name)
                 else:
-                    logo_file = _neon(Project.logo_name, Project.base_name)
+                    logo_file = _neon(Project.logo_name, Project.base_name, Project.animate_logo)
                 src = os.path.join(Project.herringfile_dir, logo_file)
                 dest = os.path.join(Project.docs_dir, '_static', logo_file)
                 shutil.copyfile(src, dest)

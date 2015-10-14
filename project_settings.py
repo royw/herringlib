@@ -121,6 +121,9 @@ def get_python_path():
     return '/usr/bin'
 
 ATTRIBUTES = {
+    'animate_logo': {
+        'default': False,
+        'help': 'When creating a logo from the title, create an animated logo (neon blinking)'},
     'api_dir': {
         'default': 'docs/api',
         'help': 'The directory where the API docs are placed relative to the herringfile_dir.  '
