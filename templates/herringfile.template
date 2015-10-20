@@ -92,7 +92,7 @@ Project.metadata(
 
         # python versions for virtual environments.  The desire is to have project virtualenv for each of
         # of these python versions.
-        'python_versions': ('35', ''34', '27', '26'),
+        'python_versions': ('35', '34', '27', '26'),
 
         # python version (defined in 'python_versions') to build documentation with.
         # Defaults to first 'python_versions'.
