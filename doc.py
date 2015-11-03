@@ -577,44 +577,48 @@ if packages_required(required_packages):
 
         with namespace('logo'):
 
-            def _neon(text, file_name, animate_logo):
-                pre = """\
-                    -size 500x200 \
-                    xc:lightblue \
-                    -font Aegean-Regular -pointsize 72 \
-                    -gravity center \
-                    -undercolor black \
-                    -stroke none \
-                    -strokewidth 3 \
-                """
-                post = """\
-                    -trim \
-                    +repage \
-                    -shave 1x1 \
-                    -bordercolor black \
-                    -border 20x20 \
-                """
-                on = """convert \
-                    {pre} \
-                    -fill DeepSkyBlue \
-                    -annotate +0+0 '{text}' \
-                    {post} \
-                    \( +clone -blur 0x25 -level 0%,50% \) \
-                    -compose screen -composite \
+            def _neon(text, file_name, animate_logo, fontsize):
+                info("creating logo")
+                pre = ' '.join(dedent("""\
+                    -size 500x200
+                    xc:lightblue
+                    -font Comic-Sans-MS-Bold
+                    -pointsize {fontsize}
+                    -gravity center
+                    -undercolor black
+                    -stroke none
+                    -strokewidth 3
+                """).format(fontsize=fontsize).strip().split('\n'))
+                post = ' '.join(dedent("""\
+                    -trim
+                    +repage
+                    -shave 1x1
+                    -bordercolor black
+                    -border 20x20
+                """).strip().split('\n'))
+                on = ' '.join(dedent("""\
+                    convert
+                    {pre}
+                    -fill DeepSkyBlue
+                    -annotate +0+0 '{text}'
+                    {post}
+                    \( +clone -blur 0x25 -level 0%,50% \)
+                    -compose screen -composite
                     {file}_on.png
-                """.format(text=text, file=file_name, pre=pre, post=post)
+                """.format(text=text, file=file_name, pre=pre, post=post)).strip().split('\n'))
 
-                off = """convert \
-                    {pre} \
-                    -fill grey12 \
-                    -annotate +0+0 '{text}' \
-                    {post} \
+                off = ' '.join(dedent("""\
+                    convert
+                    {pre}
+                    -fill grey12
+                    -annotate +0+0 '{text}'
+                    {post}
                      {file}_off.png
-                """.format(text=text, file=file_name, pre=pre, post=post)
+                """.format(text=text, file=file_name, pre=pre, post=post)).strip().split('\n'))
 
-                animated = """convert \
+                animated = ' '.join(dedent("""convert \
                     -adjoin -delay 100 -resize 240 {file}_on.png {file}_off.png {file}_animated.gif
-                """.format(file=file_name)
+                """.format(file=file_name)).strip().split('\n'))
 
                 # noinspection PyArgumentEqualDefault
                 with LocalShell(verbose=False) as local:
@@ -625,10 +629,12 @@ if packages_required(required_packages):
                         local.run('bash -c "rm -f {file}_on.png {file}_off.png"'.format(file=file_name))
                         logo_image = "{file}_animated.gif".format(file=file_name)
                     else:
+                        info(on)
                         local.run(on)
                         on_image = "{file}_on.png".format(file=file_name)
                         logo_image = "{file}.png".format(file=file_name)
-                        os.rename(on_image, logo_image)
+                        if os.path.isfile(on_image):
+                            os.rename(on_image, logo_image)
 
                 return logo_image
 
@@ -644,7 +650,7 @@ if packages_required(required_packages):
             @task()
             def display():
                 """display project logo"""
-                logo_file = _neon(Project.logo_name, Project.base_name)
+                logo_file = _neon(Project.logo_name, Project.base_name, Project.animate_logo, Project.logo_font_size)
                 # noinspection PyArgumentEqualDefault
                 with LocalShell(verbose=False) as local:
                     local.run('bash -c "display {logo_file} &"'.format(logo_file=logo_file))
@@ -656,7 +662,8 @@ if packages_required(required_packages):
                 if Project.logo_image:
                     logo_file = _image(Project.logo_name, Project.logo_image, Project.base_name)
                 else:
-                    logo_file = _neon(Project.logo_name, Project.base_name, Project.animate_logo)
+                    logo_file = _neon(Project.logo_name, Project.base_name, Project.animate_logo,
+                                      Project.logo_font_size)
                 src = os.path.join(Project.herringfile_dir, logo_file)
                 dest = os.path.join(Project.docs_dir, '_static', logo_file)
                 shutil.copyfile(src, dest)

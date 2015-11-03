@@ -276,6 +276,9 @@ ATTRIBUTES = {
         'default': 'docs/license.rst',
         'help': 'The license documentation file relative to the herringfile_dir.  '
                 'Defaults to "{herringfile_dir}/docs/license.rst".'},
+    'logo_font_size': {
+        'default': 50,
+        'help': 'The point size of the font used when generating a logo.'},
     'logo_image': {
         'default': None,
         'help': 'The project\'s logo image.  The default is generated from the project\'s "name".'},
