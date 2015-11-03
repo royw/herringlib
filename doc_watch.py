@@ -17,10 +17,11 @@ from urllib import pathname2url
 
 import sip
 # sip.setapi("QString", 2)
-from herring.herring_app import task
+from herring.herring_app import task, task_execute
 from herringlib.cd import cd
 from herringlib.project_settings import Project
 from herringlib.simple_logger import info
+from herringlib.venv import venv_decorator, VirtualenvInfo
 
 sip.setapi("QVariant", 2)
 
@@ -145,9 +146,24 @@ class MainWindow(QtGui.QMainWindow):
         self.watcher.stop()
 
 
+@task(namespace='doc')
+@venv_decorator(attr_name='doc_python_version')
+def watch():
+    """generate project documentation"""
+    venvs = VirtualenvInfo('doc_python_version')
+    info("venvs: {venvs}".format(venvs=repr(venvs.__dict__)))
+    if not venvs.in_virtualenv and venvs.defined:
+        for venv_info in venvs.infos():
+            venv_info.run('{herring} doc::watcher --python-tag py{ver}'.format(herring=Project.herring,
+                                                                               ver=venv_info.ver))
+    else:
+        info('Watching documentation using the current python environment')
+        task_execute('doc::watcher')
+
+
 # noinspection PyDocstring
 @task(namespace='doc')
-def watch():
+def watcher():
     """Live view sphinx generated HTML documents"""
     with cd(Project.docs_dir):
         if not os.path.isdir('_build'):
