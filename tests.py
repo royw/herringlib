@@ -5,7 +5,7 @@ Add the following to your *requirements.txt* file:
 * coverage; python_version == "[test_python_versions]"
 * pytest; python_version == "[test_python_versions]"
 * decorator; python_version == "[test_python_versions]"
-* lettuce; python_version == "[test_python_versions]"
+* behave; python_version == "[test_python_versions]"
 
 """
 # noinspection PyUnresolvedReferences
