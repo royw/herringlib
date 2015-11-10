@@ -11,9 +11,6 @@ Add the following to your *requirements.txt* file:
 from pexpect.pxssh import ExceptionPxssh
 from herringlib.simple_logger import info
 
-__docformat__ = 'restructuredtext en'
-
-
 from herringlib.project_settings import Project
 
 import sys
@@ -24,7 +21,7 @@ import re
 from time import sleep
 from getpass import getpass
 from paramiko import SSHClient
-from pxssh import pxssh
+from pexpect.pxssh import pxssh
 from scp import SCPClient
 
 try:
@@ -35,6 +32,8 @@ except ImportError:
     from collections import OrderedDict
 
 from herringlib.ashell import AShell, CR, MOVEMENT
+
+__docformat__ = 'restructuredtext en'
 
 
 class RemoteShell(AShell):
