@@ -88,6 +88,22 @@ project_description = u'{description}'
 project_package = u'{package}'
 project_bugzilla_url = u'{bugzilla_url}'
 
+# -- hack that modifies autodoc to skip unwanted class methods ----------------
+
+# noinspection PyDocstring,PyUnusedLocal
+def skipUnwanted(app, what, name, obj, skip, options):
+    """Skip __dict__, __doc__ and __abstractmethods__ entries"""
+    if what == "class" and name in ["__dict__", "__doc__", "__abstractmethods__"]:
+        return True
+    else:
+        return False
+
+
+# noinspection PyDocstring
+def setup(app):
+    app.connect('autodoc-skip-member', skipUnwanted)
+
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -449,6 +465,7 @@ html_theme_options = {{
     'sidebarwidth': 400,
     # 'headbgcolor': 'black'
 }}
+
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
