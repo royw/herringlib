@@ -1,0 +1,30 @@
+#!/bin/bash
+
+installer_script="{name}-{version}-installer.sh"
+
+package_name="{name}-{version}.tar.gz"
+rm -f "$package_name"
+cp "../dist/$package_name" .
+
+cd payload
+tar cf ../payload.tar ./*
+cd ..
+
+if [ -e "payload.tar" ]; then
+    gzip payload.tar
+
+    if [ -e "payload.tar.gz" ]; then
+        cat decompress payload.tar.gz > $installer_script
+        chmod +x $installer_script
+        rm -f payload.tar.gz
+    else
+        echo "payload.tar.gz does not exist"
+        exit 1
+    fi
+else
+    echo "payload.tar does not exist"
+    exit 1
+fi
+
+echo "$installer_script created"
+exit 0

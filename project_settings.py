@@ -272,6 +272,10 @@ ATTRIBUTES = {
         'default': 'docs/install.rst',
         'help': 'The installation documentation file relative to the herringfile_dir.  '
                 'Defaults to "{herringfile_dir}/docs/install.rst".'},
+    'installer_dir': {
+        'default': 'installer',
+        'help': 'The directory that contains the bash installer relative to the herringfile_dir.  '
+                'Defaults to "{herringfile_dir}/installer".'},
     'license_file': {
         'default': 'docs/license.rst',
         'help': 'The license documentation file relative to the herringfile_dir.  '
@@ -333,14 +337,17 @@ ATTRIBUTES = {
         'default': env_value('LOCAL_PYPI_PATH', default_value='/var/pypi/dev'),
         'help': 'The path on dist_host to place the distribution files.  Defaults to the value of '
                 'the LOCAL_PYPI_PATH environment variable or "/var/pypi/dev".'},
+    'pypiserver': {
+        'help': 'When uploading to a pypyserver, the alias in the ~/.pypirc file to use.'},
     'python_versions': {
         'default': ('27', '34'),
         'help': 'python versions for virtual environments.  Defaults to "(\'27\', \'34\')".'},
-    'pypiserver': {
-        'help': 'When uploading to a pypyserver, the alias in the ~/.pypirc file to use.'},
     'pythonPath': {
         'default': ".:%s" % HerringFile.directory,
         'help': 'The pythonpath to use.  Defaults to the current directory then "{herringfile_dir}".'},
+    'pythons_str': {
+        'default': "",
+        'help': 'A string listing the python executable names derived from python_versions.'},
     'quality_dir': {
         'default': 'quality',
         'help': 'The directory to place quality reports relative to the herringfile_dir.  '
@@ -396,7 +403,7 @@ ATTRIBUTES = {
         'help': 'The base name for the virtual environments.  Defaults to Settings["package"].',
     },
     'version': {
-        'default': None,
+        'default': '0.0.1',
         'help': 'The projects current version.'},
     'versioned_requirements_file_format': {
         'default': 'requirements.txt',
@@ -499,6 +506,9 @@ class ProjectSettings(object):
             setattr(self, 'min_python_version', min(getattr(self, 'python_versions')))
 
         setattr(self, 'min_python_version_tuple', self.version_to_tuple(getattr(self, 'min_python_version', '26')))
+
+        setattr(self, 'pythons_str', " ".join(list(["python{v}".format(v=self.ver_to_version(v))
+                                                    for v in getattr(self, 'python_versions')])))
 
         if getattr(self, 'docs_html_path', None) is None:
             setattr(self, 'docs_html_path', os.path.join(getattr(self, 'herringfile_dir', None),

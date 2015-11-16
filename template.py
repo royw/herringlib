@@ -91,9 +91,7 @@ class Template(object):
         :param src_filename: the template file
         :param dest_filename: the rendered file
         """
-        info("creating {dest} from {src} with options: {options}".format(dest=dest_filename,
-                                                                         src=src_filename,
-                                                                         options=pformat(kwargs)))
+        info("creating {dest} from {src}".format(dest=dest_filename, src=src_filename))
         with open(src_filename) as in_file:
             template = in_file.read()
 
@@ -141,6 +139,7 @@ class Template(object):
             error("Error rendering template ({file}) - {err}\n{trace}".format(file=src_filename,
                                                                               err=str(ex),
                                                                               trace=traceback.format_exc()))
+            error("kwargs:\n{kwargs}".format(kwargs=pformat(kwargs)))
         finally:
             if new_filename is not None:
                 if os.path.isfile(new_filename):

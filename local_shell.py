@@ -288,6 +288,8 @@ class LocalShell(AShell):
                     yield line
             except OSError as ex:
                 error("Error: Unable to run process: {cmd_args} - {err}".format(cmd_args=repr(cmd_args), err=str(ex)))
+                error("cwd: {cwd}".format(cwd=os.getcwd()))
+                error("ls: {ls}".format(ls=os.listdir('.')))
 
     # def _process_loop(self, cmd_args, sub_env, handler):
 
