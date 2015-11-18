@@ -1,4 +1,11 @@
 #!/bin/bash
+
+# Based off of installer presented at:  http://www.linuxjournal.com/node/1005818
+
+# cut the decompressed payload archive off of this script, then untar it into a
+# temp directory.  Then run the installer script from the payload.  Finally
+# clean up the temp directory.
+
 echo ""
 echo "Self Extracting Installer"
 echo ""

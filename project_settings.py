@@ -346,7 +346,7 @@ ATTRIBUTES = {
         'default': ".:%s" % HerringFile.directory,
         'help': 'The pythonpath to use.  Defaults to the current directory then "{herringfile_dir}".'},
     'pythons_str': {
-        'default': "",
+        'default': "python2.7 python3.4",
         'help': 'A string listing the python executable names derived from python_versions.'},
     'quality_dir': {
         'default': 'quality',

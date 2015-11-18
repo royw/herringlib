@@ -1,14 +1,26 @@
 #!/bin/bash
 
-installer_script="{name}-{version}-installer.sh"
+# Based off of installer presented at:  http://www.linuxjournal.com/node/1005818
 
-package_name="{name}-{version}.tar.gz"
-rm -f "$package_name"
-cp "../dist/$package_name" .
+source installer.conf
+
+# Based off of installer presented at:  http://www.linuxjournal.com/node/1005818
+
+cp -f installer.conf payload/
+
+# copy sdist package to payload/ then tar up the payload/ contents and clean up
 
 cd payload
+
+rm -f "$package_name"
+cp "../../dist/$package_name" .
 tar cf ../payload.tar ./*
+rm -f "$package_name"
+
 cd ..
+
+# compress payload.tar and build installer script by concatenating the
+# decompress script with the compressed payload
 
 if [ -e "payload.tar" ]; then
     gzip payload.tar

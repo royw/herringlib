@@ -1,8 +1,6 @@
-This installer is from:
+Based off of installer presented at:  http://www.linuxjournal.com/node/1005818
 
-http://www.linuxjournal.com/node/1005818
-
-and requires the apt package manager (debian, ubuntu,...).
+Requires the apt package manager (debian, ubuntu,...).
 
 You may be prompt you for your password:
 
