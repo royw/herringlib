@@ -4,7 +4,7 @@ Requires the apt package manager (debian, ubuntu,...).
 
 You may be prompt you for your password:
 
-•	If virtualenv is not installed, then the installer installs python-virtualenv as sudo.
+•	If virtualenv is not installed, then the installer installs virtualenv as sudo.
 •	The installer tries to install a symbolic link into $HOME/bin.
     If you do not have $HOME/bin, then /usr/local/bin will be used, which requires sudo.
 
