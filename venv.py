@@ -227,7 +227,11 @@ def mkvenvs():
     """Make virturalenvs used for wheel building.  Requires Project.wheel_python_versions and virtualenvwrapper."""
 
     venvs = VirtualenvInfo('python_versions')
-    if not venvs.in_virtualenv and venvs.defined:
+    if venvs.in_virtualenv:
+        warning('Please deactivate the current virtual environment then try running this task again.')
+        return
+
+    if venvs.defined:
         for venv_info in venvs.infos(exists=False):
             requirement_files = ['requirements.txt']
             versioned_requirement_file = Project.versioned_requirements_file_format.format(ver=venv_info.ver)
@@ -263,26 +267,33 @@ def mkvenvs():
         info("To build with wheels, in your herringfile you must set Project.wheel_python_versions to a list"
              "of compact version, for example: ['27', '33', '34'] will build wheels for "
              "python 2.7, 3.3, and 3.4")
-        return
 
 
 @task(namespace='project')
 def rmvenvs():
     """Remove all the virtual environments"""
     venvs = VirtualenvInfo('python_versions')
-    if not venvs.in_virtualenv and venvs.defined:
+    if venvs.in_virtualenv:
+        warning('Please deactivate the current virtual environment then try running this task again.')
+        return
+
+    if venvs.defined:
         for venv_info in venvs.infos():
             venv_info.rmvirtualenv()
     else:
-        warning('Please deactivate the current virtual environment then try running this task again.')
+        info("There are no virtual environments to remove.")
 
 
 @task(namespace='project')
 def lsvenvs():
     """List the virtual environments"""
     venvs = VirtualenvInfo('python_versions')
+    if venvs.in_virtualenv:
+        warning('Please deactivate the current virtual environment then try running this task again.')
+        return
+
     info("Project Virtual Environments:")
-    if not venvs.in_virtualenv and venvs.defined:
+    if venvs.defined:
         for venv_info in venvs.infos():
             info(venv_info.venv)
 
@@ -291,8 +302,12 @@ def lsvenvs():
 def upvenvs():
     """Run "pip install --update -r requirements" in each virtual environment."""
     venvs = VirtualenvInfo('python_versions')
+    if venvs.in_virtualenv:
+        warning('Please deactivate the current virtual environment then try running this task again.')
+        return
+
     info("Project Virtual Environments:")
-    if not venvs.in_virtualenv and venvs.defined:
+    if venvs.defined:
         for venv_info in venvs.infos():
             venv_info.run('pip install --upgrade pip')
             venv_info.run('pip install --upgrade setuptools')
@@ -303,8 +318,12 @@ def upvenvs():
 def listvenvs():
     """Run "pip list" in each virtual environment."""
     venvs = VirtualenvInfo('python_versions')
+    if venvs.in_virtualenv:
+        warning('Please deactivate the current virtual environment then try running this task again.')
+        return
+
     info("Project Virtual Environments:")
-    if not venvs.in_virtualenv and venvs.defined:
+    if venvs.defined:
         for venv_info in venvs.infos():
             venv_info.run('pip list ')
             info('')
