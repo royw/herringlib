@@ -80,8 +80,8 @@ try:
 
             pypi_dir = Project.pypi_path
             dist_host = Project.dist_host
-            dist_dir = '{dir}/{name}'.format(dir=pypi_dir, name=Project.base_name)
-            # dist_url = '{host}:{path}/'.format(host=dist_host, path=dist_dir)
+            # dist_dir = '{dir}/{name}'.format(dir=pypi_dir, name=Project.base_name)
+            dist_dir = pypi_dir
             dist_version = '{dir}/{file}'.format(dir=dist_dir, file=project_version_name)
             dist_latest = '{dir}/{file}'.format(dir=dist_dir, file=project_latest_name)
             dist_file = os.path.join(Project.herringfile_dir, 'dist', project_version_name)
