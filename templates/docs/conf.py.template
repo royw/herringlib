@@ -136,6 +136,7 @@ extensions = [
     # 'sphinxcontrib.autoprogram',
     'sphinxcontrib.httpdomain',
     'ext.ditaa',
+    'hieroglyph',
 ]
 
 if sys.version_info < (3, 0):
