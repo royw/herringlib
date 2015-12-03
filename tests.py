@@ -4,6 +4,7 @@ Add the following to your *requirements.txt* file:
 
 * coverage; python_version == "[test_python_versions]"
 * pytest; python_version == "[test_python_versions]"
+* pytest-cov; python_version == "[test_python_versions]"
 * decorator; python_version == "[test_python_versions]"
 * behave; python_version == "[test_python_versions]"
 
@@ -34,15 +35,18 @@ if packages_required(required_packages):
         # run the test in the current environment.
 
         venvs = VirtualenvInfo('test_python_versions', 'wheel_python_versions')
+        coverage = '--cov-report term-missing --cov={package}'.format(package=Project.package)
 
         if not venvs.in_virtualenv and venvs.defined:
             for venv_info in venvs.infos():
                 info('Running unit tests using the {venv} virtual environment.'.format(venv=venv_info.venv))
-                venv_info.run('py.test {tests_dir}'.format(tests_dir=Project.tests_dir), verbose=True)
+                venv_info.run('py.test {coverage} {tests_dir}'.format(coverage=coverage,
+                                                                      tests_dir=Project.tests_dir), verbose=True)
         else:
             with LocalShell() as local:
                 info('Running unit tests using the current python environment')
-                local.run("py.test {tests_dir}".format(tests_dir=Project.tests_dir), verbose=True)
+                local.run("py.test {coverage} {tests_dir}".format(coverage=coverage,
+                                                                  tests_dir=Project.tests_dir), verbose=True)
 
 
     @task()
