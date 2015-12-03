@@ -15,6 +15,7 @@ Add the following to your *requirements.txt* file:
 * pylint; python_version == "[metrics_python_versions]"
 * pymetrics; python_version == "[metrics_python_versions]"
 * radon; python_version == "[metrics_python_versions]"
+* pep8; python_version == "[metrics_python_versions]"
 
 **** #####pycabehtml; python_version == "[metrics_python_versions]"
 
@@ -35,6 +36,7 @@ from herringlib.executables import executables_available
 from herringlib.project_tasks import packages_required
 from herringlib.simple_logger import info
 from herringlib.venv import VirtualenvInfo
+from herringlib.local_shell import LocalShell
 
 __docformat__ = 'restructuredtext en'
 
@@ -102,14 +104,14 @@ class TextOutputter(PyViolationOutputter):
         self.summary = summary
         self.output = []
 
-    # noinspection PyDocstring
+    # noinspection PyDocstring,PyIncorrectDocstring
     def heading(self, violation, n_items):
         """
         :see: PyViolationOutputter.heading
         """
         self.output.append("%6d:  %s" % (n_items, violation))
 
-    # noinspection PyDocstring
+    # noinspection PyDocstring,PyIncorrectDocstring
     def items(self, source_lines):
         """
         :see: PyViolationOutputter.items
@@ -283,8 +285,6 @@ class PyViolations(object):
 
 
 if packages_required(required_packages):
-    from herringlib.local_shell import LocalShell
-
     with namespace('metrics'):
 
         def _sloc_totals_by_language():
@@ -513,16 +513,16 @@ if packages_required(required_packages):
                 f.write("\n".join(lines))
 
     @task(namespace='metrics',
-          depends=['metrics::cheesecake',
-                   'metrics::lint',
+          depends=['metrics::lint',
                    'metrics::pep8',
                    'metrics::complexity',
-                   'metrics::violations',
                    'metrics::radon'],
           private=False)
     def all_metrics():
         """ Quality metrics """
+        task_execute('metrics::violations')
         task_execute('metrics::violations_report')
+
 
     @task()
     def metrics():
