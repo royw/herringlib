@@ -30,6 +30,7 @@ Add the following to your *requirements.txt* file:
 * pillow; python_version == "[doc_python_version]" and python_version < "3.0"
 * mock; python_version in "[doc_python_version]"
 * importlib; python_version < '2.7'
+* hieroglyph; python_version in "[doc_python_version]"
 
 .. note::
 
@@ -118,6 +119,21 @@ def doc():
     else:
         info('Generating documentation using the current python environment')
         task_execute('doc::generate')
+
+
+@task()
+@venv_decorator(attr_name='doc_python_version')
+def slides():
+    """generate project slides"""
+    venvs = VirtualenvInfo('doc_python_version')
+    info("venvs: {venvs}".format(venvs=repr(venvs.__dict__)))
+    if not venvs.in_virtualenv and venvs.defined:
+        for venv_info in venvs.infos():
+            venv_info.run('{herring} doc::hieroglyph_slides --python-tag py{ver}'.format(herring=Project.herring,
+                                                                                         ver=venv_info.ver))
+    else:
+        info('Generating slides using the current python environment')
+        task_execute('doc::hieroglyph_slides')
 
 
 @task()
@@ -469,6 +485,16 @@ with namespace('doc'):
         with cd(Project.docs_dir):
             run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
                        '-a -E . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
+            clean_doc_log('docs.log')
+
+    @task(depends=['diagrams', 'logo::create', 'update'])
+    def hieroglyph_slides():
+        """Create presentation slides using Hieroglyph (http://docs.hieroglyph.io/en/latest/index.html)"""
+        if os.path.isdir(Project.docs_slide_dir):
+            shutil.rmtree(Project.docs_slide_dir)
+        with cd(Project.docs_dir):
+            run_python('sphinx-build -b slides -d _build/doctrees -w docs.log '
+                       '-a -E . ../{slide_dir}'.format(slide_dir=Project.docs_slide_dir))
             clean_doc_log('docs.log')
 
 
