@@ -29,7 +29,7 @@ Contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Harvester API
+   :caption: Project API
 
    _src/modules
 
