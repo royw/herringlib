@@ -239,6 +239,10 @@ ATTRIBUTES = {
         'default': 'build/pdf',
         'help': 'The directory to write PDF documentation to relative to the herringfile_dir.  '
                 'Defaults to "{herringfile_dir}/build/pdf".'},
+    'docs_slide_dir': {
+        'default': 'build/slides',
+        'help': 'The relative path to the directory to write HTML documentation to.  '
+                'Defaults to "{herringfile_dir}/build/docs".'},
     'docs_user': {
         'default': env_value('USER'),
         'help': 'The web server user that should own the documents when published.  '
@@ -384,6 +388,9 @@ ATTRIBUTES = {
         'default': 'docs/todo.rst',
         'help': 'The TODO documentation file relative to the "herringfile_dir".  '
                 'Defaults to "{herringfile_dir}/docs/todo.rst".'},
+    'tox_python_versions': {
+        'help': 'python versions (defined in "python_versions") for tox to use.  '
+                'Defaults to "test_python_versions".'},
     'uml_dir': {
         'default': 'docs/_src/uml',
         'help': 'The directory where documentation UML files are written relative to the "herringfile_dir".  '
@@ -493,6 +500,9 @@ class ProjectSettings(object):
         if getattr(self, 'test_python_versions', None) is None:
             setattr(self, 'test_python_versions', getattr(self, 'python_versions'))
 
+        if getattr(self, 'tox_python_versions', None) is None:
+            setattr(self, 'tox_python_versions', getattr(self, 'test_python_versions'))
+
         if getattr(self, 'metrics_python_versions', None) is None:
             setattr(self, 'metrics_python_versions', getattr(self, 'python_versions'))
 
@@ -509,6 +519,8 @@ class ProjectSettings(object):
 
         setattr(self, 'pythons_str', " ".join(list(["python{v}".format(v=self.ver_to_version(v))
                                                     for v in getattr(self, 'python_versions')])))
+
+        setattr(self, 'tox_pythons', ",".join(['py{v}'.format(v=v) for v in getattr(self, 'tox_python_versions')]))
 
         if getattr(self, 'docs_html_path', None) is None:
             setattr(self, 'docs_html_path', os.path.join(getattr(self, 'herringfile_dir', None),
