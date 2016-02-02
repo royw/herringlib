@@ -146,7 +146,7 @@ class MainWindow(QtGui.QMainWindow):
         self.watcher.stop()
 
 
-@task(namespace='doc')
+@task(namespace='doc', private=True)
 @venv_decorator(attr_name='doc_python_version')
 def watch():
     """generate project documentation"""
@@ -162,7 +162,7 @@ def watch():
 
 
 # noinspection PyDocstring
-@task(namespace='doc')
+@task(namespace='doc', private=True)
 def watcher():
     """Live view sphinx generated HTML documents"""
     with cd(Project.docs_dir):
