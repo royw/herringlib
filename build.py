@@ -104,24 +104,25 @@ if Project.package:
         @task(private=False)
         def installer():
             """ build a bash install script """
-            info('')
-            info("=" * 70)
-            info('building installer')
-            with cd(Project.installer_dir, verbose=True):
-                with LocalShell(verbose=True) as local:
-                    if os.path.isfile('installer.conf'):
-                        os.remove('installer.conf')
-                    with open('installer.conf', 'w') as conf:
-                        conf.write(dedent("""\
-                        installer_script="{name}-{version}-installer.sh"
-                        package_name="{name}-{version}.tar.gz"
-                        executable_name="{package}"
-                        snakes="{snakes}"
-                        """).format(name=Project.name,
-                                    version=Project.version,
-                                    package=Project.package,
-                                    snakes=Project.pythons_str))
-                    local.run('/bin/bash build')
+            if os.path.isdir(Project.installer_dir):
+                info('')
+                info("=" * 70)
+                info('building installer')
+                with cd(Project.installer_dir, verbose=True):
+                    with LocalShell(verbose=True) as local:
+                        if os.path.isfile('installer.conf'):
+                            os.remove('installer.conf')
+                        with open('installer.conf', 'w') as conf:
+                            conf.write(dedent("""\
+                            installer_script="{name}-{version}-installer.sh"
+                            package_name="{name}-{version}.tar.gz"
+                            executable_name="{package}"
+                            snakes="{snakes}"
+                            """).format(name=Project.name,
+                                        version=Project.version,
+                                        package=Project.package,
+                                        snakes=Project.pythons_str))
+                        local.run('/bin/bash build')
 
 
         @task(private=False)
