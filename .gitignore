@@ -1,1 +1,3 @@
 tests/output/dummy.py
+
+hs_err_pid*.log
