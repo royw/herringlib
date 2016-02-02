@@ -5,13 +5,15 @@ from setuptools import setup
 
 import sys
 
+# Old style (not recommended) check to prevent setup.py from being used on old pythons.
+# Current recommended practice is to include supported pythons in the
+# classifiers kwarg even though there is no automated enforcement.
 if sys.version_info < {min_python_version_tuple}:
     print('{name} requires python {min_python_version} or newer')
     exit(-1)
 
-
+#: str: Regular expression for parsing __version__ line in the packages __init__.py file.
 VERSION_REGEX = r'__version__\s*=\s*[\'\"](\S+)[\'\"]'
-
 
 # noinspection PyArgumentEqualDefault
 def get_project_version():
@@ -46,25 +48,27 @@ def get_project_version():
         pass
 
     # no joy, so try getting the version from a VERSION.txt file.
-#    try:
-#        file_name = os.path.join(os.getcwd(), '{package}', 'VERSION.txt')
-#        with open(file_name, 'r') as inFile:
-#            return inFile.read().strip()
-#    except IOError:
-#        pass
+    #    try:
+    #        file_name = os.path.join(os.getcwd(), '{package}', 'VERSION.txt')
+    #        with open(file_name, 'r') as inFile:
+    #            return inFile.read().strip()
+    #    except IOError:
+    #        pass
 
     # no joy again, so return default
     return '0.0.0'
 
-
-# all versions of python
+#: List[str]: The list of the package names for runtime dependencies
 required_imports = [
     'six',
     'fullmonty',
 ]
 
-# libraries that have been moved into python
 print("Python (%s)" % sys.version)
+
+# libraries that have been moved into python are added to the list of runtime
+# dependencies by python version.
+
 if sys.version_info < (3, 1):
     required_imports.extend([
         'ordereddict',  # new in py31
@@ -77,35 +81,47 @@ if sys.version_info < (3, 2):
         "configparser",  # back port from py32
     ])
 
-# if sys.version_info < (3, 5):
-#     required_imports.extend([
-#         "scandir",  # new in py35
-#     ])
+if sys.version_info < (3, 5):
+    required_imports.extend([
+#        "scandir",  # new in py35
+    ])
 
+#: str: the CLI templates support two descriptions, one brief and one long.
+long_description = ""
+
+# here we set the long_description to the contents of the README.rst file.
 # noinspection PyBroadException
 try:
     long_description = open('README.rst').read()
 except:
     long_description = open('README.rst', encoding='utf-8').read()
 
-setup(
-    name='{name}',
-    version=get_project_version(),
-    author='{author}',
-    author_email='{author_email}',
-    url='http://{package}.example.com',
-    packages=['{package}'],
-    package_dir={{'': '.'}},
-    package_data={{'{package}': ['*.txt', '*.js', '*.html', '*.css'],
-                  'tests': ['*'],
-                  '': ['*.rst', '*.txt', '*.rc', '*.in']}},
-    license='docs/license.rst',
-    description='{description}',
-    long_description=long_description,
+kwargs = {{}}
+if os.path.isfile('setup.json'):
+    try:
+        with open('setup.json') as data_file:
+            kwargs = json.load(data_file)
+    except Exception as ex:
+        print("Unable to load setup.json - %s" % str(ex))
+
+default_kwargs = {{
+    'name': '{name}',
+    'version': get_project_version(),
+    'author': '{author}',
+    'author_email': '{author_email}',
+    'url': 'http://{package}.example.com',
+    'packages': ['{package}'],
+    'package_dir': {{'': '.'}},
+    'package_data': {{'{package}': ['*.txt', '*.js', '*.html', '*.css'],
+                     'tests': ['*'],
+                     '': ['*.rst', '*.txt', '*.rc', '*.in']}},
+    'license': 'docs/license.rst',
+    'description': '{description}',
+    'long_description': long_description,
     # use keywords relevant to the application
-    keywords=[],
+    'keywords': [],
     # use classifiers from:  https://pypi.python.org/pypi?%3Aaction=list_classifiers
-    classifiers=[
+    'classifiers': [
         # 'Development Status :: 1 - Planning',
         'Development Status :: 2 - Pre-Alpha',
         # 'Development Status :: 3 - Alpha',
@@ -124,7 +140,11 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Topic :: Software Development',
     ],
-    install_requires=required_imports,
-    entry_points={{
+    'install_requires': required_imports,
+    'entry_points': {{
         'console_scripts': ['{package} = {package}.{package}_main:main']
-    }})
+    }}
+}}
+
+default_kwargs.update(kwargs)
+setup(**default_kwargs)
