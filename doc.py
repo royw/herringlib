@@ -483,8 +483,12 @@ with namespace('doc'):
         if os.path.isdir(Project.docs_html_dir):
             shutil.rmtree(Project.docs_html_dir)
         with cd(Project.docs_dir):
-            run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
-                       '-a -E . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
+            if os.path.isfile('_build/doctrees/index.doctree'):
+                run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
+                           '-a -E . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
+            else:
+                run_python('sphinx-build -b html -w docs.log '
+                           '-a -E . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
             clean_doc_log('docs.log')
 
     @task(depends=['diagrams', 'logo::create', 'update'])
