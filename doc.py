@@ -482,13 +482,22 @@ with namespace('doc'):
         hack()
         if os.path.isdir(Project.docs_html_dir):
             shutil.rmtree(Project.docs_html_dir)
+        options = [
+            # '-a',       # always write all output files
+            # '-E',       # don't use saved environment
+            '-j 4',     # distribute the build of N processes
+            # '-n',       # run in nit-picky mode
+            # '-v',       # increase verbosity
+            '-q',       # do not output anything on standard output, warnings and errors go to stderr
+            # '-Q',       # do not output anything on standard output.  Suppress warnings.  Only errors go to stderr
+            ]
         with cd(Project.docs_dir):
             if os.path.isfile('_build/doctrees/index.doctree'):
                 run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
-                           '-a -E . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
+                           '{options} . ../{htmldir}'.format(options=' '.join(options), htmldir=Project.docs_html_dir))
             else:
                 run_python('sphinx-build -b html -w docs.log '
-                           '-a -E . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
+                           '{options} . ../{htmldir}'.format(options=' '.join(options), htmldir=Project.docs_html_dir))
             clean_doc_log('docs.log')
 
     @task(depends=['diagrams', 'logo::create', 'update'])
@@ -863,28 +872,29 @@ with namespace('doc'):
         @task(private=False)
         def readme():
             """Update the README.rst from the application's package docstring"""
-            # noinspection PyBroadException
-            try:
-                # make sure the project's directory is on the system path so python can find import modules
-                this_dir = os.path.abspath(Project.herringfile_dir)
-                parent_dir = os.path.dirname(this_dir)
-                if this_dir in sys.path:
-                    sys.path.remove(this_dir)
-                if parent_dir in sys.path:
-                    sys.path.remove(parent_dir)
-                sys.path.insert(0, parent_dir)
-                sys.path.insert(1, this_dir)
+            if Project.generate_readme:
+                # noinspection PyBroadException
+                try:
+                    # make sure the project's directory is on the system path so python can find import modules
+                    this_dir = os.path.abspath(Project.herringfile_dir)
+                    parent_dir = os.path.dirname(this_dir)
+                    if this_dir in sys.path:
+                        sys.path.remove(this_dir)
+                    if parent_dir in sys.path:
+                        sys.path.remove(parent_dir)
+                    sys.path.insert(0, parent_dir)
+                    sys.path.insert(1, this_dir)
 
-                debug("sys.path: %s" % pformat(sys.path))
-                debug("package: {pkg}".format(pkg=Project.package))
-                app_module = importlib.import_module(Project.package)
-                text = app_module.__doc__
-                debug(text)
-                if text:
-                    with open(Project.readme_file, 'w') as readme_file:
-                        readme_file.write(text)
-            except Exception as ex:
-                error('Can not write {file} - {why}'.format(file=Project.readme_file, why=str(ex)))
+                    debug("sys.path: %s" % pformat(sys.path))
+                    debug("package: {pkg}".format(pkg=Project.package))
+                    app_module = importlib.import_module(Project.package)
+                    text = app_module.__doc__
+                    debug(text)
+                    if text:
+                        with open(Project.readme_file, 'w') as readme_file:
+                            readme_file.write(text)
+                except Exception as ex:
+                    error('Can not write {file} - {why}'.format(file=Project.readme_file, why=str(ex)))
 
 
         def _app_output(options):

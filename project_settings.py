@@ -264,6 +264,9 @@ ATTRIBUTES = {
         'default': 'features',
         'help': 'The directory for lettuce features relative to the herringfile_dir.  Defaults to "{'
                 'herringfile_dir}/features".'},
+    'generate_readme': {
+        'default': True,
+        'help': "Generate, overwriting if existing, the README.rst from the project's module's docstring"},
     'github_url': {
         'default': None,
         'help': 'The URL for the project on github.  Defaults to None.'},
