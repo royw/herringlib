@@ -483,12 +483,12 @@ with namespace('doc'):
         if os.path.isdir(Project.docs_html_dir):
             shutil.rmtree(Project.docs_html_dir)
         options = [
-            # '-a',       # always write all output files
-            # '-E',       # don't use saved environment
-            '-j 4',     # distribute the build of N processes
+            '-a',       # always write all output files
+            '-E',       # don't use saved environment
+            # '-j 4',     # distribute the build of N processes WARNING: breaks jenkins
             # '-n',       # run in nit-picky mode
             # '-v',       # increase verbosity
-            '-q',       # do not output anything on standard output, warnings and errors go to stderr
+            # '-q',       # do not output anything on standard output, warnings and errors go to stderr
             # '-Q',       # do not output anything on standard output.  Suppress warnings.  Only errors go to stderr
             ]
         with cd(Project.docs_dir):
