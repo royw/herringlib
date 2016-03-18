@@ -296,6 +296,7 @@ def lsvenvs():
     if venvs.defined:
         for venv_info in venvs.infos():
             info(venv_info.venv)
+    return
 
 
 @task(namespace='project')
