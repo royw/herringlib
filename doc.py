@@ -94,6 +94,7 @@ def run_python(cmd_line, env=None, verbose=True, ignore_errors=False):
     :return: the output from running the command
     :rtype: str
     """
+    global doc_errors
     if env is None:
         env = {'PYTHONPATH': Project.pythonPath}
     with LocalShell() as local:
@@ -155,6 +156,7 @@ with namespace('doc'):
     @task(depends=['clean'], private=True)
     def clean():
         """Remove documentation artifacts"""
+        global doc_errors
         recursively_remove(os.path.join(Project.docs_dir, '_src'), '*')
         recursively_remove(os.path.join(Project.docs_dir, '_epy'), '*')
         recursively_remove(os.path.join(Project.docs_dir, '_build'), '*')
@@ -192,7 +194,7 @@ with namespace('doc'):
                 image=classes_image,
                 name=module_name)
         else:
-            warning("%s does not exist!" % image_path)
+            debug("%s does not exist!" % image_path)
         return line
 
 
@@ -213,7 +215,7 @@ with namespace('doc'):
                     name=class_name)
                 break
             else:
-                warning("%s does not exist!" % image_path)
+                debug("%s does not exist!" % image_path)
         return line
 
 
@@ -480,6 +482,10 @@ with namespace('doc'):
     def sphinx():
         """Generate sphinx HTML API documents"""
         hack()
+        run_sphinx()
+
+    @task()
+    def run_sphinx():
         if os.path.isdir(Project.docs_html_dir):
             shutil.rmtree(Project.docs_html_dir)
         options = [
@@ -561,9 +567,10 @@ with namespace('doc'):
     @task(depends=['sphinx'], private=True)
     def generate():
         """Generate API documents"""
-        if doc.doc_errors:
-            error(pformat(doc.doc_errors))
-        info("{cnt} errors.".format(cnt=len(doc.doc_errors)))
+        global doc_errors
+        if doc_errors:
+            error(pformat(doc_errors))
+        info("{cnt} errors.".format(cnt=len(doc_errors)))
 
 
     @task(depends=['generate'], private=True)
@@ -934,11 +941,11 @@ with namespace('doc'):
                     Installation
                     ============
 
-                    To install from local PyPI::
+                    To install from PyPI::
 
-                        ➤ pip install --index-url {url} {name}
+                        ➤ pip install {name}
 
-                """.format(url="http://{host}/pypi/simple/".format(host=Project.dist_host), name=Project.name)))
+                """.format(name=Project.name)))
 
 
     @task(depends=['update::readme', 'update::changelog', 'update::todo',
