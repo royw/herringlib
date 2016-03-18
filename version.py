@@ -38,8 +38,6 @@ Add the following to your *requirements.txt* file:
 
 """
 
-__docformat__ = 'restructuredtext en'
-
 import os
 import re
 
@@ -52,9 +50,10 @@ from versio.version import Version
 from herring.herring_app import task, namespace
 
 from herringlib.safe_edit import safe_edit
-from herringlib.simple_logger import info, error, debug, warning
+from herringlib.simple_logger import info, error, debug
 from herringlib.project_settings import Project
 
+__docformat__ = 'restructuredtext en'
 
 VERSION_REGEX = r'__version__\s*=\s*[\'\"](\S+)[\'\"]'
 
@@ -85,6 +84,7 @@ def get_version_from_file(project_package=None):
     return '0.0'
 
 
+# noinspection PyArgumentEqualDefault
 def get_project_version(project_package=None):
     r"""
     Get the version from __init__.py with a line: /^__version__\s*=\s*(\S+)/
@@ -101,11 +101,21 @@ def get_project_version(project_package=None):
     try:
         file_name = _file_spec('__init__.py', project_package)
         debug("version_file => %s" % file_name)
-        with open(file_name) as in_file:
-            for line in in_file.readlines():
-                match = re.match(VERSION_REGEX, line)
-                if match:
-                    return match.group(1)
+        # noinspection PyBroadException
+        try:
+            # python3
+            with open(file_name, 'r', encoding='utf-8') as inFile:
+                for line in inFile.readlines():
+                    match = re.match(VERSION_REGEX, line)
+                    if match:
+                        return match.group(1)
+        except:
+            # python2
+            with open(file_name, 'r') as inFile:
+                for line in inFile.readlines():
+                    match = re.match(VERSION_REGEX, line)
+                    if match:
+                        return match.group(1)
     except IOError:
         pass
 
@@ -113,8 +123,16 @@ def get_project_version(project_package=None):
     try:
         file_name = _file_spec('VERSION.txt', project_package)
         info("version_file => %s" % file_name)
-        with open(file_name) as in_file:
-            return in_file.read().strip()
+        # noinspection PyBroadException
+        try:
+            # python3
+            with open(file_name, 'r', encoding='utf-8') as in_file:
+                return in_file.read().strip()
+        except:
+            # python2
+            with open(file_name, 'r') as in_file:
+                return in_file.read().strip()
+
     except IOError:
         try:
             file_name = _file_spec('VERSION.txt', Project.herringfile_dir)
