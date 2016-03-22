@@ -45,6 +45,7 @@ class {name}App(object):
 
         with GracefulInterruptHandler() as handler:
             # TODO: implement app here
-            pass
+            if handler.interrupted:
+                break
 
         return None
