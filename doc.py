@@ -865,13 +865,14 @@ with namespace('doc'):
                                 pkg=Project.package, name=Project.name)
                             usage_file.write(".. autoprogram:: {parser}".format(parser=parser))
                             usage_file.write("    :prog: {name}\n\n".format(name=Project.package))
-                        usage_file.write("::\n\n")
-                        for script in console_scripts:
-                            text = local.run("python -m %s --help" % script)
-                            if text:
-                                usage_file.write("    ➤ {app} --help\n".format(app=script))
-                                usage_file.write(indent(text, indent_spaces=4))
-                                usage_file.write("\n\n")
+                        else:
+                            usage_file.write("::\n\n")
+                            for script in console_scripts:
+                                text = local.run("python -m %s --help" % script)
+                                if text:
+                                    usage_file.write("    ➤ {app} --help\n".format(app=script))
+                                    usage_file.write(indent(text, indent_spaces=4))
+                                    usage_file.write("\n\n")
             except:
                 pass
 

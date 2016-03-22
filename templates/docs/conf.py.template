@@ -14,6 +14,7 @@ serve to show the default.
 import re
 import sys
 import os
+import warnings
 from datetime import datetime
 
 
@@ -242,6 +243,9 @@ pygments_style = 'sphinx'
 
 # If true, keep warnings as "system message" paragraphs in the built documents.
 # keep_warnings = False
+
+# "No classes found for inheritance diagram" is erroneously emitted when inheritance-diagram is given a module
+warnings.filterwarnings("ignore", r"No classes found for inheritance diagram")
 
 # -- Options for httpdomain -----------------------------------------------------
 # https://pythonhosted.org/sphinxcontrib-httpdomain/
@@ -725,7 +729,7 @@ intersphinx_mapping = {{
     'http://docs.python.org/': None,
     'python27': ('http://docs.python.org/2.7', None),
     'python34': ('https://docs.python.org/3.4', None),
-    'FullMonty': ('royw.github.io/fullmonty', None),
+    'FullMonty': ('https://royw.github.io/fullmonty', None),
     'six': ('http://pythonhosted.org/six/', None),
     'dateutil': ('https://dateutil.readthedocs.org/en/latest/', None),
     'matplotlib': ('http://matplotlib.org/', None),
@@ -733,15 +737,6 @@ intersphinx_mapping = {{
 }}
 
 rst_epilog = """
-.. |package| image:: /_static/package.svg
-    :width: 26pt
-
-.. |module| image:: /_static/module.svg
-    :width: 26pt
-
-.. |inherit| image:: /_static/inheritance.svg
-    :width: 26pt
-
 .. role:: strike
     :class: strike
 
