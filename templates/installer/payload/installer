@@ -52,7 +52,7 @@ fi
 
 # create virtualenv
 
-venv="${{WORKON_HOME:=~/.virtualenvs}}"/"$executable_name"
+venv="${WORKON_HOME:=~/.virtualenvs}"/"$executable_name"
 virtualenv -p $python_path $venv
 source $venv/bin/activate
 pip install --upgrade pip
