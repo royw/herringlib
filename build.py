@@ -11,7 +11,7 @@ Add the following to your *requirements.txt* file:
 * wheel; python_version == "[wheel_python_versions]"
 * decorator; python_version == "[wheel_python_versions]"
 """
-
+import glob
 import os
 from textwrap import dedent
 
@@ -112,6 +112,8 @@ if Project.package:
                     with LocalShell(verbose=True) as local:
                         if os.path.isfile('installer.conf'):
                             os.remove('installer.conf')
+                        for f in glob.glob("*.sh"):
+                            os.remove(f)
                         with open('installer.conf', 'w') as conf:
                             conf.write(dedent("""\
                             installer_script="{name}-{version}-installer.sh"
