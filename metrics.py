@@ -301,9 +301,12 @@ if packages_required(required_packages):
         @task()
         def sloccount():
             """Generate SLOCCount output file, sloccount.sc, used by jenkins"""
+            sloc_data = os.path.join(Project.quality_dir, 'slocdata')
+            mkdir_p(sloc_data)
             sloc_filename = os.path.join(Project.quality_dir, 'sloccount.sc')
             with LocalShell() as local:
-                output = local.run("sloccount --wide --details {src}".format(src=Project.package))
+                output = local.run("sloccount --datadir {data} --wide --details {src}".format(data=sloc_data,
+                                                                                              src=Project.package))
                 if os.path.isfile(sloc_filename):
                     os.remove(sloc_filename)
                 with open(sloc_filename, 'w') as sloc_file:
