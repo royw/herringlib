@@ -37,22 +37,23 @@ if command -v virtualenv 2>/dev/null; then
     echo "virtualenv already installed"
 else
     echo "installing virtualenv"
-    if command -v apt-get 2>/dev/null 1>/dev/null; then
-        sudo apt-get install python-virtualenv
-        mkdir -f ~/.virtualenvs
+    if ! command -v pip 2>/dev/null 1>/dev/null; then
+        sudo easy_install pip
+    fi
+    if command -v pip 2>/dev/null 1>/dev/null; then
+        sudo pip install virtualenv
     else
-        if command -v pip 2>/dev/null 1>/dev/null; then
-            sudo pip install virtualenv
-        else
-            echo "This is not a supported distribution.  Please manually install virtualenv then try this install again."
-            exit 1
-        fi
+        echo "This is not a supported distribution.  Please manually install virtualenv then try this install again."
+        exit 1
     fi
 fi
 
 # create virtualenv
 
-venv="${WORKON_HOME:=~/.virtualenvs}"/"$executable_name"
+echo "virtualenv directory is: ${WORKON_HOME:=$HOME/.virtualenvs}"
+mkdir -p "${WORKON_HOME:=$HOME/.virtualenvs}"
+
+venv="${WORKON_HOME:=$HOME/.virtualenvs}"/"$executable_name"
 virtualenv -p $python_path $venv
 source $venv/bin/activate
 pip install --upgrade pip
@@ -60,21 +61,26 @@ pip install --upgrade setuptools
 
 # install payload package into virtual environment
 
+pip install *.tar.gz
 pip install "$package_name"
 
 # symbolically link package script onto path
 
-if [ -d "$HOME/bin" ]; then
-    rm -f "$HOME/bin/$executable_name"
-    ln -s "$venv/bin/$executable_name" "$HOME/bin/$executable_name"
-    echo "$executable_name installed to $HOME/bin"
-elif [ -d /usr/local/bin ]; then
-    sudo rm -f "usr/local/bin/$executable_name"
-    sudo ln -s "$venv/bin/$executable_name" "/usr/local/bin/$executable_name"
-    echo "$executable_name installed to /usr/local/bin"
+if [ -x "$venv/bin/$executable_name" ]; then
+    if [ -d "$HOME/bin" ]; then
+        rm -f "$HOME/bin/$executable_name"
+        ln -s "$venv/bin/$executable_name" "$HOME/bin/$executable_name"
+        echo "$executable_name installed to $HOME/bin"
+    elif [ -d /usr/local/bin ]; then
+        sudo rm -f "usr/local/bin/$executable_name"
+        sudo ln -s "$venv/bin/$executable_name" "/usr/local/bin/$executable_name"
+        echo "$executable_name installed to /usr/local/bin"
+    else
+        echo "Please symbolically link $venv/bin/$executable_name to somewhere on your path."
+        echo
+    fi
 else
-    echo "Please symbolically link $venv/bin/$executable_name to somewhere on your path."
-    echo
+    echo "There was a problem with the install and the executable is not available:  $venv/bin/$executable_name"
 fi
 
 exit 0
