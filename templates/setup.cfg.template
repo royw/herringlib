@@ -10,3 +10,7 @@ universal=0
 # python-tag = py27
 # abi = None
 # platform = None
+
+[pep8]
+# ignore line length errors
+ignore = E501
