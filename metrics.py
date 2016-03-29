@@ -299,6 +299,17 @@ if packages_required(required_packages):
             return totals_by_language
 
         @task()
+        def sloccount():
+            """Generate SLOCCount output file, sloccount.sc used by jenkins"""
+            sloc_filename = os.path.join(Project.quality_dir, 'sloccount.sc')
+            with LocalShell() as local:
+                output = local.run("sloccount --wide --details {src}".format(src=Project.package))
+                if os.path.isfile(sloc_filename):
+                    os.remove(sloc_filename)
+                with open(sloc_filename, 'w') as sloc_file:
+                    sloc_file.write(output)
+
+        @task()
         def sloc():
             """Run sloccount to get the source lines of code."""
             if not executables_available(['sloccount']):
