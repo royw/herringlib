@@ -300,7 +300,7 @@ if packages_required(required_packages):
 
         @task()
         def sloccount():
-            """Generate SLOCCount output file, sloccount.sc used by jenkins"""
+            """Generate SLOCCount output file, sloccount.sc, used by jenkins"""
             sloc_filename = os.path.join(Project.quality_dir, 'sloccount.sc')
             with LocalShell() as local:
                 output = local.run("sloccount --wide --details {src}".format(src=Project.package))

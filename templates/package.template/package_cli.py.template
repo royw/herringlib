@@ -3,11 +3,11 @@
 The command line interface for the {name} application.
 
 """
-__docformat__ = 'restructuredtext en'
 
 from {package}.{package}_settings import {name}Settings
 from fullmonty.simple_logger import error, info
 
+__docformat__ = 'restructuredtext en'
 __all__ = ("ArgumentError", "{name}CLI")
 
 
