@@ -68,3 +68,9 @@ if packages_required(required_packages):
             with LocalShell() as local:
                 info('Running features using the current python environment')
                 local.run("behave {features_dir}".format(features_dir=Project.features_dir), verbose=True)
+
+    @task()
+    def tox():
+        """Run tox to test the package in virtual environments defined in tox.ini"""
+        with LocalShell() as local:
+            local.run('tox', verbose=True)
