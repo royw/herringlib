@@ -215,6 +215,10 @@ ATTRIBUTES = {
         'default': 'docs',
         'help': 'The documentation directory relative to the herringfile_dir.  '
                 'Defaults to "{herringfile_dir}/docs".'},
+    'docs_group': {
+        'default': 'www-data',
+        'help': 'The web server group that should own the documents when published.  '
+                'Default is "www-data".'},
     'docs_host': {
         'help': 'A host name to publish documentation files to.  Defaults to "dist_host"'},
     'doc_host_prompt_for_sudo_password': {
@@ -247,10 +251,10 @@ ATTRIBUTES = {
         'default': env_value('USER'),
         'help': 'The web server user that should own the documents when published.  '
                 'Default is "www-data".'},
-    'docs_group': {
-        'default': 'www-data',
-        'help': 'The web server group that should own the documents when published.  '
-                'Default is "www-data".'},
+    'docs_venv': {
+        'help': 'The virtualenv to use for documentation.  Note that the virtual environment '
+                'name should end in a two digit python version that is in python_versions. '
+                'Default is the virtualenv selected by doc_python_version'},
     'egg_dir': {
         'help': 'The project\'s egg filename.  Default is generate from the project\'s "name"'},
     'exclude_from_docs': {
@@ -419,6 +423,12 @@ ATTRIBUTES = {
         'default': 'requirements.txt',
         'help': 'When creating multiple virtual environments, the format string for the per'
                 'version requirements.txt file (ex: requirements.txt).'},
+    'virtualenv_requirements': {
+        'default': {
+            'python_versions': ['requirements.txt'],
+            'docs_venv': ['doc.requirements.txt']
+        },
+        'help': 'Specifies which requirements files to use with virtual environments.'},
     'virtualenvwrapper_script': {
         'default': env_value(name='VIRTUALENVWRAPPER_SCRIPT',
                              default_value='/usr/share/virtualenvwrapper/virtualenvwrapper.sh'),
@@ -466,6 +476,19 @@ class ProjectSettings(object):
         :param data_dict: the project's attributes
         :type data_dict: dict
         """
+
+        def set_default_attr(attr, default_attr, first=False):
+            """
+            If the attribute is not set, then set it to the value of the default attribute.
+            If first is asserted, then the value of the default attribute should be a list and we
+            want the first value in the list.
+            """
+            if getattr(self, attr, None) is None:
+                default_value = getattr(self, default_attr, None)
+                if default_value and first:
+                    default_value = getattr(self, default_attr, None)[0]
+                setattr(self, attr, default_value)
+
         # print("metadata(%s)" % repr(data_dict))
         for key, value in data_dict.items():
             self.__setattr__(key, value)
@@ -475,8 +498,7 @@ class ProjectSettings(object):
         self.__check_missing_required_attributes()
 
         setattr(self, 'name', re.sub(r'[ -]', '', getattr(self, 'name', '')))
-        if getattr(self, 'title', None) is None:
-            setattr(self, 'title', getattr(self, 'name', None))
+        set_default_attr('title', 'name')
 
         from herringlib.version import get_project_version
 
@@ -497,26 +519,14 @@ class ProjectSettings(object):
             if 'egg_dir' not in self.__dict__:
                 self.__setattr__('egg_dir', "{name}.egg-info".format(name=Project.name))
 
-        if Project.venv_base is None:
-            Project.venv_base = Project.package
+        set_default_attr('venv_base', 'package')
+        set_default_attr('test_python_versions', 'python_versions')
+        set_default_attr('tox_python_versions', 'test_python_versions')
+        set_default_attr('metrics_python_versions', 'python_versions')
+        set_default_attr('min_python_version', 'python_versions')
 
-        if getattr(self, 'test_python_versions', None) is None:
-            setattr(self, 'test_python_versions', getattr(self, 'python_versions'))
-
-        if getattr(self, 'tox_python_versions', None) is None:
-            setattr(self, 'tox_python_versions', getattr(self, 'test_python_versions'))
-
-        if getattr(self, 'metrics_python_versions', None) is None:
-            setattr(self, 'metrics_python_versions', getattr(self, 'python_versions'))
-
-        if getattr(self, 'sdist_python_version', None) is None:
-            setattr(self, 'sdist_python_version', getattr(self, 'python_versions')[0])
-
-        if getattr(self, 'deploy_python_version', None) is None:
-            setattr(self, 'deploy_python_version', getattr(self, 'python_versions')[0])
-
-        if getattr(self, 'min_python_version', None) is None:
-            setattr(self, 'min_python_version', min(getattr(self, 'python_versions')))
+        set_default_attr('sdist_python_version', 'python_versions', first=True)
+        set_default_attr('deploy_python_version', 'python_versions', first=True)
 
         setattr(self, 'min_python_version_tuple', self.version_to_tuple(getattr(self, 'min_python_version', '26')))
 
@@ -525,21 +535,18 @@ class ProjectSettings(object):
 
         setattr(self, 'tox_pythons', ",".join(['py{v}'.format(v=v) for v in getattr(self, 'tox_python_versions')]))
 
+        if getattr(self, 'docs_venv', None) is None:
+            setattr(self, 'docs_venv', '{name}{ver}'.format(name=getattr(self, 'venv_base'),
+                                                            ver=getattr(self, 'doc_python_version')))
+
         if getattr(self, 'docs_html_path', None) is None:
             setattr(self, 'docs_html_path', os.path.join(getattr(self, 'herringfile_dir', None),
                                                          getattr(self, 'docs_html_dir', None)))
 
-        if getattr(self, 'docs_host', None) is None:
-            setattr(self, 'docs_host', getattr(self, 'dist_host', None))
-
-        if getattr(self, 'docs_user', None) is None:
-            setattr(self, 'docs_user', getattr(self, 'dist_user', None))
-
-        if getattr(self, 'docs_password', None) is None:
-            setattr(self, 'docs_password', getattr(self, 'dist_password', None))
-
-        if getattr(self, 'docker_project', None) is None:
-            setattr(self, 'docker_project', getattr(self, 'package', None))
+        set_default_attr('docs_host', 'dist_host')
+        set_default_attr('docs_user', 'dist_user')
+        set_default_attr('docs_password', 'dist_password')
+        set_default_attr('docker_project', 'package')
 
         # load design header from file if available
         # noinspection PyBroadException

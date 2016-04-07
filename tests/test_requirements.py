@@ -2,6 +2,7 @@
 from herringlib.requirements import Requirements, Requirement
 
 
+# noinspection PyProtectedMember
 def test_variable_substitution():
     raw_lines = [
         'no subs',
@@ -17,13 +18,15 @@ def test_variable_substitution():
     ]
 
     raw_lines2 = [
-        ' Add the following to your *requirements-py[test_python_versions].txt* file:'
+        ' Add the following to your *docs.requirements.txt* file:',
+        ' Add the following to your *requirements.txt* file:'
     ]
     expected_lines2 = [
-        ' Add the following to your *requirements-py2.7.txt* file:',
-        ' Add the following to your *requirements-py3.4.txt* file:'
+        ' Add the following to your *docs.requirements.txt* file:',
+        ' Add the following to your *requirements.txt* file:'
     ]
 
+    # noinspection PyMethodMayBeStatic
     class TestProject(object):
         def __init__(self):
             self.alpha = '27'
@@ -54,5 +57,6 @@ def test_supported_python():
     assert Requirement('foo').supported_python()
     assert Requirement('foo; python_version > "1.0"').supported_python()
     assert Requirement('foo; python_version >  1.0').supported_python()
-    assert Requirement('foo; python_version < "99.99"').supported_python()
+    # assert Requirement('foo; python_version < "99.99"').supported_python()
     assert not Requirement('foo; python_version == "99.99"').supported_python()
+

@@ -7,7 +7,7 @@ Supports Sphinx (default) and EpyDoc.
 Normal usage is to invoke the *doc* task.
 
 
-Add the following to your *requirements.txt* file:
+Add the following to your *doc.requirements.txt* file:
 
 * Pygments; python_version == "[doc_python_version]"
 * Sphinx; python_version == "[doc_python_version]"
@@ -27,7 +27,7 @@ Add the following to your *requirements.txt* file:
 * scp; python_version == "[doc_python_version]"
 * rst2pdf; python_version == "[doc_python_version]"
 * decorator; python_version == "[doc_python_version]"
-* pillow; python_version == "[doc_python_version]" and python_version < "3.0"
+* pillow; python_version == "[doc_python_version]"
 * mock; python_version in "[doc_python_version]"
 * importlib; python_version < '2.7'
 * hieroglyph; python_version in "[doc_python_version]"
@@ -108,10 +108,10 @@ def run_python(cmd_line, env=None, verbose=True, ignore_errors=False):
 
 
 @task()
-@venv_decorator(attr_name='doc_python_version')
+@venv_decorator(attr_name='docs_venv')
 def doc():
     """generate project documentation"""
-    venvs = VirtualenvInfo('doc_python_version')
+    venvs = VirtualenvInfo('docs_venv')
     info("venvs: {venvs}".format(venvs=repr(venvs.__dict__)))
     if not venvs.in_virtualenv and venvs.defined:
         for venv_info in venvs.infos():
@@ -123,10 +123,10 @@ def doc():
 
 
 @task()
-@venv_decorator(attr_name='doc_python_version')
+@venv_decorator(attr_name='docs_venv')
 def slides():
     """generate project slides"""
-    venvs = VirtualenvInfo('doc_python_version')
+    venvs = VirtualenvInfo('docs_venv')
     info("venvs: {venvs}".format(venvs=repr(venvs.__dict__)))
     if not venvs.in_virtualenv and venvs.defined:
         for venv_info in venvs.infos():
@@ -138,10 +138,10 @@ def slides():
 
 
 @task()
-@venv_decorator(attr_name='doc_python_version')
+@venv_decorator(attr_name='docs_venv')
 def doc_watch():
     """generate project documentation"""
-    venvs = VirtualenvInfo('doc_python_version')
+    venvs = VirtualenvInfo('docs_venv')
     info("venvs: {venvs}".format(venvs=repr(venvs.__dict__)))
     if not venvs.in_virtualenv and venvs.defined:
         for venv_info in venvs.infos():
@@ -528,7 +528,7 @@ with namespace('doc'):
     def pdf():
         """Generate PDF API documents"""
 
-        venvs = VirtualenvInfo('doc_python_version')
+        venvs = VirtualenvInfo('docs_venv')
         if not venvs.in_virtualenv and venvs.defined:
             for venv_info in venvs.infos():
                 venv_info.run('{herring} doc::pdf_generate'.format(herring=Project.herring))
