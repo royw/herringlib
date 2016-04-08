@@ -27,7 +27,6 @@ Add the following to your *requirements.txt* file:
 """
 
 import os
-import trace
 import traceback
 from functools import wraps
 from pprint import pformat
@@ -154,7 +153,7 @@ class VenvInfo(object):
                               env=new_env).strip().split("\n")
             if self.venv in venvs:
                 output = local.run('/bin/bash -c "source {venv_script} ; '
-                                   'workon {venv} ; python --version ; echo \"$VIRTUAL_ENV\" ; '
+                                   'workon {venv} ; '
                                    '{cmd}"'.format(venv_script=venv_script, venv=self.venv, cmd=command_line),
                                    verbose=verbose,
                                    env=new_env)
@@ -255,6 +254,9 @@ def mkvenvs():
             return
 
         if venvs.defined:
+            wheel_options = '--quiet --wheel-dir {dir}'.format(dir=Project.pip_wheelhouse)
+            pip_options = '--quiet {pip_opts} --no-binary pycrypto --find-links={dir}'.format(
+                pip_opts=Project.pip_options, dir=Project.pip_wheelhouse)
             for venv_info in venvs.infos(exists=False):
                 if venv_info.exists():
                     info("{venv} already exists".format(venv=venv_info.venv))
@@ -272,23 +274,35 @@ def mkvenvs():
                         # info(pformat(requirements))
 
                 install_lines = [
-                    'pip install --upgrade {pip_options} pip ; '.format(pip_options=Project.pip_options),
-                    'pip install --upgrade {pip_options} setuptools ; '.format(pip_options=Project.pip_options),
-                    'pip install --upgrade {pip_options} requests[security] ;'.format(pip_options=Project.pip_options),
+                    'pip wheel {wheel_options} pip'.format(wheel_options=wheel_options),
+                    'pip install --upgrade {pip_options} pip'.format(pip_options=pip_options),
+                    'pip wheel {wheel_options} setuptools'.format(wheel_options=wheel_options),
+                    'pip install --upgrade {pip_options} setuptools'.format(pip_options=pip_options),
+                    'pip wheel {wheel_options} cryptography'.format(wheel_options=wheel_options),
+                    'pip install --upgrade {pip_options} cryptography'.format(pip_options=pip_options),
+                    'pip wheel {wheel_options} pyopenssl ndg-httpsclient pyasn1'.format(wheel_options=wheel_options),
+                    'pip install --upgrade {pip_options} pyopenssl ndg-httpsclient pyasn1'.format(
+                        pip_options=pip_options),
+                    'pip wheel {wheel_options} requests'.format(wheel_options=wheel_options),
+                    'pip install --upgrade {pip_options} requests[security]'.format(pip_options=pip_options),
                 ]
                 if 'numpy' in requirements:
-                    install_lines.append('pip install {pip_options} numpy ; '.format(pip_options=Project.pip_options))
+                    install_lines.append('pip wheel {wheel_options} numpy'.format(wheel_options=wheel_options))
+                    install_lines.append('pip install --upgrade {pip_options} numpy'.format(pip_options=pip_options))
 
                 if 'matplotlib' in requirements:
-                    install_lines.append('pip install {pip_options} matplotlib ; '.format(pip_options=Project.pip_options))
+                    install_lines.append('pip wheel {wheel_options} matplotlib'.format(wheel_options=wheel_options))
+                    install_lines.append('pip install --upgrade {pip_options} matplotlib'.format(pip_options=pip_options))
 
                 for requirement_file in unique_list(requirement_files):
-                    install_lines.append('pip install {pip_options} -r {requirement_file} ; '.format(
-                        pip_options=Project.pip_options, requirement_file=requirement_file))
+                    install_lines.append('pip wheel {wheel_options} -r {requirement_file}'.format(
+                        wheel_options=wheel_options, requirement_file=requirement_file))
+                    install_lines.append('pip install --upgrade {pip_options} -r {requirement_file}'.format(
+                        pip_options=pip_options, requirement_file=requirement_file))
 
                 venv_info.mkvirtualenv()
-                info(''.join(install_lines))
-                venv_info.run(''.join(install_lines))
+                for line in install_lines:
+                    venv_info.run(line, verbose=True)
         else:
             info("To build with wheels, in your herringfile you must set Project.wheel_python_versions to a list"
                  "of compact version, for example: ['27', '33', '34'] will build wheels for "
@@ -337,6 +351,9 @@ def lsvenvs():
 @task(namespace='project')
 def upvenvs():
     """Run "pip install --update -r requirements" in each virtual environment."""
+    wheel_options = '--quiet --wheel-dir {dir}'.format(dir=os.path.expanduser(Project.pip_wheelhouse))
+    pip_options = '--quiet {pip_opts} --no-binary pycrypto --no-index --find-links={dir}'.format(
+        pip_opts=Project.pip_options, dir=os.path.expanduser(Project.pip_wheelhouse))
     for attr_name in Project.virtualenv_requirements.keys():
         requirement_files = Project.virtualenv_requirements[attr_name]
 
@@ -345,13 +362,18 @@ def upvenvs():
             warning('Please deactivate the current virtual environment then try running this task again.')
             return
 
-        info("Project Virtual Environments:")
+        # info("Project Virtual Environments:")
         if venvs.defined:
             for venv_info in venvs.infos():
-                venv_info.run('pip install --upgrade pip')
-                venv_info.run('pip install --upgrade setuptools')
+                venv_info.run('pip wheel {wheel_options} pip'.format(wheel_options=wheel_options))
+                venv_info.run('pip wheel {wheel_options} setuptools'.format(wheel_options=wheel_options))
+                venv_info.run('pip install --upgrade {pip_options} pip'.format(pip_options=pip_options))
+                venv_info.run('pip install --upgrade {pip_options} setuptools'.format(pip_options=pip_options))
                 for requirement_filename in requirement_files:
-                    venv_info.run('pip install --upgrade -r {req}'.format(req=requirement_filename))
+                    venv_info.run('pip wheel {wheel_options} -r {requirement_file} ; '.format(
+                        wheel_options=wheel_options, requirement_file=requirement_filename))
+                    venv_info.run('pip install --upgrade {pip_options} -r {req}'.format(pip_options=pip_options,
+                                                                                        req=requirement_filename))
 
 
 @task(namespace='project')

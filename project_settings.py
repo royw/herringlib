@@ -332,6 +332,10 @@ ATTRIBUTES = {
     'pip_options': {
         'default': '',
         'help': 'Command line options to pass to pip install.'},
+    'pip_wheelhouse': {
+        'default': '~/.pip/wheelhouse',
+        'help': 'The path to store python wheels.  "~" is expanded to the current user.  '
+                'Defaults to "~/.pip/wheelhouse".'},
     'port': {
         'default': 22,
         'help': 'The SSH port for transferring files to the dist_host.  '
