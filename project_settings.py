@@ -137,7 +137,7 @@ ATTRIBUTES = {
     'bin_dir': {
         'default': '~/bin',
         'help': 'The path to the user\'s bin directory.  '
-                'Defaults to "{herringfile_dir}/docs/usage.rst".'},
+                'Defaults to "~/bin".'},
     'bugzilla_url': {
         'default': env_value('BUGZILLA_URL', default_value='http://localhost'),
         'help': 'A URL to bugzilla.'
@@ -268,9 +268,21 @@ ATTRIBUTES = {
         'default': 'features',
         'help': 'The directory for lettuce features relative to the herringfile_dir.  Defaults to "{'
                 'herringfile_dir}/features".'},
+    'generate_design': {
+        'default': True,
+        'help': 'generate a design document.  '
+                'Defaults to True'},
+    'generate_install': {
+        'default': True,
+        'help': 'generate an install document.  '
+                'Defaults to True'},
     'generate_readme': {
         'default': True,
         'help': "Generate, overwriting if existing, the README.rst from the project's module's docstring"},
+    'generate_usage': {
+        'default': True,
+        'help': 'generate a usage document.  '
+                'Defaults to True'},
     'github_url': {
         'default': None,
         'help': 'The URL for the project on github.  Defaults to None.'},

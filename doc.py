@@ -797,37 +797,38 @@ with namespace('doc'):
         @task(private=True)
         def design():
             """Update the design.rst from the source module's docstrings"""
-            info("Python version: {version}".format(version=version))
+            if Project.generate_design:
+                info("Python version: {version}".format(version=version))
 
-            design_header = Project.design_header.strip()
-            if design_header:
-                py_files = _find_py_files(Project.package)
-                if py_files:
-                    with open(Project.design_file, 'w') as design_file:
-                        design_file.write("Design\n")
-                        design_file.write("======\n\n")
-                        design_file.write(design_header)
-                        design_file.write("\n\n")
-                        for py_file in sorted(py_files):
-                            docstring, functions, classes = _parse_py_file(py_file)
-                            design_file.write(py_file)
-                            design_file.write("\n")
-                            design_file.write('-' * len(py_file))
+                design_header = Project.design_header.strip()
+                if design_header:
+                    py_files = _find_py_files(Project.package)
+                    if py_files:
+                        with open(Project.design_file, 'w') as design_file:
+                            design_file.write("Design\n")
+                            design_file.write("======\n\n")
+                            design_file.write(design_header)
                             design_file.write("\n\n")
-                            design_file.write(docstring)
-                            design_file.write("\n\n")
-                            if functions:
-                                design_file.write("Functions:\n\n")
-                                for function in functions:
-                                    design_file.write("* {name}\n".format(name=function))
+                            for py_file in sorted(py_files):
+                                docstring, functions, classes = _parse_py_file(py_file)
+                                design_file.write(py_file)
+                                design_file.write("\n")
+                                design_file.write('-' * len(py_file))
                                 design_file.write("\n\n")
-                            if classes:
-                                design_file.write("Classes:\n\n")
-                                for class_ in classes:
-                                    design_file.write("* {name}\n".format(name=class_))
+                                design_file.write(docstring)
                                 design_file.write("\n\n")
-            else:
-                touch(Project.design_file)
+                                if functions:
+                                    design_file.write("Functions:\n\n")
+                                    for function in functions:
+                                        design_file.write("* {name}\n".format(name=function))
+                                    design_file.write("\n\n")
+                                if classes:
+                                    design_file.write("Classes:\n\n")
+                                    for class_ in classes:
+                                        design_file.write("* {name}\n".format(name=class_))
+                                    design_file.write("\n\n")
+                else:
+                    touch(Project.design_file)
 
 
         def _console_scripts():
@@ -851,30 +852,32 @@ with namespace('doc'):
         @task(private=True)
         def usage():
             """Update the usage.rst from the application's --help output"""
-            # noinspection PyBroadException
-            try:
-                console_scripts = _console_scripts()
-                # noinspection PyArgumentEqualDefault
-                with LocalShell(verbose=False) as local:
-                    with open(Project.usage_file, 'w') as usage_file:
-                        usage_file.write("\n\n")
-                        usage_file.write("Usage\n")
-                        usage_file.write("=====\n\n")
-                        if Project.usage_autoprogram:
-                            parser = "{pkg}.{pkg}_settings:{name}Settings().parse()[0]\n".format(
-                                pkg=Project.package, name=Project.name)
-                            usage_file.write(".. autoprogram:: {parser}".format(parser=parser))
-                            usage_file.write("    :prog: {name}\n\n".format(name=Project.package))
-                        else:
-                            usage_file.write("::\n\n")
-                            for script in console_scripts:
-                                text = local.run("python -m %s --help" % script)
-                                if text:
-                                    usage_file.write("    ➤ {app} --help\n".format(app=script))
-                                    usage_file.write(indent(text, indent_spaces=4))
-                                    usage_file.write("\n\n")
-            except:
-                pass
+
+            if Project.generate_usage:
+                # noinspection PyBroadException
+                try:
+                    console_scripts = _console_scripts()
+                    # noinspection PyArgumentEqualDefault
+                    with LocalShell(verbose=False) as local:
+                        with open(Project.usage_file, 'w') as usage_file:
+                            usage_file.write("\n\n")
+                            usage_file.write("Usage\n")
+                            usage_file.write("=====\n\n")
+                            if Project.usage_autoprogram:
+                                parser = "{pkg}.{pkg}_settings:{name}Settings().parse()[0]\n".format(
+                                    pkg=Project.package, name=Project.name)
+                                usage_file.write(".. autoprogram:: {parser}".format(parser=parser))
+                                usage_file.write("    :prog: {name}\n\n".format(name=Project.package))
+                            else:
+                                usage_file.write("::\n\n")
+                                for script in console_scripts:
+                                    text = local.run("python -m %s --help" % script)
+                                    if text:
+                                        usage_file.write("    ➤ {app} --help\n".format(app=script))
+                                        usage_file.write(indent(text, indent_spaces=4))
+                                        usage_file.write("\n\n")
+                except:
+                    pass
 
 
         @task(private=False)
@@ -937,16 +940,17 @@ with namespace('doc'):
         @task(private=True)
         def install():
             """Update the install.rst"""
-            with open(Project.install_file, 'w') as install_file:
-                install_file.write(dedent("""\
-                    Installation
-                    ============
+            if Project.generate_install:
+                with open(Project.install_file, 'w') as install_file:
+                    install_file.write(dedent("""\
+                        Installation
+                        ============
 
-                    To install from PyPI::
+                        To install from PyPI::
 
-                        ➤ pip install {name}
+                            ➤ pip install {name}
 
-                """.format(name=Project.name)))
+                    """.format(name=Project.name)))
 
 
     @task(depends=['update::readme', 'update::changelog', 'update::todo',
