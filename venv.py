@@ -298,7 +298,7 @@ def mkvenvs():
                 for requirement_file in unique_list(requirement_files):
                     install_lines.append('pip wheel {wheel_options} -r {requirement_file}'.format(
                         wheel_options=wheel_options, requirement_file=requirement_file))
-                    install_lines.append('pip install --upgrade {pip_options} -r {requirement_file}'.format(
+                    install_lines.append('pip install --upgrade {pip_options} --pre -r {requirement_file}'.format(
                         pip_options=pip_options, requirement_file=requirement_file))
 
                 venv_info.mkvirtualenv()
@@ -374,7 +374,7 @@ def upvenvs():
                 for requirement_filename in requirement_files:
                     venv_info.run('pip wheel {wheel_options} -r {requirement_file} ; '.format(
                         wheel_options=wheel_options, requirement_file=requirement_filename))
-                    venv_info.run('pip install --upgrade {pip_options} -r {req}'.format(pip_options=pip_options,
+                    venv_info.run('pip install --upgrade {pip_options} --pre -r {req}'.format(pip_options=pip_options,
                                                                                         req=requirement_filename))
 
 
