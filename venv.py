@@ -274,9 +274,8 @@ def mkvenvs():
                         # info(pformat(requirements))
 
                 install_lines = [
+                    'pip install --upgrade pip',
                     'pip install wheel',
-                    'pip wheel {wheel_options} pip'.format(wheel_options=wheel_options),
-                    'pip install --upgrade {pip_options} pip'.format(pip_options=pip_options),
                     'pip wheel {wheel_options} setuptools'.format(wheel_options=wheel_options),
                     'pip install --upgrade {pip_options} setuptools'.format(pip_options=pip_options),
                     'pip wheel {wheel_options} cryptography'.format(wheel_options=wheel_options),
@@ -368,10 +367,9 @@ def upvenvs():
         # info("Project Virtual Environments:")
         if venvs.defined:
             for venv_info in venvs.infos():
+                venv_info.run('pip install --upgrade pip')
                 venv_info.run('pip install --upgrade wheel')
-                venv_info.run('pip wheel {wheel_options} pip'.format(wheel_options=wheel_options))
                 venv_info.run('pip wheel {wheel_options} setuptools'.format(wheel_options=wheel_options))
-                venv_info.run('pip install --upgrade {pip_options} pip'.format(pip_options=pip_options))
                 venv_info.run('pip install --upgrade {pip_options} setuptools'.format(pip_options=pip_options))
                 for requirement_filename in requirement_files:
                     venv_info.run('pip wheel {wheel_options} -r {requirement_file} ; '.format(
