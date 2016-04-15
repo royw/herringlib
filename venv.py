@@ -274,7 +274,7 @@ def mkvenvs():
                         # info(pformat(requirements))
 
                 install_lines = [
-                    'pip install {pip_options} wheel'.format(pip_options=pip_options),
+                    'pip install wheel',
                     'pip wheel {wheel_options} pip'.format(wheel_options=wheel_options),
                     'pip install --upgrade {pip_options} pip'.format(pip_options=pip_options),
                     'pip wheel {wheel_options} setuptools'.format(wheel_options=wheel_options),
@@ -293,7 +293,8 @@ def mkvenvs():
 
                 if 'matplotlib' in requirements:
                     install_lines.append('pip wheel {wheel_options} matplotlib'.format(wheel_options=wheel_options))
-                    install_lines.append('pip install --upgrade {pip_options} matplotlib'.format(pip_options=pip_options))
+                    install_lines.append('pip install --upgrade {pip_options} matplotlib'.format(
+                        pip_options=pip_options))
 
                 for requirement_file in unique_list(requirement_files):
                     install_lines.append('pip wheel {wheel_options} -r {requirement_file}'.format(
@@ -303,6 +304,7 @@ def mkvenvs():
 
                 venv_info.mkvirtualenv()
                 for line in install_lines:
+                    # noinspection PyArgumentEqualDefault
                     venv_info.run(line, verbose=True)
         else:
             info("To build with wheels, in your herringfile you must set Project.wheel_python_versions to a list"
@@ -366,7 +368,7 @@ def upvenvs():
         # info("Project Virtual Environments:")
         if venvs.defined:
             for venv_info in venvs.infos():
-                venv_info.run('pip install --upgrade {pip_options} wheel'.format(pip_options=pip_options))
+                venv_info.run('pip install --upgrade wheel')
                 venv_info.run('pip wheel {wheel_options} pip'.format(wheel_options=wheel_options))
                 venv_info.run('pip wheel {wheel_options} setuptools'.format(wheel_options=wheel_options))
                 venv_info.run('pip install --upgrade {pip_options} pip'.format(pip_options=pip_options))
