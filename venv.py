@@ -254,8 +254,7 @@ def mkvenvs():
             return
 
         if venvs.defined:
-            pip_options = '--quiet {pip_opts}'.format(
-                pip_opts=Project.pip_options, dir=Project.pip_wheelhouse)
+            pip_options = '{pip_opts}'.format(pip_opts=Project.pip_options)
             for venv_info in venvs.infos(exists=False):
                 if venv_info.exists():
                     info("{venv} already exists".format(venv=venv_info.venv))
@@ -344,8 +343,7 @@ def lsvenvs():
 @task(namespace='project')
 def upvenvs():
     """Run "pip install --update -r requirements" in each virtual environment."""
-    pip_options = '--quiet {pip_opts}'.format(
-        pip_opts=Project.pip_options, dir=os.path.expanduser(Project.pip_wheelhouse))
+    pip_options = '{pip_opts}'.format(pip_opts=Project.pip_options)
     for attr_name in Project.virtualenv_requirements.keys():
         requirement_files = Project.virtualenv_requirements[attr_name]
 
