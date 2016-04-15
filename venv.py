@@ -366,6 +366,7 @@ def upvenvs():
         # info("Project Virtual Environments:")
         if venvs.defined:
             for venv_info in venvs.infos():
+                venv_info.run('pip install --upgrade {pip_options} wheel'.format(pip_options=pip_options))
                 venv_info.run('pip wheel {wheel_options} pip'.format(wheel_options=wheel_options))
                 venv_info.run('pip wheel {wheel_options} setuptools'.format(wheel_options=wheel_options))
                 venv_info.run('pip install --upgrade {pip_options} pip'.format(pip_options=pip_options))
