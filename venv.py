@@ -274,6 +274,7 @@ def mkvenvs():
                         # info(pformat(requirements))
 
                 install_lines = [
+                    'pip install {pip_options} wheel'.format(pip_options=pip_options),
                     'pip wheel {wheel_options} pip'.format(wheel_options=wheel_options),
                     'pip install --upgrade {pip_options} pip'.format(pip_options=pip_options),
                     'pip wheel {wheel_options} setuptools'.format(wheel_options=wheel_options),
