@@ -38,6 +38,7 @@ Add the following to your *doc.requirements.txt* file:
 
 """
 import ast
+import glob
 from datetime import datetime
 from distutils import dir_util
 from getpass import getpass
@@ -152,6 +153,12 @@ def doc_watch():
         task_execute('doc::watch')
 
 
+@task()
+def publish():
+    """ copy latest docs to a linux base web server """
+    task_execute('doc::publish')
+
+
 with namespace('doc'):
     @task(depends=['clean'], private=True)
     def clean():
@@ -160,6 +167,8 @@ with namespace('doc'):
         recursively_remove(os.path.join(Project.docs_dir, '_src'), '*')
         recursively_remove(os.path.join(Project.docs_dir, '_epy'), '*')
         recursively_remove(os.path.join(Project.docs_dir, '_build'), '*')
+        for filename in glob.glob(os.path.join(Project.docs_dir, '*.log')):
+            os.remove(filename)
         doc.doc_errors = []
 
 
@@ -363,13 +372,15 @@ with namespace('doc'):
         if Project.package is not None:
             with cd(Project.docs_dir):
                 exclude = ' '.join(Project.exclude_from_docs)
-                run_python("sphinx-apidoc "
-                           "--separate "
-                           "-d 6 "
-                           "-o _src "
-                           "--force "
-                           "../{pkg} {exclude}".format(pkg=Project.package, exclude=exclude))
-
+                with open("apidoc.log", "w") as outputter:
+                    output = run_python("sphinx-apidoc "
+                                        "--separate "
+                                        "-d 6 "
+                                        "-o _src "
+                                        "--force "
+                                        "../{pkg} {exclude}".format(pkg=Project.package,
+                                                                    exclude=exclude))
+                    outputter.write(output)
 
     def _customize_doc_src_files(exclude=None):
         """change the auto-api generated sphinx src files to be more what we want"""
@@ -400,6 +411,7 @@ with namespace('doc'):
         * WARNING: py:class reference target not found: exceptions.Exception
         * WARNING: py:class reference target not found: type
         * WARNING: py:class reference target not found: tuple
+        * WARNING: No classes found for inheritance diagram
 
         :param file_name: log file name
          :type file_name: str
@@ -413,6 +425,9 @@ with namespace('doc'):
                     if match:
                         if match.group(1) in ['object', 'exceptions.Exception', 'type', 'tuple']:
                             continue
+                    match = re.search(r'WARNING: No classes found for inheritance diagram', line)
+                    if match:
+                        continue
                     out_file.write(line)
 
     # noinspection PyUnusedLocal,PyArgumentEqualDefault
@@ -428,17 +443,19 @@ with namespace('doc'):
             warning('pyreverse not available')
             return
 
-        for module_path in [root for root, dirs, files in os.walk(path) if os.path.basename(root) != '__pycache__']:
-            debug("module_path: {path}".format(path=module_path))
-            init_filename = os.path.join(module_path, '__init__.py')
-            if os.path.exists(init_filename):
-                info(init_filename)
-                name = os.path.basename(module_path).split(".")[0]
-                output = run_python('pyreverse -o svg -p {name} {module}'.format(name=name, module=module_path),
-                                    verbose=True, ignore_errors=True)
-                errors = [line for line in output.splitlines() if not line.startswith('parsing')]
-                if errors:
-                    info(errors)
+        with open(os.path.join(Project.docs_dir, "pyreverse.log"), "w") as outputter:
+            for module_path in [root for root, dirs, files in os.walk(path) if os.path.basename(root) != '__pycache__']:
+                debug("module_path: {path}".format(path=module_path))
+                init_filename = os.path.join(module_path, '__init__.py')
+                if os.path.exists(init_filename):
+                    info(init_filename)
+                    name = os.path.basename(module_path).split(".")[0]
+                    output = run_python('pyreverse -o svg -p {name} {module} '.format(name=name, module=module_path),
+                                        verbose=True, ignore_errors=True)
+                    outputter.write(output)
+                    errors = [line for line in output.splitlines() if not line.startswith('parsing')]
+                    if errors:
+                        info(errors)
 
     # noinspection PyArgumentEqualDefault
     def _create_class_diagrams(path):
@@ -457,15 +474,16 @@ with namespace('doc'):
                  for dir_path, dir_names, files in os.walk(path)
                  for f in fnmatch.filter(files, '*.py')]
         debug("files: {files}".format(files=repr(files)))
-        for src_file in files:
-            debug(src_file)
-            name = src_file.replace(Project.herringfile_dir + '/', '').replace('.py', '.png').replace('/', '.')
-            output = "classes_{name}".format(name=name)
-            debug(output)
-            if not os.path.isfile(output) or (os.path.isfile(output) and is_newer(output, src_file)):
-                run_python("pynsource -y {output} {source}".format(output=output, source=src_file),
-                           verbose=False, ignore_errors=True)
-
+        with open(os.path.join(Project.docs_dir, "pynsource.log"), "w") as outputter:
+            for src_file in files:
+                debug(src_file)
+                name = src_file.replace(Project.herringfile_dir + '/', '').replace('.py', '.png').replace('/', '.')
+                output = "classes_{name}".format(name=name)
+                debug(output)
+                if not os.path.isfile(output) or (os.path.isfile(output) and is_newer(output, src_file)):
+                    output = run_python("pynsource -y {output} {source}".format(output=output, source=src_file),
+                                        verbose=False, ignore_errors=True)
+                    outputter.write(output)
 
     @task(depends=['api'], private=True)
     def diagrams():
@@ -478,7 +496,10 @@ with namespace('doc'):
                 _create_class_diagrams(path)
 
 
-    @task(depends=['api', 'diagrams', 'logo::create', 'update'], private=True)
+    @task(depends=['api',
+                   # 'diagrams',
+                   'logo::create',
+                   'update'], private=True)
     def sphinx():
         """Generate sphinx HTML API documents"""
         hack()
@@ -498,12 +519,15 @@ with namespace('doc'):
             # '-Q',       # do not output anything on standard output.  Suppress warnings.  Only errors go to stderr
             ]
         with cd(Project.docs_dir):
-            if os.path.isfile('_build/doctrees/index.doctree'):
-                run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
-                           '{options} . ../{htmldir}'.format(options=' '.join(options), htmldir=Project.docs_html_dir))
-            else:
-                run_python('sphinx-build -b html -w docs.log '
-                           '{options} . ../{htmldir}'.format(options=' '.join(options), htmldir=Project.docs_html_dir))
+            with open("sphinx-build.log", "w") as outputter:
+                if os.path.isfile('_build/doctrees/index.doctree'):
+                    output = run_python('sphinx-build -v -b html -d _build/doctrees -w docs.log {options} . '
+                                        '../{htmldir}'.format(options=' '.join(options),
+                                                              htmldir=Project.docs_html_dir))
+                else:
+                    output = run_python('sphinx-build -v -b html -w docs.log {options} . '
+                                        '../{htmldir}'.format(options=' '.join(options), htmldir=Project.docs_html_dir))
+                outputter.write(output)
             clean_doc_log('docs.log')
 
     @task(depends=['diagrams', 'logo::create', 'update'])
@@ -512,8 +536,10 @@ with namespace('doc'):
         if os.path.isdir(Project.docs_slide_dir):
             shutil.rmtree(Project.docs_slide_dir)
         with cd(Project.docs_dir):
-            run_python('sphinx-build -b slides -d _build/doctrees -w docs.log '
-                       '-a -E . ../{slide_dir}'.format(slide_dir=Project.docs_slide_dir))
+            with open("slides.log", "w") as outputter:
+                output = run_python('sphinx-build -b slides -d _build/doctrees -w docs.log '
+                                    '-a -E . ../{slide_dir}'.format(slide_dir=Project.docs_slide_dir))
+                outputter.write(output)
             clean_doc_log('docs.log')
 
 
@@ -543,8 +569,10 @@ with namespace('doc'):
         exclude_from_inheritance_diagrams = getattr(Project, 'exclude_from_inheritance_diagrams', None)
         _customize_doc_src_files(exclude=exclude_from_inheritance_diagrams)
         with cd(Project.docs_dir):
-            run_python('sphinx-build -b pdf -d _build/doctrees -w docs.log '
-                       '-a -E -n . ../{pdfdir}'.format(pdfdir=Project.docs_pdf_dir))
+            with open("pdf.log", "w") as outputter:
+                output = run_python('sphinx-build -b pdf -d _build/doctrees -w docs.log '
+                                    '-a -E -n . ../{pdfdir}'.format(pdfdir=Project.docs_pdf_dir))
+                outputter.write(output)
             clean_doc_log('docs.log')
 
 
@@ -552,19 +580,21 @@ with namespace('doc'):
     def incremental():
         """Incremental build docs for testing purposes"""
         with cd(Project.docs_dir):
-            run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
-                       '-n . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
+            with open("incremental.log", "w") as outputter:
+                output = run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
+                                    '-n . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
+                outputter.write(output)
             clean_doc_log('docs.log')
 
 
-    @task(depends=['api'], private=True)
-    def epy():
-        """Generate epy API documents"""
-        with cd(Project.docs_dir):
-            run_python('epydoc -v --output _epy --graph all bin db dst dut lab otto pc tests util')
+    # @task(depends=['api'], private=True)
+    # def epy():
+    #     """Generate epy API documents"""
+    #     with cd(Project.docs_dir):
+    #         run_python('epydoc -v --output _epy --graph all bin db dst dut lab otto pc tests util')
 
 
-    @task(depends=['sphinx'], private=True)
+    @task(depends=['clean', 'sphinx'], private=True)
     def generate():
         """Generate API documents"""
         global doc_errors
@@ -582,7 +612,7 @@ with namespace('doc'):
     @task(depends=['clean'])
     def rstlint():
         """Check the RST in the source files"""
-        if not executables_available(['rstlint.py']):
+        if not executables_available(['rst-lint']):
             return
         rst_files = [os.path.join(dir_path, f)
                      for dir_path, dir_names, files in os.walk(Project.herringfile_dir)
@@ -594,7 +624,7 @@ with namespace('doc'):
 
         with LocalShell() as local:
             for src_file in rst_files + src_files:
-                cmd_line = 'rstlint.py {file}'.format(file=src_file)
+                cmd_line = 'rst-lint {file}'.format(file=src_file)
                 result = local.system(cmd_line, verbose=False)
                 if not re.search(r'No problems found', result):
                     info(cmd_line)
@@ -770,7 +800,6 @@ with namespace('doc'):
                         todo_file.write(line.strip())
                         todo_file.write("\n")
                     todo_file.write("\n")
-
 
         def _find_py_files(package_dir):
             py_files = []
