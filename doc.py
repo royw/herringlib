@@ -981,6 +981,21 @@ with namespace('doc'):
 
                     """.format(name=Project.name)))
 
+                    if os.path.isdir(Project.installer_dir):
+                        install_file.write(dedent("""\
+                            Bash Installer
+                            --------------
+
+                            There is a bash installer that will create and install {name} into a virtualenv
+                            that is then placed on the path.  Ubuntu and Centos have been tested but may work
+                            on other Linux distributions.
+
+                            To install simply run the installer::
+
+                                ➤ bash {name}-*-installer.sh
+
+                    """.format(name=Project.name)))
+
 
     @task(depends=['update::readme', 'update::changelog', 'update::todo',
                    'update::usage', 'update::design', 'update::install'])
