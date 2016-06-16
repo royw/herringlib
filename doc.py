@@ -40,7 +40,7 @@ Add the following to your *doc.requirements.txt* file:
 import ast
 import glob
 from datetime import datetime
-from distutils import dir_util
+from distutils.dir_util import copy_tree
 from getpass import getpass
 # noinspection PyCompatibility
 import importlib
@@ -586,7 +586,6 @@ with namespace('doc'):
                 outputter.write(output)
             clean_doc_log('docs.log')
 
-
     # @task(depends=['api'], private=True)
     # def epy():
     #     """Generate epy API documents"""
@@ -1099,7 +1098,7 @@ with namespace('doc'):
 
                             # copy documentation
                             if os.path.isdir(Project.docs_html_path):
-                                dir_util.copy_tree(Project.docs_html_path, tmp_repo_path)
+                                copy_tree(Project.docs_html_path, tmp_repo_path)
 
                             # commit and push to github
                             local.run("git add --all")
