@@ -8,6 +8,8 @@ Add the following to your *requirements.txt* file:
 * scp; python_version == "[python_versions]"
 
 """
+import traceback
+
 from pexpect.pxssh import ExceptionPxssh
 from herringlib.simple_logger import info
 
@@ -92,6 +94,8 @@ class RemoteShell(AShell):
             self.prefix.insert(0, "cd {dir} ; ".format(dir=working_dir))
         if virtualenv:
             self.prefix.insert(0, "source {path}/bin/activate ; ".format(path=virtualenv))
+        if verbose:
+            info("remote: {user}@{host}".format(user=user or "", host=host or ""))
 
     def env(self):
         """returns the environment dictionary"""
@@ -259,6 +263,8 @@ class RemoteShell(AShell):
             remote_path = files
         self.display("scp '{src}' '{dest}'".format(src=files, dest=remote_path),
                      out_stream=out_stream, verbose=verbose)
+        info("\naddress: {address}".format(address=Project.address))
+        info("port: {port}".format(port=Project.port))
         ssh = SSHClient()
         ssh.load_system_host_keys()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -269,12 +275,15 @@ class RemoteShell(AShell):
         try:
             info("\nfiles: %s" % repr(files))
             info("remote_path: %s" % remote_path)
-            output = scp.put(files, '"{dest}"'.format(dest=remote_path), recursive=True) or ''
+            output = scp.put(files, '{dest}'.format(dest=remote_path), recursive=True) or ''
         except Exception:
+            output = traceback.format_exc()
+            # noinspection PyBroadException,PyUnusedLocal
             try:
-                output = scp.put(files, remote_path, recursive=True) or ''
+                output += scp.put(files, remote_path, recursive=True) or ''
             except Exception as ex:
-                output = str(ex)
+                # output = str(ex)
+                output += traceback.format_exc()
         self.display("\n" + output, out_stream=out_stream, verbose=verbose)
         return output
 
