@@ -53,8 +53,8 @@ from sys import version
 import tempfile
 from textwrap import dedent
 
-# noinspection PyUnresolvedReferences
 import errno
+# noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace, task_execute
 import sys
 from herringlib.is_newer import is_newer
@@ -172,232 +172,36 @@ with namespace('doc'):
         doc.doc_errors = []
 
 
-    def _name_dict(file_name):
-        """extract the name dictionary from the automodule lines in the sphinx src file"""
-        name_dict = {}
-        # noinspection PyArgumentEqualDefault
-        with open(file_name, 'r') as in_file:
-            for line in in_file.readlines():
-                match = re.match(r'.. automodule:: (\S+)', line)
-                if match:
-                    value = match.group(1)
-                    key = value.split('.')[-1]
-                    if '__init__' not in value:
-                        name_dict[key] = value
-        return name_dict
-
-
-    def _package_line(module_name):
-        """create the package figure lines for the given module"""
-        info("_package_line(%s)" % module_name)
-        line = ''
-        package_image = "uml/packages_{name}.svg".format(name=module_name.split('.')[-1])
-        classes_image = "uml/classes_{name}.svg".format(name=module_name.split('.')[-1])
-        image_path = os.path.join(Project.docs_dir, '_src', package_image)
-        if os.path.exists(image_path):
-            info("adding figure %s" % image_path)
-            line += "\n.. figure:: {image}\n    :width: 1100 px\n\n    {name} Packages\n\n".format(
-                image=package_image,
-                name=module_name)
-            line += "\n.. figure:: {image}\n\n    {name} Classes\n\n".format(
-                image=classes_image,
-                name=module_name)
-        else:
-            debug("%s does not exist!" % image_path)
-        return line
-
-
-    def _class_line(module_name, class_name):
-        """create the class figure lines for the given module and class"""
-        info("_class_line(%s, %s)" % (module_name, class_name))
-        line = ''
-        classes_images = [
-            "uml/classes_{module}.{name}.png".format(module=module_name, name=class_name),
-            "uml/classes_{module}.png".format(module=module_name),
-        ]
-        for classes_image in classes_images:
-            image_path = os.path.join(Project.docs_dir, '_src', classes_image)
-            if os.path.exists(image_path):
-                info("adding figure %s" % image_path)
-                line += "\n.. figure:: {image}\n\n    {name} Class\n\n".format(
-                    image=classes_image,
-                    name=class_name)
-                break
-            else:
-                debug("%s does not exist!" % image_path)
-        return line
-
-
-    # noinspection PyMethodMayBeStatic
-    class SourceFile(object):
-        """
-        autodoc generates:
-
-        :mod:`ArgumentServiceTest` Module
-        ---------------------------------
-
-        .. automodule:: util.unittests.ArgumentServiceTest
-
-        need to add package path from automodule line to module name in mod line.
-        """
-
-        def __init__(self, file_name):
-            self.file_name = file_name
-
-            # build dict from automodule lines where key is base name, value is full name
-            self.name_dict = _name_dict(file_name)
-            self.module_name = os.path.splitext(os.path.basename(file_name))[0]
-            self.line_length = 0
-            self.package = False
-            self.class_name = ''
-
-        def hack(self, exclude=None):
-            """
-            substitute full names into mod lines with base names.
-
-            :param exclude: list of files to exclude from generating inheritance diagrams
-            :type exclude: list(str)
-            """
-            if os.path.splitext(self.file_name)[1] != '.rst':
-                return
-
-            if exclude is None:
-                exclude = []
-
-            with safe_edit(self.file_name) as files:
-                in_file = files['in']
-                out_file = files['out']
-                info("Editing %s" % self.file_name)
-
-                self.line_length = 0
-                self.package = False
-                self.class_name = ''
-
-                headers_to_remove = ['Subpackages', 'Submodules', 'Module contents']
-
-                out_file.write(".. include:: ../icons.rst")
-                out_file.write("\n\n")
-
-                delete_next_line = False
-                for line in in_file.readlines():
-                    if delete_next_line and line.startswith('---'):
-                        info("removing " + line.strip())
-                        delete_next_line = False
-                        continue
-                    delete_next_line = False
-                    line = self._hack_mod(line)
-                    line = self._hack_package(line)
-                    line = self._hack_module(line)
-                    line = self._hack_init(line)
-                    line = self._hack_underline(line)
-                    line = self._hack_members(line)
-                    if line.strip() in headers_to_remove:
-                        info("removing " + line.strip())
-                        delete_next_line = True
-                        continue
-                    out_file.write(line)
-
-                out_file.write("\n\n")
-                # title = "%s Inheritance Diagrams" % self.module_name
-                # out_file.write("%s\n" % title)
-                # out_file.write('-' * len(title) + "\n\n")
-                for value in sorted(self.name_dict.values()):
-                    if value not in exclude:
-                        out_file.write(".. inheritance-diagram:: %s\n" % value)
-                out_file.write("\n\n")
-
-        def _hack_mod(self, line):
-            match = re.match(r':mod:`(.+)`(.*)', line)
-            if match:
-                debug("matched :mod:")
-                key = match.group(1)
-                if key in self.name_dict:
-                    value = self.name_dict[key]
-                    line = ''.join(":mod:`%s`%s\n" % (value, match.group(2)))
-                self.line_length = len(line)
-                self.package = re.search(r':mod:.+Package', line)
-                self.class_name = key
-            return line
-
-        def _hack_package(self, line):
-            match = re.match(r'(.+)\s+package\s*', line)
-            if match:
-                debug("matched package")
-                line = '|package| ' + match.group(1)
-                self.line_length = len(line)
-                line += '\n'
-            return line
-
-        def _hack_module(self, line):
-            match = re.match(r'(.+)\s+module\s*', line)
-            if match:
-                debug("matched module")
-                self.package = False
-                self.class_name = match.group(1).split('.')[-1]
-                line = '|module| ' + match.group(1)
-                self.line_length = len(line)
-                line += '\n'
-            return line
-
-        def _hack_init(self, line):
-            match = re.match(r'Module contents', line)
-            if match:
-                self.package = True
-                self.class_name = '__init__'
-            return line
-
-        def _hack_underline(self, line):
-            if re.match(r'[=\-\.][=\-\.][=\-\.]+', line):
-                debug("matched [=\-\.][=\-\.][=\-\.]+")
-                if self.line_length > 0:
-                    line = "%s\n" % (line[0] * self.line_length)
-                if self.package:
-                    line += _package_line(self.module_name)
-                if self.class_name:
-                    line += _class_line(self.module_name, self.class_name)
-            return line
-
-        # noinspection PyMethodMayBeStatic
-        def _hack_members(self, line):
-            match = re.match(r'\s*:members:', line)
-            if match:
-                line += "    :special-members:\n"
-                line += "    :exclude-members: __dict__,__weakref__,__module__\n"
-            return line
-
-
     @task(depends=['clean'], private=True)
     def api():
         """Generate API sphinx source files from code"""
         if Project.package is not None:
             with cd(Project.docs_dir):
                 exclude = ' '.join(Project.exclude_from_docs)
-                with open("apidoc.log", "w") as outputter:
-                    output = run_python("sphinx-apidoc "
-                                        "--separate "
-                                        "-d 6 "
-                                        "-o _src "
-                                        "--force "
-                                        "../{pkg} {exclude}".format(pkg=Project.package,
-                                                                    exclude=exclude))
-                    outputter.write(output)
+                dirs = [d for d in os.listdir("../{pkg}".format(pkg=Project.package)) if '.' not in d]
+                for subdir in dirs:
+                    with open("apidoc-{dir}.log".format(dir=subdir), "w") as outputter:
+                        output = run_python("sphinx-apidoc "
+                                            "--separate "
+                                            "-d 6 "
+                                            "-o _src "
+                                            "--force "
+                                            "../{pkg}/{dir} {exclude}".format(pkg=Project.package,
+                                                                              dir=subdir,
+                                                                              exclude=exclude))
+                        outputter.write(output)
 
-    def _customize_doc_src_files(exclude=None):
-        """change the auto-api generated sphinx src files to be more what we want"""
-        for root, dirs, files in os.walk(os.path.join(Project.docs_dir, '_src')):
-            for file_name in files:
-                if file_name != 'modules.rst':
-                    # noinspection PyBroadException
-                    try:
-                        SourceFile(os.path.join(root, file_name)).hack(exclude=exclude)
-                    except:
-                        pass
+                with open("_src/modules.rst", "w") as modules_file:
+                    modules_file.write(dedent("""\
+                    Modules
+                    =======
 
-            # ignore dot sub-directories ('.*') (mainly for skipping .svn directories)
-            for name in dirs:
-                if name.startswith('.'):
-                    dirs.remove(name)
+                    .. toctree::
+                       :maxdepth: 6
 
+                       {mods}
+
+                    """).format(mods="\n   ".join(dirs)))
 
     def clean_doc_log(file_name):
         """
@@ -430,79 +234,12 @@ with namespace('doc'):
                         continue
                     out_file.write(line)
 
-    # noinspection PyUnusedLocal,PyArgumentEqualDefault
-    def _create_module_diagrams(path):
-        """
-        create module UML diagrams
-
-        :param path: the module path
-         :type path: str
-        """
-        info("_create_module_diagrams")
-        if not executables_available(['pyreverse']):
-            warning('pyreverse not available')
-            return
-
-        with open(os.path.join(Project.docs_dir, "pyreverse.log"), "w") as outputter:
-            for module_path in [root for root, dirs, files in os.walk(path) if os.path.basename(root) != '__pycache__']:
-                debug("module_path: {path}".format(path=module_path))
-                init_filename = os.path.join(module_path, '__init__.py')
-                if os.path.exists(init_filename):
-                    info(init_filename)
-                    name = os.path.basename(module_path).split(".")[0]
-                    output = run_python('pyreverse -o svg -p {name} {module} '.format(name=name, module=module_path),
-                                        verbose=True, ignore_errors=True)
-                    outputter.write(output)
-                    errors = [line for line in output.splitlines() if not line.startswith('parsing')]
-                    if errors:
-                        info(errors)
-
-    # noinspection PyArgumentEqualDefault
-    def _create_class_diagrams(path):
-        """
-        Create class UML diagram
-
-        :param path: path to the module file.
-        :type path: str
-        """
-        info("_create_class_diagrams")
-        if not executables_available(['pynsource']):
-            warning('pynsource not available')
-            return
-
-        files = [os.path.join(dir_path, f)
-                 for dir_path, dir_names, files in os.walk(path)
-                 for f in fnmatch.filter(files, '*.py')]
-        debug("files: {files}".format(files=repr(files)))
-        with open(os.path.join(Project.docs_dir, "pynsource.log"), "w") as outputter:
-            for src_file in files:
-                debug(src_file)
-                name = src_file.replace(Project.herringfile_dir + '/', '').replace('.py', '.png').replace('/', '.')
-                output = "classes_{name}".format(name=name)
-                debug(output)
-                if not os.path.isfile(output) or (os.path.isfile(output) and is_newer(output, src_file)):
-                    output = run_python("pynsource -y {output} {source}".format(output=output, source=src_file),
-                                        verbose=False, ignore_errors=True)
-                    outputter.write(output)
-
-    @task(depends=['api'], private=True)
-    def diagrams():
-        """Create UML diagrams"""
-        if Project.package is not None:
-            path = os.path.join(Project.herringfile_dir, Project.package)
-            mkdir_p(Project.uml_dir)
-            with cd(Project.uml_dir, verbose=True):
-                _create_module_diagrams(path)
-                _create_class_diagrams(path)
-
-
     @task(depends=['api',
                    # 'diagrams',
                    'logo::create',
                    'update'], private=True)
     def sphinx():
         """Generate sphinx HTML API documents"""
-        hack()
         run_sphinx()
 
     @task()
@@ -543,13 +280,6 @@ with namespace('doc'):
             clean_doc_log('docs.log')
 
 
-    @task()
-    def hack():
-        """hack the RST files generated by apidoc"""
-        exclude_from_inheritance_diagrams = getattr(Project, 'exclude_from_inheritance_diagrams', None)
-        _customize_doc_src_files(exclude=exclude_from_inheritance_diagrams)
-
-
     @task(depends=['api', 'diagrams', 'logo::create', 'update'])
     def pdf():
         """Generate PDF API documents"""
@@ -567,7 +297,7 @@ with namespace('doc'):
     def pdf_generate():
         """generate PDF using current python environment"""
         exclude_from_inheritance_diagrams = getattr(Project, 'exclude_from_inheritance_diagrams', None)
-        _customize_doc_src_files(exclude=exclude_from_inheritance_diagrams)
+        # _customize_doc_src_files(exclude=exclude_from_inheritance_diagrams)
         with cd(Project.docs_dir):
             with open("pdf.log", "w") as outputter:
                 output = run_python('sphinx-build -b pdf -d _build/doctrees -w docs.log '
