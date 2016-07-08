@@ -102,6 +102,7 @@ installed_packages = None
 
 site_packages = []
 try:
+    # noinspection PyUnresolvedReferences
     site_packages = site.getsitepackages()
 except AttributeError:
     # virtualenv uses site.py from python2.6 instead of python2.7 where getsitepackages() was introduced.
@@ -257,6 +258,9 @@ ATTRIBUTES = {
                 'Default is the virtualenv selected by doc_python_version'},
     'egg_dir': {
         'help': 'The project\'s egg filename.  Default is generate from the project\'s "name"'},
+    'enhanced_docs': {
+        'default': False,
+        'help': 'Add diagrams to API documents.  This really slows down document generation.'},
     'exclude_from_docs': {
         'default': [],
         'help': 'These files cause sphinx to barf, so do not include them in the documentation.'},
@@ -266,8 +270,8 @@ ATTRIBUTES = {
                 'Defaults to "{herringfile_dir}/docs/faq.rst".'},
     'features_dir': {
         'default': 'features',
-        'help': 'The directory for lettuce features relative to the herringfile_dir.  Defaults to "{'
-                'herringfile_dir}/features".'},
+        'help': 'The directory for lettuce features relative to the herringfile_dir.  Defaults to '
+                '"{herringfile_dir}/features".'},
     'generate_design': {
         'default': True,
         'help': 'generate a design document.  '
@@ -335,6 +339,11 @@ ATTRIBUTES = {
         'required': True,
         'help': 'The package name relative to the herringfile_dir.  Set to None for document only projects.  Please '
                 'no hyphens or underscores.'},
+    'package_subdirs': {
+        'default': False,
+        'help': 'The "package" directory contains sub-directories that are top level packages '
+                '(package="foo", package_subdirs=True -> "bar.drink").  Normally the "package" directory is the top '
+                'level package (package="foo", package_subdirs=False -> "foo.bar.drink")'},
     'password': {
         'default': None,
         'help': 'The password for logging into the dist_host.  Prompts once on need if not defined.'},

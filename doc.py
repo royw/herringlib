@@ -57,10 +57,12 @@ import errno
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace, task_execute
 import sys
-from herringlib.is_newer import is_newer
+
+from herringlib.doc_diagrams import diagrams
+from herringlib.doc_hack import hack
 from herringlib.remote_shell import RemoteShell
-from herringlib.simple_logger import info, warning, error, debug
-from herringlib.mkdir_p import mkdir_p
+from herringlib.run_python import run_python
+from herringlib.simple_logger import info, error, debug
 from herringlib.project_settings import Project
 from herringlib.local_shell import LocalShell
 from herringlib.touch import touch
@@ -78,34 +80,6 @@ __docformat__ = 'restructuredtext en'
 doc_errors = []
 
 # TODO: how to handle required packages for just virtual environments, not the herring run environment.
-
-
-def run_python(cmd_line, env=None, verbose=True, ignore_errors=False):
-    """
-    Setup PYTHONPATH environment variable then run the given command line.  Parse results for python style errors.
-
-    :param cmd_line:  command line (probably running a python script)
-    :type cmd_line:  str
-    :param env: environment dictionary
-    :type env: dict|None
-    :param verbose: echo output of running the command to stdout
-    :type verbose: bool
-    :param ignore_errors: ignore errors versus parsing them into doc.doc_errors
-    :type ignore_errors: bool
-    :return: the output from running the command
-    :rtype: str
-    """
-    global doc_errors
-    if env is None:
-        env = {'PYTHONPATH': Project.pythonPath}
-    with LocalShell() as local:
-        output = local.run(cmd_line, env=env, verbose=verbose)
-        if not ignore_errors:
-            error_lines = [line for line in output.splitlines()
-                           if re.search(r'error', line, re.IGNORECASE) and
-                           not re.search(r'error[a-zA-Z0-9/.]*\.(?!py)', line, re.IGNORECASE)]
-            doc_errors.extend([line for line in error_lines if not re.search(r'Unexpected indentation', line)])
-        return output
 
 
 @task()
@@ -175,33 +149,48 @@ with namespace('doc'):
     @task(depends=['clean'], private=True)
     def api():
         """Generate API sphinx source files from code"""
+        global doc_errors
         if Project.package is not None:
             with cd(Project.docs_dir):
                 exclude = ' '.join(Project.exclude_from_docs)
-                dirs = [d for d in os.listdir("../{pkg}".format(pkg=Project.package)) if '.' not in d]
-                for subdir in dirs:
-                    with open("apidoc-{dir}.log".format(dir=subdir), "w") as outputter:
+                if Project.package_subdirs:
+                    dirs = [d for d in os.listdir("../{pkg}".format(pkg=Project.package)) if '.' not in d]
+                    for subdir in dirs:
+                        with open("apidoc-{dir}.log".format(dir=subdir), "w") as outputter:
+                            output = run_python("sphinx-apidoc "
+                                                "--separate "
+                                                "-d 6 "
+                                                "-o _src "
+                                                "--force "
+                                                "../{pkg}/{dir} {exclude}".format(pkg=Project.package,
+                                                                                  dir=subdir,
+                                                                                  exclude=exclude),
+                                                doc_errors=doc_errors)
+                            outputter.write(output)
+
+                    with open("_src/modules.rst", "w") as modules_file:
+                        modules_file.write(dedent("""\
+                        Modules
+                        =======
+
+                        .. toctree::
+                           :maxdepth: 6
+
+                           {mods}
+
+                        """).format(mods="\n   ".join(dirs)))
+                else:
+                    with open("apidoc.log", "w") as outputter:
                         output = run_python("sphinx-apidoc "
                                             "--separate "
                                             "-d 6 "
                                             "-o _src "
                                             "--force "
-                                            "../{pkg}/{dir} {exclude}".format(pkg=Project.package,
-                                                                              dir=subdir,
-                                                                              exclude=exclude))
+                                            "../{pkg} {exclude}".format(pkg=Project.package,
+                                                                        exclude=exclude),
+                                            doc_errors=doc_errors)
                         outputter.write(output)
 
-                with open("_src/modules.rst", "w") as modules_file:
-                    modules_file.write(dedent("""\
-                    Modules
-                    =======
-
-                    .. toctree::
-                       :maxdepth: 6
-
-                       {mods}
-
-                    """).format(mods="\n   ".join(dirs)))
 
     def clean_doc_log(file_name):
         """
@@ -235,15 +224,18 @@ with namespace('doc'):
                     out_file.write(line)
 
     @task(depends=['api',
-                   # 'diagrams',
                    'logo::create',
                    'update'], private=True)
     def sphinx():
         """Generate sphinx HTML API documents"""
+        if Project.enhanced_docs:
+            diagrams()
+            hack()
         run_sphinx()
 
     @task()
     def run_sphinx():
+        global doc_errors
         if os.path.isdir(Project.docs_html_dir):
             shutil.rmtree(Project.docs_html_dir)
         options = [
@@ -260,22 +252,26 @@ with namespace('doc'):
                 if os.path.isfile('_build/doctrees/index.doctree'):
                     output = run_python('sphinx-build -v -b html -d _build/doctrees -w docs.log {options} . '
                                         '../{htmldir}'.format(options=' '.join(options),
-                                                              htmldir=Project.docs_html_dir))
+                                                              htmldir=Project.docs_html_dir),
+                                        doc_errors=doc_errors)
                 else:
                     output = run_python('sphinx-build -v -b html -w docs.log {options} . '
-                                        '../{htmldir}'.format(options=' '.join(options), htmldir=Project.docs_html_dir))
+                                        '../{htmldir}'.format(options=' '.join(options), htmldir=Project.docs_html_dir),
+                                        doc_errors=doc_errors)
                 outputter.write(output)
             clean_doc_log('docs.log')
 
     @task(depends=['diagrams', 'logo::create', 'update'])
     def hieroglyph_slides():
         """Create presentation slides using Hieroglyph (http://docs.hieroglyph.io/en/latest/index.html)"""
+        global doc_errors
         if os.path.isdir(Project.docs_slide_dir):
             shutil.rmtree(Project.docs_slide_dir)
         with cd(Project.docs_dir):
             with open("slides.log", "w") as outputter:
                 output = run_python('sphinx-build -b slides -d _build/doctrees -w docs.log '
-                                    '-a -E . ../{slide_dir}'.format(slide_dir=Project.docs_slide_dir))
+                                    '-a -E . ../{slide_dir}'.format(slide_dir=Project.docs_slide_dir),
+                                    doc_errors=doc_errors)
                 outputter.write(output)
             clean_doc_log('docs.log')
 
@@ -296,12 +292,15 @@ with namespace('doc'):
     @task()
     def pdf_generate():
         """generate PDF using current python environment"""
-        exclude_from_inheritance_diagrams = getattr(Project, 'exclude_from_inheritance_diagrams', None)
-        # _customize_doc_src_files(exclude=exclude_from_inheritance_diagrams)
+        global doc_errors
+        if Project.enhanced_docs:
+            diagrams()
+            hack()
         with cd(Project.docs_dir):
             with open("pdf.log", "w") as outputter:
                 output = run_python('sphinx-build -b pdf -d _build/doctrees -w docs.log '
-                                    '-a -E -n . ../{pdfdir}'.format(pdfdir=Project.docs_pdf_dir))
+                                    '-a -E -n . ../{pdfdir}'.format(pdfdir=Project.docs_pdf_dir),
+                                    doc_errors=doc_errors)
                 outputter.write(output)
             clean_doc_log('docs.log')
 
@@ -312,7 +311,8 @@ with namespace('doc'):
         with cd(Project.docs_dir):
             with open("incremental.log", "w") as outputter:
                 output = run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
-                                    '-n . ../{htmldir}'.format(htmldir=Project.docs_html_dir))
+                                    '-n . ../{htmldir}'.format(htmldir=Project.docs_html_dir),
+                                    doc_errors=doc_errors)
                 outputter.write(output)
             clean_doc_log('docs.log')
 

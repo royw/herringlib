@@ -7,7 +7,7 @@ import os
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace, task_execute
 
-from herringlib.doc import run_python
+from herringlib.run_python import run_python
 from herringlib.is_newer import is_newer
 from herringlib.simple_logger import info, warning, debug
 from herringlib.mkdir_p import mkdir_p
