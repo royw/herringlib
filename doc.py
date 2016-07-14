@@ -243,19 +243,19 @@ with namespace('doc'):
             '-E',       # don't use saved environment
             # '-j 4',     # distribute the build of N processes WARNING: breaks jenkins
             # '-n',       # run in nit-picky mode
-            '-v',       # increase verbosity
+            # '-v',       # increase verbosity
             # '-q',       # do not output anything on standard output, warnings and errors go to stderr
             # '-Q',       # do not output anything on standard output.  Suppress warnings.  Only errors go to stderr
             ]
         with cd(Project.docs_dir):
             with open("sphinx-build.log", "w") as outputter:
                 if os.path.isfile('_build/doctrees/index.doctree'):
-                    output = run_python('sphinx-build -v -b html -d _build/doctrees -w docs.log {options} . '
+                    output = run_python('sphinx-build -v -v -b html -d _build/doctrees -w docs.log {options} . '
                                         '../{htmldir}'.format(options=' '.join(options),
                                                               htmldir=Project.docs_html_dir),
                                         doc_errors=doc_errors)
                 else:
-                    output = run_python('sphinx-build -v -b html -w docs.log {options} . '
+                    output = run_python('sphinx-build -v -v -b html -w docs.log {options} . '
                                         '../{htmldir}'.format(options=' '.join(options), htmldir=Project.docs_html_dir),
                                         doc_errors=doc_errors)
                 outputter.write(output)
