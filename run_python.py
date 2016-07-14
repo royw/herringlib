@@ -22,7 +22,7 @@ def run_python(cmd_line, env=None, verbose=True, ignore_errors=False, doc_errors
     """
     if env is None:
         env = {'PYTHONPATH': Project.pythonPath}
-    with LocalShell() as local:
+    with LocalShell(verbose=verbose) as local:
         output = local.run(cmd_line, env=env, verbose=verbose)
         if not ignore_errors:
             error_lines = [line for line in output.splitlines()

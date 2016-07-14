@@ -77,7 +77,7 @@ from herringlib.safe_edit import safe_edit, quick_edit
 
 __docformat__ = 'restructuredtext en'
 
-doc_errors = []
+doc_errors = None
 
 # TODO: how to handle required packages for just virtual environments, not the herring run environment.
 
@@ -312,6 +312,7 @@ with namespace('doc'):
             with open("incremental.log", "w") as outputter:
                 output = run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
                                     '-n . ../{htmldir}'.format(htmldir=Project.docs_html_dir),
+                                    verbose=True,
                                     doc_errors=doc_errors)
                 outputter.write(output)
             clean_doc_log('docs.log')
