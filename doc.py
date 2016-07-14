@@ -243,7 +243,7 @@ with namespace('doc'):
             '-E',       # don't use saved environment
             # '-j 4',     # distribute the build of N processes WARNING: breaks jenkins
             # '-n',       # run in nit-picky mode
-            # '-v',       # increase verbosity
+            '-v',       # increase verbosity
             # '-q',       # do not output anything on standard output, warnings and errors go to stderr
             # '-Q',       # do not output anything on standard output.  Suppress warnings.  Only errors go to stderr
             ]
