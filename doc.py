@@ -250,12 +250,12 @@ with namespace('doc'):
         with cd(Project.docs_dir):
             with open("sphinx-build.log", "w") as outputter:
                 if os.path.isfile('_build/doctrees/index.doctree'):
-                    output = run_python('sphinx-build -v -v -b html -d _build/doctrees -w docs.log {options} . '
+                    output = run_python('sphinx-build -v -v -v -b html -d _build/doctrees -w docs.log {options} . '
                                         '../{htmldir}'.format(options=' '.join(options),
                                                               htmldir=Project.docs_html_dir),
                                         doc_errors=doc_errors)
                 else:
-                    output = run_python('sphinx-build -v -v -b html -w docs.log {options} . '
+                    output = run_python('sphinx-build -v -v -v -b html -w docs.log {options} . '
                                         '../{htmldir}'.format(options=' '.join(options), htmldir=Project.docs_html_dir),
                                         doc_errors=doc_errors)
                 outputter.write(output)
@@ -310,6 +310,7 @@ with namespace('doc'):
         """Incremental build docs for testing purposes"""
         with cd(Project.docs_dir):
             with open("incremental.log", "w") as outputter:
+                # noinspection PyArgumentEqualDefault
                 output = run_python('sphinx-build -b html -d _build/doctrees -w docs.log '
                                     '-n . ../{htmldir}'.format(htmldir=Project.docs_html_dir),
                                     verbose=True,
@@ -330,7 +331,7 @@ with namespace('doc'):
         global doc_errors
         if doc_errors:
             error(pformat(doc_errors))
-        info("{cnt} errors.".format(cnt=len(doc_errors)))
+            info("{cnt} errors.".format(cnt=len(doc_errors)))
 
 
     @task(depends=['generate'], private=True)
