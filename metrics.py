@@ -284,277 +284,278 @@ class PyViolations(object):
                                 violation=self.substitute(PyViolations.PYFLAKES_SUBSTITUTIONS, match_obj.group(3)))
 
 
-if packages_required(required_packages):
-    with namespace('metrics'):
+@task()
+def metrics():
+    """ Quality metrics """
 
-        def _sloc_totals_by_language():
-            totals_by_language = {}
+    # Run the metrics in each of the virtual environments defined in Project.metrics_python_versions
+    # or if not defined, then in Project.wheel_python_versions.  If neither are defined, then
+    # run the test in the current environment.
 
-            with LocalShell() as local:
-                output = local.run("sloccount --wide {src}".format(src=Project.package))
-                for line in output.splitlines():
-                    match = re.match(r"(\S+):\s+(\d+)\s+\(([\d.]+)%\)", line)
-                    if match:
-                        totals_by_language[match.group(1)] = (int(match.group(2)), float(match.group(3)))
-            return totals_by_language
+    venvs = VirtualenvInfo('metrics_python_versions', 'wheel_python_versions')
 
-        @task()
-        def sloccount():
-            """Generate SLOCCount output file, sloccount.sc, used by jenkins"""
-            sloc_data = os.path.join(Project.quality_dir, 'slocdata')
-            mkdir_p(sloc_data)
-            sloc_filename = os.path.join(Project.quality_dir, 'sloccount.sc')
-            with LocalShell() as local:
-                output = local.run("sloccount --datadir {data} --wide --details {src}".format(data=sloc_data,
-                                                                                              src=Project.package))
-                if os.path.isfile(sloc_filename):
-                    os.remove(sloc_filename)
-                with open(sloc_filename, 'w') as sloc_file:
-                    sloc_file.write(output)
-
-        @task()
-        def sloc():
-            """Run sloccount to get the source lines of code."""
-            if not executables_available(['sloccount']):
-                return
-            mkdir_p(Project.quality_dir)
-            sloc_json = os.path.join(Project.quality_dir, 'sloc.json')
-            totals_by_language = _sloc_totals_by_language()
-            total_sloc = 0
-            for value in totals_by_language.values():
-                total_sloc += value[0]
-            with open(sloc_json, 'w') as json_file:
-                json.dump(totals_by_language, json_file)
-            for lang in totals_by_language.keys():
-                info("{lang}: {total} ({percentage}%)".format(lang=lang,
-                                                              total=totals_by_language[lang][0],
-                                                              percentage=totals_by_language[lang][1]))
-            info("Total SLOC: {total}".format(total=total_sloc))
+    if not venvs.in_virtualenv and venvs.defined:
+        for venv_info in venvs.infos():
+            info('Running metrics using the {venv} virtual environment.'.format(venv=venv_info.venv))
+            venv_info.run('herring metrics::all_metrics')
+    else:
+        info('Running metrics using the current python environment')
+        task_execute('metrics::all_metrics')
 
 
-        # @task()
-        # def sloc_graph():
-        #     """Graph SLOC over time"""
-        #     if not executables_available(['sloccount']):
-        #         return
-        #     mkdir_p(Project.quality_dir)
-        #
-        #     # from git import Repo
-        #     #
-        #     # repo = Repo(Project.herringfile_dir)
-        #     # master = repo.remotes.origin.head
-        #     # # master.commit
-        #     # commit_log = master.log()
-        #     # for log in commit_log:
-        #     #     info("{time} {commit_id} {message}".format(time=time.strftime("%a, %d %b %Y %H:%M",
-        #     #                                                                   time.gmtime(log.time[0])),
-        #     #                                                commit_id=log.newhexsha,
-        #     #                                                message=log.message))
-        #
-        #     with LocalShell() as local:
-        #         output = local.run('git log --pretty=format:" % H % cd"')
-        #         for line in output.splitlines():
-        #             match = re.match(r"^(\S+)\s+(.+)$", line)
-        #             if match:
-        #                 commit_id = match.group(1)
-        #                 commit_date = match.group(2)
-        #                 _add_to_sloc_db(commit_id, commit_date)
+# if packages_required(required_packages):
+with namespace('metrics'):
+
+    def _sloc_totals_by_language():
+        totals_by_language = {}
+
+        with LocalShell() as local:
+            output = local.run("sloccount --wide {src}".format(src=Project.package))
+            for line in output.splitlines():
+                match = re.match(r"(\S+):\s+(\d+)\s+\(([\d.]+)%\)", line)
+                if match:
+                    totals_by_language[match.group(1)] = (int(match.group(2)), float(match.group(3)))
+        return totals_by_language
+
+    @task()
+    def sloccount():
+        """Generate SLOCCount output file, sloccount.sc, used by jenkins"""
+        sloc_data = os.path.join(Project.quality_dir, 'slocdata')
+        mkdir_p(sloc_data)
+        sloc_filename = os.path.join(Project.quality_dir, 'sloccount.sc')
+        with LocalShell() as local:
+            output = local.run("sloccount --datadir {data} --wide --details {src}".format(data=sloc_data,
+                                                                                          src=Project.package))
+            if os.path.isfile(sloc_filename):
+                os.remove(sloc_filename)
+            with open(sloc_filename, 'w') as sloc_file:
+                sloc_file.write(output)
+
+    @task()
+    def sloc():
+        """Run sloccount to get the source lines of code."""
+        if not executables_available(['sloccount']):
+            return
+        mkdir_p(Project.quality_dir)
+        sloc_json = os.path.join(Project.quality_dir, 'sloc.json')
+        totals_by_language = _sloc_totals_by_language()
+        total_sloc = 0
+        for value in totals_by_language.values():
+            total_sloc += value[0]
+        with open(sloc_json, 'w') as json_file:
+            json.dump(totals_by_language, json_file)
+        for lang in totals_by_language.keys():
+            info("{lang}: {total} ({percentage}%)".format(lang=lang,
+                                                          total=totals_by_language[lang][0],
+                                                          percentage=totals_by_language[lang][1]))
+        info("Total SLOC: {total}".format(total=total_sloc))
 
 
-        @task(private=True)
-        def cheesecake():
-            """ Run the cheesecake kwalitee metric """
-            if not executables_available(['cheesecake_index']):
-                return
-            mkdir_p(Project.quality_dir)
-            cheesecake_log = os.path.join(Project.quality_dir, 'cheesecake.log')
-            with LocalShell() as local:
-                local.system("cheesecake_index --path=dist/%s-%s.tar.gz --keep-log -l %s" %
-                             (Project.name,
-                              Project.version,
-                              cheesecake_log))
+    # @task()
+    # def sloc_graph():
+    #     """Graph SLOC over time"""
+    #     if not executables_available(['sloccount']):
+    #         return
+    #     mkdir_p(Project.quality_dir)
+    #
+    #     # from git import Repo
+    #     #
+    #     # repo = Repo(Project.herringfile_dir)
+    #     # master = repo.remotes.origin.head
+    #     # # master.commit
+    #     # commit_log = master.log()
+    #     # for log in commit_log:
+    #     #     info("{time} {commit_id} {message}".format(time=time.strftime("%a, %d %b %Y %H:%M",
+    #     #                                                                   time.gmtime(log.time[0])),
+    #     #                                                commit_id=log.newhexsha,
+    #     #                                                message=log.message))
+    #
+    #     with LocalShell() as local:
+    #         output = local.run('git log --pretty=format:" % H % cd"')
+    #         for line in output.splitlines():
+    #             match = re.match(r"^(\S+)\s+(.+)$", line)
+    #             if match:
+    #                 commit_id = match.group(1)
+    #                 commit_date = match.group(2)
+    #                 _add_to_sloc_db(commit_id, commit_date)
 
-        @task(private=True)
-        def lint():
-            """ Run pylint with project overrides from pylint.rc """
-            if not executables_available(['pylint']):
-                return
-            mkdir_p(Project.quality_dir)
-            options = ''
-            if os.path.exists(Project.pylintrc):
-                options += "--rcfile=pylint.rc"
-            pylint_log = os.path.join(Project.quality_dir, 'pylint.log')
-            with LocalShell() as local:
-                local.system("pylint {options} {dir} > {log}".format(options=options,
-                                                                     dir=Project.package,
-                                                                     log=pylint_log))
+
+    @task(private=True)
+    def cheesecake():
+        """ Run the cheesecake kwalitee metric """
+        if not executables_available(['cheesecake_index']):
+            return
+        mkdir_p(Project.quality_dir)
+        cheesecake_log = os.path.join(Project.quality_dir, 'cheesecake.log')
+        with LocalShell() as local:
+            local.system("cheesecake_index --path=dist/%s-%s.tar.gz --keep-log -l %s" %
+                         (Project.name,
+                          Project.version,
+                          cheesecake_log))
+
+    @task(private=True)
+    def lint():
+        """ Run pylint with project overrides from pylint.rc """
+        if not executables_available(['pylint']):
+            return
+        mkdir_p(Project.quality_dir)
+        options = ''
+        if os.path.exists(Project.pylintrc):
+            options += "--rcfile=pylint.rc"
+        pylint_log = os.path.join(Project.quality_dir, 'pylint.log')
+        with LocalShell() as local:
+            local.system("pylint {options} {dir} > {log}".format(options=options,
+                                                                 dir=Project.package,
+                                                                 log=pylint_log))
 
 
-        @task(private=True)
-        def pep8():
-            """Run pep8 checks"""
-            if not executables_available(['pep8']):
-                return
-            mkdir_p(Project.quality_dir)
-            pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
-            pep8_out = os.path.join(Project.quality_dir, 'pep8.out')
-            os.system("rm -f %s" % pep8_text)
-            os.system("PYTHONPATH=%s pep8 %s 2>/dev/null >%s" % (Project.pythonPath, Project.package, pep8_text))
+    @task(private=True)
+    def pep8():
+        """Run pep8 checks"""
+        if not executables_available(['pep8']):
+            return
+        mkdir_p(Project.quality_dir)
+        pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
+        pep8_out = os.path.join(Project.quality_dir, 'pep8.out')
+        os.system("rm -f %s" % pep8_text)
+        os.system("PYTHONPATH=%s pep8 %s 2>/dev/null >%s" % (Project.pythonPath, Project.package, pep8_text))
 
-            # need to reorder the columns to make compatible with pylint file format
-            # pep8 output:    "{file}:{line}:{column}: {err} {desc}"
-            # pylint output:  "{file}:{line}: [{err}] {desc}"
+        # need to reorder the columns to make compatible with pylint file format
+        # pep8 output:    "{file}:{line}:{column}: {err} {desc}"
+        # pylint output:  "{file}:{line}: [{err}] {desc}"
+
+        # noinspection PyArgumentEqualDefault
+        with open(pep8_text, 'r') as src_file:
+            lines = src_file.readlines()
+
+        with open(pep8_out, 'w') as out_file:
+            for line in lines:
+                match = re.match(r"(.+):(\d+):(\d+):\s*(\S+)\s+(.+)", line)
+                if match:
+                    out_file.write("{file}:{line}: [{err}] {desc}\n".format(file=match.group(1),
+                                                                            line=match.group(2),
+                                                                            err=match.group(4),
+                                                                            desc=match.group(5)))
+
+    @task(private=True)
+    def complexity():
+        """ Run McCabe code complexity """
+        if not executables_available(['pymetrics', 'pycabehtml.py']):
+            return
+        mkdir_p(Project.quality_dir)
+        quality_dir = Project.quality_dir
+        complexity_txt = os.path.join(quality_dir, 'complexity.txt')
+        graph = os.path.join(quality_dir, 'output.png')
+        acc = os.path.join(quality_dir, 'complexity_acc.txt')
+        metrics_html = os.path.join(quality_dir, 'complexity_metrics.html')
+        with LocalShell() as local:
+            local.system("touch %s" % complexity_txt)
+            local.system("touch %s" % acc)
+            local.system("pymetrics --nosql --nocsv `find %s/ -iname \"*.py\"` > %s" %
+                         (Project.package, complexity_txt))
+            local.system("pycabehtml.py -i %s -o %s -a %s -g %s" %
+                         (complexity_txt, metrics_html, acc, graph))
+
+    @task(private=True)
+    def violations():
+        """Find the violations by inverting the results from the code analysis"""
+        mkdir_p(Project.quality_dir)
+        pylint_log = os.path.join(Project.quality_dir, 'pylint.log')
+        pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
+
+        for fileSpec in (pylint_log, pep8_text):
+            pyviolations = PyViolations()
+            pyviolations.process_file(fileSpec)
 
             # noinspection PyArgumentEqualDefault
-            with open(pep8_text, 'r') as src_file:
-                lines = src_file.readlines()
+            outputter = TextOutputter(summary=False)
+            pyviolations.report(outputter)
+            output_filespec = os.path.join(Project.quality_dir,
+                                           "violations.%s" % os.path.basename(fileSpec))
+            with open(output_filespec, 'w') as f:
+                f.write(outputter.to_string())
 
-            with open(pep8_out, 'w') as out_file:
-                for line in lines:
-                    match = re.match(r"(.+):(\d+):(\d+):\s*(\S+)\s+(.+)", line)
-                    if match:
-                        out_file.write("{file}:{line}: [{err}] {desc}\n".format(file=match.group(1),
-                                                                                line=match.group(2),
-                                                                                err=match.group(4),
-                                                                                desc=match.group(5)))
+            outputter = TextOutputter(summary=True)
+            pyviolations.report(outputter)
+            output_filespec = os.path.join(Project.quality_dir,
+                                           "violations.summary.%s" % os.path.basename(fileSpec))
+            with open(output_filespec, 'w') as f:
+                f.write(outputter.to_string())
 
-        @task(private=True)
-        def complexity():
-            """ Run McCabe code complexity """
-            if not executables_available(['pymetrics', 'pycabehtml.py']):
-                return
-            mkdir_p(Project.quality_dir)
-            quality_dir = Project.quality_dir
-            complexity_txt = os.path.join(quality_dir, 'complexity.txt')
-            graph = os.path.join(quality_dir, 'output.png')
-            acc = os.path.join(quality_dir, 'complexity_acc.txt')
-            metrics_html = os.path.join(quality_dir, 'complexity_metrics.html')
-            with LocalShell() as local:
-                local.system("touch %s" % complexity_txt)
-                local.system("touch %s" % acc)
-                local.system("pymetrics --nosql --nocsv `find %s/ -iname \"*.py\"` > %s" %
-                             (Project.package, complexity_txt))
-                local.system("pycabehtml.py -i %s -o %s -a %s -g %s" %
-                             (complexity_txt, metrics_html, acc, graph))
+    @task(private=True)
+    def radon():
+        """ Cyclomatic complexity metrics """
+        if not executables_available(['radon']):
+            return
+        mkdir_p(Project.quality_dir)
 
-        @task(private=True)
-        def violations():
-            """Find the violations by inverting the results from the code analysis"""
-            mkdir_p(Project.quality_dir)
-            pylint_log = os.path.join(Project.quality_dir, 'pylint.log')
-            pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
+        def qd(basename):
+            """
+            get the relative path to report file in quality directory
 
-            for fileSpec in (pylint_log, pep8_text):
-                pyviolations = PyViolations()
-                pyviolations.process_file(fileSpec)
+            :param basename: the report base name.
+            :returns: the relative path to the given report name in the quality directory.
+            """
+            return os.path.join(Project.quality_dir, basename)
 
-                # noinspection PyArgumentEqualDefault
-                outputter = TextOutputter(summary=False)
-                pyviolations.report(outputter)
-                output_filespec = os.path.join(Project.quality_dir,
-                                               "violations.%s" % os.path.basename(fileSpec))
-                with open(output_filespec, 'w') as f:
-                    f.write(outputter.to_string())
+        with LocalShell() as local:
+            local.system("radon cc -s --average --total-average {dir} > {out}".format(
+                dir=Project.package, out=qd('radon_cc.txt')))
+            local.system("radon cc -s --average --total-average --json {dir} > {out}".format(
+                dir=Project.package, out=qd('radon_cc.json')))
+            local.system("radon cc -s --average --total-average --xml {dir} > {out}".format(
+                dir=Project.package, out=qd('radon_cc.xml')))
+            local.system("radon mi -s {dir} > {out}".format(
+                dir=Project.package, out=qd('radon_mi.txt')))
+            local.system("radon raw -s {dir} > {out}".format(
+                dir=Project.package, out=qd('radon_raw.txt')))
+            local.system("radon raw -s --json {dir} > {out}".format(
+                dir=Project.package, out=qd('radon_raw.json')))
 
-                outputter = TextOutputter(summary=True)
-                pyviolations.report(outputter)
-                output_filespec = os.path.join(Project.quality_dir,
-                                               "violations.summary.%s" % os.path.basename(fileSpec))
-                with open(output_filespec, 'w') as f:
-                    f.write(outputter.to_string())
+    @task(private=True)
+    def violations_report():
+        """ Quality, violations, metrics reports """
+        lines = ["""
+        <html>
+          <head>
+            <title>Violation Reports</title>
+          </head>
+          <body>
+            <h1>Violation Reports</h1>
+        """]
+        mkdir_p(Project.quality_dir)
+        pylint_log = os.path.join(Project.quality_dir, 'pylint.log')
+        pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
+        index_html = os.path.join(Project.quality_dir, 'index.html')
 
-        @task(private=True)
-        def radon():
-            """ Cyclomatic complexity metrics """
-            if not executables_available(['radon']):
-                return
-            mkdir_p(Project.quality_dir)
-
-            def qd(basename):
-                """
-                get the relative path to report file in quality directory
-
-                :param basename: the report base name.
-                :returns: the relative path to the given report name in the quality directory.
-                """
-                return os.path.join(Project.quality_dir, basename)
-
-            with LocalShell() as local:
-                local.system("radon cc -s --average --total-average {dir} > {out}".format(
-                    dir=Project.package, out=qd('radon_cc.txt')))
-                local.system("radon cc -s --average --total-average --json {dir} > {out}".format(
-                    dir=Project.package, out=qd('radon_cc.json')))
-                local.system("radon cc -s --average --total-average --xml {dir} > {out}".format(
-                    dir=Project.package, out=qd('radon_cc.xml')))
-                local.system("radon mi -s {dir} > {out}".format(
-                    dir=Project.package, out=qd('radon_mi.txt')))
-                local.system("radon raw -s {dir} > {out}".format(
-                    dir=Project.package, out=qd('radon_raw.txt')))
-                local.system("radon raw -s --json {dir} > {out}".format(
-                    dir=Project.package, out=qd('radon_raw.json')))
-
-        @task(private=True)
-        def violations_report():
-            """ Quality, violations, metrics reports """
-            lines = ["""
-            <html>
-              <head>
-                <title>Violation Reports</title>
-              </head>
-              <body>
-                <h1>Violation Reports</h1>
-            """]
-            mkdir_p(Project.quality_dir)
-            pylint_log = os.path.join(Project.quality_dir, 'pylint.log')
-            pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
-            index_html = os.path.join(Project.quality_dir, 'index.html')
-
-            for fileSpec in (pylint_log, pep8_text):
-                file_base = os.path.basename(fileSpec)
-                violations_name = "violations.%s" % file_base
-                summary = "violations.summary.%s" % file_base
-                lines.append("            <h2>%s</h2>" % os.path.splitext(file_base)[0])
-                lines.append("            <ul>")
-                lines.append("              <li><a href='%s'>Report</a></li>" % file_base)
-                lines.append("              <li><a href='%s'>Violations</a></li>" % violations_name)
-                lines.append("              <li><a href='%s'>Violation Summary</a></li>" % summary)
-                lines.append("            </ul>")
-            lines.append("""
-              </body>
-            </html>
-            """)
-            with open(index_html, 'w') as f:
-                f.write("\n".join(lines))
+        for fileSpec in (pylint_log, pep8_text):
+            file_base = os.path.basename(fileSpec)
+            violations_name = "violations.%s" % file_base
+            summary = "violations.summary.%s" % file_base
+            lines.append("            <h2>%s</h2>" % os.path.splitext(file_base)[0])
+            lines.append("            <ul>")
+            lines.append("              <li><a href='%s'>Report</a></li>" % file_base)
+            lines.append("              <li><a href='%s'>Violations</a></li>" % violations_name)
+            lines.append("              <li><a href='%s'>Violation Summary</a></li>" % summary)
+            lines.append("            </ul>")
+        lines.append("""
+          </body>
+        </html>
+        """)
+        with open(index_html, 'w') as f:
+            f.write("\n".join(lines))
 
     @task(namespace='metrics',
-          depends=['metrics::lint',
-                   'metrics::pep8',
-                   'metrics::complexity',
-                   'metrics::radon'],
+          depends=['lint',
+                   'pep8',
+                   'complexity',
+                   'radon'],
           private=False)
     def all_metrics():
         """ Quality metrics """
         task_execute('metrics::violations')
         task_execute('metrics::violations_report')
 
-
-    @task()
-    def metrics():
-        """ Quality metrics """
-
-        # Run the metrics in each of the virtual environments defined in Project.metrics_python_versions
-        # or if not defined, then in Project.wheel_python_versions.  If neither are defined, then
-        # run the test in the current environment.
-
-        venvs = VirtualenvInfo('metrics_python_versions', 'wheel_python_versions')
-
-        if not venvs.in_virtualenv and venvs.defined:
-            for venv_info in venvs.infos():
-                info('Running metrics using the {venv} virtual environment.'.format(venv=venv_info.venv))
-                venv_info.run('herring metrics::all_metrics')
-        else:
-            info('Running metrics using the current python environment')
-            task_execute('metrics::all_metrics')
 
     @task(namespace='metrics', help='To display graphs instead of creating png files, use --display')
     def graph_complexity():
