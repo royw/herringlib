@@ -15,7 +15,7 @@ Add the following to your *requirements.txt* file:
 * pylint; python_version == "[metrics_python_versions]"
 * pymetrics; python_version == "[metrics_python_versions]"
 * radon; python_version == "[metrics_python_versions]"
-* pep8; python_version == "[metrics_python_versions]"
+* pycodestyle; python_version == "[metrics_python_versions]"
 * pepper8; python_version == "[metrics_python_versions]"
 * flake8; python_version == "[metrics_python_versions]"
 
@@ -319,9 +319,27 @@ with namespace('metrics'):
                     totals_by_language[match.group(1)] = (int(match.group(2)), float(match.group(3)))
         return totals_by_language
 
+
+    @task()
+    def cloc():
+        """Generate SLOCCount output file, sloccount.sc, used by jenkins"""
+        sloc_data = os.path.join(Project.quality_dir, 'slocdata')
+        mkdir_p(sloc_data)
+        sloc_filename = os.path.join(Project.quality_dir, 'sloccount.sc')
+        with LocalShell() as local:
+            output = local.run("sloccount --datadir {data} --wide --details {src}".format(data=sloc_data,
+                                                                                          src=Project.package))
+            if os.path.isfile(sloc_filename):
+                os.remove(sloc_filename)
+            with open(sloc_filename, 'w') as sloc_file:
+                sloc_file.write(output)
+
+
     @task()
     def sloccount():
         """Generate SLOCCount output file, sloccount.sc, used by jenkins"""
+        if not executables_available(['sloccount']):
+            return
         sloc_data = os.path.join(Project.quality_dir, 'slocdata')
         mkdir_p(sloc_data)
         sloc_filename = os.path.join(Project.quality_dir, 'sloccount.sc')
@@ -583,9 +601,10 @@ with namespace('metrics'):
 
     @task(namespace='metrics',
           depends=['lint',
-                   'pep8',
+                   'flake8',
                    'complexity',
-                   'radon'],
+                   'radon',
+                   'sloccount'],
           private=False)
     def all_metrics():
         """ Quality metrics """
