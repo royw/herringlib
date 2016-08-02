@@ -16,6 +16,8 @@ Add the following to your *requirements.txt* file:
 * pymetrics; python_version == "[metrics_python_versions]"
 * radon; python_version == "[metrics_python_versions]"
 * pep8; python_version == "[metrics_python_versions]"
+* pepper8; python_version == "[metrics_python_versions]"
+* flake8; python_version == "[metrics_python_versions]"
 
 **** #####pycabehtml; python_version == "[metrics_python_versions]"
 
@@ -410,25 +412,27 @@ with namespace('metrics'):
 
 
     @task(private=True)
-    def pep8():
-        """Run pep8 checks"""
-        if not executables_available(['pep8']):
+    def pycodestyle():
+        """Run pycodestyle checks"""
+        if not executables_available(['pycodestyle']):
             return
         mkdir_p(Project.quality_dir)
-        pep8_text = os.path.join(Project.quality_dir, 'pep8.txt')
-        pep8_out = os.path.join(Project.quality_dir, 'pep8.out')
-        os.system("rm -f %s" % pep8_text)
-        os.system("PYTHONPATH=%s pep8 %s 2>/dev/null >%s" % (Project.pythonPath, Project.package, pep8_text))
+        pycodestyle_text = os.path.join(Project.quality_dir, 'pycodestyle.txt')
+        pycodestyle_out = os.path.join(Project.quality_dir, 'pycodestyle.out')
+        pycodestyle_html = os.path.join(Project.quality_dir, 'pycodestyle.html')
+        os.system("rm -f %s" % pycodestyle_text)
+        os.system("PYTHONPATH=%s pycodestyle %s 2>/dev/null >%s" % (Project.pythonPath, Project.package, pycodestyle_text))
+        os.system("pepper8 -o %s %s" % (pycodestyle_html, pycodestyle_text))
 
         # need to reorder the columns to make compatible with pylint file format
-        # pep8 output:    "{file}:{line}:{column}: {err} {desc}"
+        # pycodestyle output:    "{file}:{line}:{column}: {err} {desc}"
         # pylint output:  "{file}:{line}: [{err}] {desc}"
 
         # noinspection PyArgumentEqualDefault
-        with open(pep8_text, 'r') as src_file:
+        with open(pycodestyle_text, 'r') as src_file:
             lines = src_file.readlines()
 
-        with open(pep8_out, 'w') as out_file:
+        with open(pycodestyle_out, 'w') as out_file:
             for line in lines:
                 match = re.match(r"(.+):(\d+):(\d+):\s*(\S+)\s+(.+)", line)
                 if match:
@@ -436,6 +440,38 @@ with namespace('metrics'):
                                                                             line=match.group(2),
                                                                             err=match.group(4),
                                                                             desc=match.group(5)))
+
+
+    @task(private=True)
+    def flake8():
+        """Run flake8 checks"""
+        if not executables_available(['flake8']):
+            return
+        mkdir_p(Project.quality_dir)
+        flake8_text = os.path.join(Project.quality_dir, 'flake8.txt')
+        flake8_out = os.path.join(Project.quality_dir, 'flake8.out')
+        flake8_html = os.path.join(Project.quality_dir, 'flake8.html')
+        os.system("rm -f %s" % flake8_text)
+        os.system("PYTHONPATH=%s flake8 --show-source --statistics %s 2>/dev/null >%s" % (Project.pythonPath, Project.package, flake8_text))
+        os.system("pepper8 -o %s %s" % (flake8_html, flake8_text))
+
+        # need to reorder the columns to make compatible with pylint file format
+        # flake8 output:    "{file}:{line}:{column}: {err} {desc}"
+        # pylint output:  "{file}:{line}: [{err}] {desc}"
+
+        # noinspection PyArgumentEqualDefault
+        with open(flake8_text, 'r') as src_file:
+            lines = src_file.readlines()
+
+        with open(flake8_out, 'w') as out_file:
+            for line in lines:
+                match = re.match(r"(.+):(\d+):(\d+):\s*(\S+)\s+(.+)", line)
+                if match:
+                    out_file.write("{file}:{line}: [{err}] {desc}\n".format(file=match.group(1),
+                                                                            line=match.group(2),
+                                                                            err=match.group(4),
+                                                                            desc=match.group(5)))
+
 
     @task(private=True)
     def complexity():
