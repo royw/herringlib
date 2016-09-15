@@ -142,14 +142,16 @@ def init():
 
     # print("defaults:\n{defaults}".format(defaults=pformat(defaults)))
 
-    template = Template()
+    if Project.use_templates:
 
-    for template_dir in [os.path.abspath(os.path.join(herringlib, 'herringlib', 'templates'))
-                         for herringlib in HerringFile.herringlib_paths]:
+        template = Template()
 
-        info("template directory: %s" % template_dir)
-        # noinspection PyArgumentEqualDefault
-        template.generate(template_dir, defaults, overwrite=False)
+        for template_dir in [os.path.abspath(os.path.join(herringlib, 'herringlib', 'templates'))
+                             for herringlib in HerringFile.herringlib_paths]:
+
+            info("template directory: %s" % template_dir)
+            # noinspection PyArgumentEqualDefault
+            template.generate(template_dir, defaults, overwrite=False)
 
 
 @task(namespace='project')
@@ -158,16 +160,17 @@ def update():
     Regenerate files (except herringfile) from current templates.
     Delete the file(s) you want to update, then run this task.
     """
-    defaults = _project_defaults()
+    if Project.use_templates:
+        defaults = _project_defaults()
 
-    template = Template()
+        template = Template()
 
-    for template_dir in [os.path.abspath(os.path.join(herringlib, 'herringlib', 'templates'))
-                         for herringlib in HerringFile.herringlib_paths]:
+        for template_dir in [os.path.abspath(os.path.join(herringlib, 'herringlib', 'templates'))
+                             for herringlib in HerringFile.herringlib_paths]:
 
-        info("template directory: %s" % template_dir)
-        # noinspection PyArgumentEqualDefault
-        template.generate(template_dir, defaults, overwrite=False)
+            info("template directory: %s" % template_dir)
+            # noinspection PyArgumentEqualDefault
+            template.generate(template_dir, defaults, overwrite=False)
 
 
 @task(namespace='project', configured='optional')

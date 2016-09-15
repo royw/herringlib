@@ -334,6 +334,9 @@ ATTRIBUTES = {
         'default': 'docs/news.rst',
         'help': 'The news documentation file relative to the herringfile_dir.  '
                 'Defaults to "{herringfile_dir}/docs/news.rst".'},
+    'otto_dir': {
+        'default': os.getenv("OTTO_DIR", None),
+        'help': 'The working directory for the Otto core.'},
     'package': {
         'default': None,
         'required': True,
@@ -434,6 +437,10 @@ ATTRIBUTES = {
         'default': 'docs/usage.rst',
         'help': 'The usage documentation file relative to the "herringfile_dir".  '
                 'Defaults to "{herringfile_dir}/docs/usage.rst".'},
+    'use_templates': {
+        'default': True,
+        'help': 'Allow creation of files from templates.  Set to False for data or documentation only projects.  '
+                'Defaults to True.'},
     'user': {
         'default': env_value('USER'),
         'help': 'The dist_host user.  Defaults to the value of the "USER" environment variable.'},
