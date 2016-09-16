@@ -426,6 +426,8 @@ ATTRIBUTES = {
     'tox_python_versions': {
         'help': 'python versions (defined in "python_versions") for tox to use.  '
                 'Defaults to "test_python_versions".'},
+    'tox_pythons': {
+        'help': 'list of python versions used by tox.'},
     'uml_dir': {
         'default': 'docs/_src/uml',
         'help': 'The directory where documentation UML files are written relative to the "herringfile_dir".  '

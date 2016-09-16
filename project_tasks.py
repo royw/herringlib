@@ -46,7 +46,19 @@ def value_from_setup_py(arg_name):
         # scan setup.py for a call to 'setup'.
         tree = ast.parse(''.join(open(setup_py)))
         call_nodes = [node.value for node in tree.body if type(node) == ast.Expr and type(node.value) == ast.Call]
-        keywords = [call_node.keywords for call_node in call_nodes if call_node.func.id == 'setup']
+
+        def is_setup(call_node):
+            try:
+                return call_node.func.id == 'setup'
+            except AttributeError as ex:
+                try:
+                    return call_node.func.value.id == 'setup'
+                except AttributeError as ex:
+                    print(str(ex))
+                    print(ast.dump(call_node.func))
+                    print(ast.dump(call_node))
+
+        keywords = [call_node.keywords for call_node in call_nodes if is_setup(call_node)]
         # now setup() takes keyword arguments so scan them looking for key that matches the given arg_name,
         # then return the keyword's value
         for keyword in keywords:
@@ -121,6 +133,8 @@ def _project_defaults():
             value = getattr(Project, key, None)
             if value is not None:
                 defaults[key] = value
+            else:
+                print("{key}:None".format(key=key))
 
     return defaults
 
