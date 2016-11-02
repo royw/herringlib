@@ -28,6 +28,8 @@ import operator
 
 # noinspection PyUnresolvedReferences
 from pprint import pformat
+from textwrap import dedent
+
 import six
 from herring.herring_app import task, namespace, task_execute
 import re
@@ -50,6 +52,16 @@ required_packages = [
     'pylint',
     'pymetrics'
 ]
+
+
+def qd(basename):
+    """
+    get the relative path to report file in quality directory
+
+    :param basename: the report base name.
+    :returns: the relative path to the given report name in the quality directory.
+    """
+    return os.path.join(Project.quality_dir, basename)
 
 
 class PyViolationOutputter(object):
@@ -320,19 +332,19 @@ with namespace('metrics'):
         return totals_by_language
 
 
-    @task()
-    def cloc():
-        """Generate SLOCCount output file, sloccount.sc, used by jenkins"""
-        sloc_data = os.path.join(Project.quality_dir, 'slocdata')
-        mkdir_p(sloc_data)
-        sloc_filename = os.path.join(Project.quality_dir, 'sloccount.sc')
-        with LocalShell() as local:
-            output = local.run("sloccount --datadir {data} --wide --details {src}".format(data=sloc_data,
-                                                                                          src=Project.package))
-            if os.path.isfile(sloc_filename):
-                os.remove(sloc_filename)
-            with open(sloc_filename, 'w') as sloc_file:
-                sloc_file.write(output)
+    # @task()
+    # def cloc():
+    #     """Generate SLOCCount output file, sloccount.sc, used by jenkins"""
+    #     sloc_data = os.path.join(Project.quality_dir, 'slocdata')
+    #     mkdir_p(sloc_data)
+    #     sloc_filename = os.path.join(Project.quality_dir, 'sloccount.sc')
+    #     with LocalShell() as local:
+    #         output = local.run("sloccount --datadir {data} --wide --details {src}".format(data=sloc_data,
+    #                                                                                       src=Project.package))
+    #         if os.path.isfile(sloc_filename):
+    #             os.remove(sloc_filename)
+    #         with open(sloc_filename, 'w') as sloc_file:
+    #             sloc_file.write(output)
 
 
     @task()
@@ -340,9 +352,9 @@ with namespace('metrics'):
         """Generate SLOCCount output file, sloccount.sc, used by jenkins"""
         if not executables_available(['sloccount']):
             return
-        sloc_data = os.path.join(Project.quality_dir, 'slocdata')
+        sloc_data = qd('slocdata')
         mkdir_p(sloc_data)
-        sloc_filename = os.path.join(Project.quality_dir, 'sloccount.sc')
+        sloc_filename = qd('sloccount.sc')
         with LocalShell() as local:
             output = local.run("sloccount --datadir {data} --wide --details {src}".format(data=sloc_data,
                                                                                           src=Project.package))
@@ -350,6 +362,22 @@ with namespace('metrics'):
                 os.remove(sloc_filename)
             with open(sloc_filename, 'w') as sloc_file:
                 sloc_file.write(output)
+
+            counts = {'all': 0}
+            for line in output.splitlines():
+                match = re.match(r"^(\d+)\s+(\S+)\s+(\S+)\s+(\S+)", line)
+                if match:
+                    language = match.group(2)
+                    if language not in counts:
+                        counts[language] = 0
+                    counts[language] += int(match.group(1))
+                    counts['all'] += int(match.group(1))
+
+            with open(qd("sloccount.js"), 'w') as out_file:
+                out_file.write("\nsloccount_data = {\n")
+                for key in sorted(counts.keys()):
+                    out_file.write("    \"{key}\": \"{value}\",\n".format(key=key, value=counts[key]))
+                out_file.write("};\n")
 
     @task()
     def sloc():
@@ -469,6 +497,7 @@ with namespace('metrics'):
         flake8_text = os.path.join(Project.quality_dir, 'flake8.txt')
         flake8_out = os.path.join(Project.quality_dir, 'flake8.out')
         flake8_html = os.path.join(Project.quality_dir, 'flake8.html')
+        flake8_js = os.path.join(Project.quality_dir, 'flake8.js')
         os.system("rm -f %s" % flake8_text)
         os.system("PYTHONPATH=%s flake8 --show-source --statistics %s 2>/dev/null >%s" % (Project.pythonPath, Project.package, flake8_text))
         os.system("pepper8 -o %s %s" % (flake8_html, flake8_text))
@@ -481,15 +510,31 @@ with namespace('metrics'):
         with open(flake8_text, 'r') as src_file:
             lines = src_file.readlines()
 
+        errors = 0
+        warnings = 0
+        others = 0
         with open(flake8_out, 'w') as out_file:
             for line in lines:
                 match = re.match(r"(.+):(\d+):(\d+):\s*(\S+)\s+(.+)", line)
                 if match:
+                    if match.group(4).startswith('E'):
+                        errors += 1
+                    elif match.group(4).startswith('W'):
+                        warnings += 1
+                    else:
+                        others += 1
                     out_file.write("{file}:{line}: [{err}] {desc}\n".format(file=match.group(1),
                                                                             line=match.group(2),
                                                                             err=match.group(4),
                                                                             desc=match.group(5)))
-
+        with open(flake8_js, 'w') as out_file:
+            out_file.write(dedent("""
+                    flake8_data = {{
+                        "errors": "{errors}",
+                        "warnings: "{warnings}",
+                        "other: "{others}"
+                    }};
+                """.format(errors=errors, warnings=warnings, others=others)))
 
     @task(private=True)
     def complexity():
@@ -543,15 +588,6 @@ with namespace('metrics'):
             return
         mkdir_p(Project.quality_dir)
 
-        def qd(basename):
-            """
-            get the relative path to report file in quality directory
-
-            :param basename: the report base name.
-            :returns: the relative path to the given report name in the quality directory.
-            """
-            return os.path.join(Project.quality_dir, basename)
-
         with LocalShell() as local:
             local.system("radon cc -s --average --total-average {dir} > {out}".format(
                 dir=Project.package, out=qd('radon_cc.txt')))
@@ -565,6 +601,26 @@ with namespace('metrics'):
                 dir=Project.package, out=qd('radon_raw.txt')))
             local.system("radon raw -s --json {dir} > {out}".format(
                 dir=Project.package, out=qd('radon_raw.json')))
+
+            grade_a = local.system("grep -c \" - A \" {txt}".format(txt=qd('radon_cc.txt'))).strip()
+            grade_b = local.system("grep -c \" - B \" {txt}".format(txt=qd('radon_cc.txt'))).strip()
+            grade_c = local.system("grep -c \" - C \" {txt}".format(txt=qd('radon_cc.txt'))).strip()
+            grade_d = local.system("grep -c \" - D \" {txt}".format(txt=qd('radon_cc.txt'))).strip()
+            grade_e = local.system("grep -c \" - E \" {txt}".format(txt=qd('radon_cc.txt'))).strip()
+            grade_f = local.system("grep -c \" - F \" {txt}".format(txt=qd('radon_cc.txt'))).strip()
+
+            with open(qd("radon_cc_summary.js"), 'w') as out_file:
+                out_file.write(dedent(r"""
+                    code_complexity_data = {{
+                        "A": "{a}",
+                        "B": "{b}",
+                        "C": "{c}",
+                        "D": "{d}",
+                        "E": "{e}",
+                        "F": "{f}",
+                    }};
+                """.format(a=grade_a, b=grade_b, c=grade_c, d=grade_d, e=grade_e, f=grade_f)))
+
 
     @task(private=True)
     def violations_report():
