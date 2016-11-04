@@ -664,8 +664,9 @@ with namespace('metrics'):
           private=False)
     def all_metrics():
         """ Quality metrics """
-        task_execute('metrics::violations')
-        task_execute('metrics::violations_report')
+        # task_execute('metrics::violations')
+        # task_execute('metrics::violations_report')
+        pass
 
 
     @task(namespace='metrics', help='To display graphs instead of creating png files, use --display')
