@@ -15,7 +15,7 @@ Add the following to your *requirements.txt* file:
 * pylint; python_version == "[metrics_python_versions]"
 * pymetrics; python_version == "[metrics_python_versions]"
 * radon; python_version == "[metrics_python_versions]"
-* pycodestyle; python_version == "[metrics_python_versions]"
+* pycodestyle==2.0.0; python_version == "[metrics_python_versions]"
 * pepper8; python_version == "[metrics_python_versions]"
 * flake8; python_version == "[metrics_python_versions]"
 
