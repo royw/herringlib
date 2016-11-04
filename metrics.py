@@ -531,8 +531,8 @@ with namespace('metrics'):
             out_file.write(dedent("""
                     flake8_data = {{
                         "errors": "{errors}",
-                        "warnings: "{warnings}",
-                        "other: "{others}"
+                        "warnings": "{warnings}",
+                        "other": "{others}"
                     }};
                 """.format(errors=errors, warnings=warnings, others=others)))
 
