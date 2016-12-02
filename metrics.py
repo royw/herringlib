@@ -374,7 +374,7 @@ with namespace('metrics'):
                     counts['all'] += int(match.group(1))
 
             with open(qd("sloccount.js"), 'w') as out_file:
-                out_file.write("\nsloccount_data = {\n")
+                out_file.write("\n{name}_sloccount_data = {{\n".format(name=Project.name))
                 for key in sorted(counts.keys()):
                     out_file.write("    \"{key}\": \"{value}\",\n".format(key=key, value=counts[key]))
                 out_file.write("};\n")
@@ -529,12 +529,12 @@ with namespace('metrics'):
                                                                             desc=match.group(5)))
         with open(flake8_js, 'w') as out_file:
             out_file.write(dedent("""
-                    flake8_data = {{
+                    {name}_flake8_data = {{
                         "errors": "{errors}",
                         "warnings": "{warnings}",
                         "other": "{others}"
                     }};
-                """.format(errors=errors, warnings=warnings, others=others)))
+                """.format(name=Project.name, errors=errors, warnings=warnings, others=others)))
 
     @task(private=True)
     def complexity():
@@ -611,7 +611,7 @@ with namespace('metrics'):
 
             with open(qd("radon_cc_summary.js"), 'w') as out_file:
                 out_file.write(dedent(r"""
-                    code_complexity_data = {{
+                    {name}_code_complexity_data = {{
                         "A": "{a}",
                         "B": "{b}",
                         "C": "{c}",
@@ -619,7 +619,7 @@ with namespace('metrics'):
                         "E": "{e}",
                         "F": "{f}",
                     }};
-                """.format(a=grade_a, b=grade_b, c=grade_c, d=grade_d, e=grade_e, f=grade_f)))
+                """.format(name=Project.name, a=grade_a, b=grade_b, c=grade_c, d=grade_d, e=grade_e, f=grade_f)))
 
 
     @task(private=True)
