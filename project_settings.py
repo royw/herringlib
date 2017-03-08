@@ -56,7 +56,6 @@ that declares external dependencies without the leading '#' characters::
 #    * cheesecake
 #    * matplotlib
 #    * numpy
-#    * pycabehtml
 #    * pylint
 #    * pymetrics; python_version == "[metrics_python_versions]"
 #    * ordereddict if sys.version_info < (3, 1)

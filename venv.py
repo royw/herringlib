@@ -174,7 +174,7 @@ class VirtualenvInfo(object):
             debug(name)
             self._ver_attr = getattr(Project, name, None)
             if self._ver_attr is not None:
-                debug("_ver_attr: %s" % repr(self._ver_attr))
+                info("_ver_attr: %s" % repr(self._ver_attr))
                 break
 
     @property

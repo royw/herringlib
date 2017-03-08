@@ -6,7 +6,6 @@ Add the following to your *requirements.txt* files:
 * argparse; python_version < "3.2"
 * ordereddict; python_version < "3.0"
 * cheesecake; python_version == "[metrics_python_versions]"
-* pycabehtml; python_version == "[metrics_python_versions]"
 * pylint; python_version == "[metrics_python_versions]"
 * pymetrics; python_version == "[metrics_python_versions]"
 * mako; python_version == "[python_versions]"

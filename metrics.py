@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Herring tasks for quality metrics (cheesecake, pymetrics, pycabehtml, pylint).
+Herring tasks for quality metrics (cheesecake, pymetrics, pylint).
 
 .. note::
 
@@ -18,8 +18,6 @@ Add the following to your *requirements.txt* file:
 * pycodestyle==2.0.0; python_version == "[metrics_python_versions]"
 * pepper8; python_version == "[metrics_python_versions]"
 * flake8; python_version == "[metrics_python_versions]"
-
-**** #####pycabehtml; python_version == "[metrics_python_versions]"
 
 """
 import json
@@ -48,7 +46,6 @@ required_packages = [
     # 'Cheesecake',
     'matplotlib',
     'numpy',
-    'pycabehtml',
     'pylint',
     'pymetrics'
 ]
@@ -539,7 +536,7 @@ with namespace('metrics'):
     @task(private=True)
     def complexity():
         """ Run McCabe code complexity """
-        if not executables_available(['pymetrics', 'pycabehtml.py']):
+        if not executables_available(['pymetrics']):
             return
         mkdir_p(Project.quality_dir)
         quality_dir = Project.quality_dir
@@ -552,8 +549,8 @@ with namespace('metrics'):
             local.system("touch %s" % acc)
             local.system("pymetrics --nosql --nocsv `find %s/ -iname \"*.py\"` > %s" %
                          (Project.package, complexity_txt))
-            local.system("pycabehtml.py -i %s -o %s -a %s -g %s" %
-                         (complexity_txt, metrics_html, acc, graph))
+            # local.system("pycabehtml.py -i %s -o %s -a %s -g %s" %
+            #              (complexity_txt, metrics_html, acc, graph))
 
     @task(private=True)
     def violations():
