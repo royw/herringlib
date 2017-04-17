@@ -150,13 +150,14 @@ ATTRIBUTES = {
         'default': "docs/CHANGES.rst",
         'help': 'The change log filespec.  '
                 'Defaults to "{herringfile_dir}/docs/CHANGES.rst".'},
+    'class_name_prefix': {
+        'help': 'The prefix to use for class names.  Defaults to the project name.'},
     'description': {
         'required': True,
         'help': 'A short description of this project.'},
     'deploy_python_version': {
         'help': 'python version (defined in "python_versions") to deploy to pypi server.  '
-                'Defaults to first version in "python_versions"'
-    },
+                'Defaults to first version in "python_versions"'},
     'design_file': {
         'default': 'docs/design.rst',
         'help': 'The design documentation file relative to the herringfile_dir.  '
@@ -532,6 +533,7 @@ class ProjectSettings(object):
 
         setattr(self, 'name', re.sub(r'[ -]', '', getattr(self, 'name', '')))
         set_default_attr('title', 'name')
+        set_default_attr('class_name_prefix', 'name')
 
         from herringlib.version import get_project_version
 
