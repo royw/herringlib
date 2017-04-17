@@ -14,11 +14,12 @@ Add the following to your *doc.requirements.txt* file:
 * sphinx-bootstrap-theme; python_version == "[doc_python_version]"
 * sphinx-pyreverse; python_version == "[doc_python_version]"
 * sphinxcontrib-plantuml; python_version == "[doc_python_version]"
-* sphinxcontrib-blockdiag; python_version == "[doc_python_version]"
+* sphinxcontrib-dd; python_version == "[doc_python_version]"
 * sphinxcontrib-actdiag; python_version == "[doc_python_version]"
 * sphinxcontrib-nwdiag; python_version == "[doc_python_version]"
 * sphinxcontrib-seqdiag; python_version == "[doc_python_version]"
-* sphinxcontrib-autoprogram; python_version == "[doc_python_version]"
+* sphinxcontrib-blockdiag; python_version == "[doc_python_version]"
+* sphinxcontrib-autoprogram; python_version == "[doc_python_version]" and python_version > '3.3'
 * git+https://github.com/cawka/sphinxcontrib-aafig.git#egg=sphinxcontrib-aafig; python_version == "[doc_python_version]"
 * sphinxcontrib-httpdomain; python_version == "[doc_python_version]"
 * sphinx-rtd-theme; python_version == "[doc_python_version]"
@@ -625,7 +626,7 @@ with namespace('doc'):
                             usage_file.write("=====\n\n")
                             if Project.usage_autoprogram:
                                 parser = "{pkg}.{pkg}_settings:{name}Settings().parse()[0]\n".format(
-                                    pkg=Project.package, name=Project.name)
+                                    pkg=Project.package, name=Project.class_name_prefix)
                                 usage_file.write(".. autoprogram:: {parser}".format(parser=parser))
                                 usage_file.write("    :prog: {name}\n\n".format(name=Project.package))
                             else:
