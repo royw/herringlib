@@ -280,6 +280,8 @@ def mkvenvs():
                         pip_options=pip_options),
                     'pip install --upgrade {pip_options} requests[security]'.format(pip_options=pip_options),
                 ]
+                if os.path.isfile('/etc/ssl/certs/ca-certificates.crt'):
+                    install_lines.append('pip install --cert /etc/ssl/certs/ca-certificates.crt')
                 if 'numpy' in requirements:
                     install_lines.append('pip install --upgrade {pip_options} numpy'.format(pip_options=pip_options))
 
