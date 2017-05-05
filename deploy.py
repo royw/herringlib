@@ -68,7 +68,7 @@ try:
                     venv_info.run("python setup.py sdist upload -r {server}".format(server=Project.pypiserver),
                                   verbose=True)
             else:
-                with LocalShell() as local:
+                with LocalShell(verbose=True) as local:
                     info("Deploying sdist using default environment")
                     local.run("python setup.py sdist upload -r {server}".format(server=Project.pypiserver),
                               verbose=True)

@@ -15,11 +15,11 @@ import glob
 import os
 from textwrap import dedent
 
-from herringlib.cd import cd
-
 try:
     # noinspection PyUnresolvedReferences
     from herring.herring_app import task, HerringFile, task_execute, namespace
+    # noinspection PyUnresolvedReferences
+    from herringlib.cd import cd
     # noinspection PyUnresolvedReferences
     from herringlib.setup_cfg import setup_cfg_value
     # noinspection PyUnresolvedReferences
@@ -33,6 +33,7 @@ try:
     # noinspection PyUnresolvedReferences
     from herringlib.simple_logger import error, info, warning
 except ImportError as ex:
+    # noinspection PyUnresolvedReferences
     from herringlib.simple_logger import error
     error("Problem importing:  {msg}".format(msg=str(ex)))
 
