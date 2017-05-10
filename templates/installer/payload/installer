@@ -64,6 +64,9 @@ pip install --upgrade setuptools
 pip install *.tar.gz
 pip install "$package_name"
 
+# upgrade packages
+pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U
+
 # symbolically link package script onto path
 
 if [ -x "$venv/bin/$executable_name" ]; then
