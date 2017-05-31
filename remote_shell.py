@@ -1,6 +1,18 @@
 # coding=utf-8
 
 """
+Remote shell with a context over ssh with support for pexpect.
+
+Usage
+-----
+
+.. code-block:: python
+
+    with RemoteShell(user=user, password=password, host=host, verbose=True) as remote:
+        remote.run("ls ~")
+        remote.put(local_file, remote_dir)
+        remote.get(remote_file)
+
 Add the following to your *requirements.txt* file:
 
 * pexpect; python_version == "[python_versions]"
@@ -10,20 +22,35 @@ Add the following to your *requirements.txt* file:
 """
 import traceback
 
-from pexpect.pxssh import ExceptionPxssh
+# noinspection PyUnresolvedReferences
 from herringlib.simple_logger import info
-
+# noinspection PyUnresolvedReferences
 from herringlib.project_settings import Project
 
 import sys
-import pexpect
-import paramiko
 import re
-
 from time import sleep
 from getpass import getpass
+
+# noinspection PyUnresolvedReferences
+import pexpect
+# noinspection PyUnresolvedReferences
+import paramiko
+# noinspection PyUnresolvedReferences
 from paramiko import SSHClient
-from pexpect.pxssh import pxssh
+
+try:
+    from pexpect.pxssh import pxssh
+except ImportError:
+    try:
+        from pexpect import pxssh
+    except ImportError:
+        # noinspection PyUnresolvedReferences
+        import pxssh
+
+# noinspection PyUnresolvedReferences
+from pexpect.pxssh import ExceptionPxssh
+# noinspection PyUnresolvedReferences
 from scp import SCPClient
 
 try:
@@ -33,9 +60,10 @@ except ImportError:
     # noinspection PyUnresolvedReferences
     from collections import OrderedDict
 
-from herringlib.ashell import AShell, CR, MOVEMENT
+from .ashell import AShell, CR, MOVEMENT
 
 __docformat__ = 'restructuredtext en'
+__all__ = ('RemoteShell',)
 
 
 class RemoteShell(AShell):

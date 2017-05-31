@@ -10,6 +10,7 @@ Normal usage is to invoke the *doc* task.
 Add the following to your *doc.requirements.txt* file:
 
 * Pygments; python_version == "[doc_python_version]"
+* docutils!=0.14rc1; python_version == "[doc_python_version]"
 * Sphinx; python_version == "[doc_python_version]"
 * sphinx-bootstrap-theme; python_version == "[doc_python_version]"
 * sphinx-pyreverse; python_version == "[doc_python_version]"

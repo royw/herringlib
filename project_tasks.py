@@ -1,14 +1,22 @@
 # coding=utf-8
 """
 Project tasks
+
+Add the following to your *requirements.txt* file:
+
+* docutils!=0.14rc1; python_version == "[python_versions]"
+
 """
 import ast
 import os
 from pprint import pformat
 import shutil
 import textwrap
+# noinspection PyUnresolvedReferences
 from herringlib.prompt import prompt
+# noinspection PyUnresolvedReferences
 from herringlib.template import Template
+# noinspection PyUnresolvedReferences
 from herringlib.venv import VirtualenvInfo
 
 try:
@@ -23,9 +31,13 @@ except ImportError:
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, HerringFile
 
+# noinspection PyUnresolvedReferences
 from herringlib.simple_logger import info, debug
+# noinspection PyUnresolvedReferences
 from herringlib.local_shell import LocalShell
+# noinspection PyUnresolvedReferences
 from herringlib.requirements import Requirements, Requirement
+# noinspection PyUnresolvedReferences
 from herringlib.project_settings import Project, ATTRIBUTES
 
 missing_modules = []
@@ -47,6 +59,7 @@ def value_from_setup_py(arg_name):
         tree = ast.parse(''.join(open(setup_py)))
         call_nodes = [node.value for node in tree.body if type(node) == ast.Expr and type(node.value) == ast.Call]
 
+        # noinspection PyShadowingNames
         def is_setup(call_node):
             try:
                 return call_node.func.id == 'setup'

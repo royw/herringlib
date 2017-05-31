@@ -70,9 +70,11 @@ from itertools import groupby
 
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, HerringFile, task_execute
+# noinspection PyUnresolvedReferences
 from herringlib.comparable_mixin import ComparableMixin
-
+# noinspection PyUnresolvedReferences
 from herringlib.list_helper import compress_list, is_sequence, unique_list
+# noinspection PyUnresolvedReferences
 from herringlib.simple_logger import debug, warning
 
 
@@ -87,7 +89,7 @@ class EnvironmentMarker(object):
         self.operator = None
         self.value = None
         if self.marker is not None:
-            match = re.match(r'''(\S+)\s*((?:[!=<>]+)|(?:not in)|(?<!not )in)\s*[\"\']?([\d\.\s]+)[\"\']?''',
+            match = re.match(r'''(\S+)\s*((?:[!=<>]+)|(?:not in)|(?<!not )in)\s*[\"\']?([\d.\s]+)[\"\']?''',
                              self.marker)
             if match:
                 self.name = match.group(1)
@@ -171,6 +173,20 @@ class Requirement(ComparableMixin):
             marker_str = '; '.join([str(m) for m in self.markers])
             return '{package}; {marker}'.format(package=self.package, marker=marker_str)
         return self.package
+
+    def qualified(self, qualifiers):
+        if qualifiers:
+            if self.package == self.qualified_package:
+                return ''
+            package = self.qualified_package
+        else:
+            if self.package != self.qualified_package:
+                return ''
+            package = self.package
+        if self.markers:
+            marker_str = '; '.join([str(m) for m in self.markers])
+            return '{package}; {marker}'.format(package=package, marker=marker_str)
+        return package
 
     def __repr__(self):
         if self.markers:
@@ -437,7 +453,13 @@ class Requirements(object):
                         req_file.write('-e .\n\n')
                 with open(requirements_filename, 'a') as req_file:
                     for need in sorted(unique_list(list(needed))):
-                        req_file.write(str(need) + "\n")
+                        out_line = need.qualified(qualifiers=True)
+                        if out_line:
+                            req_file.write(out_line + "\n")
+                    for need in sorted(unique_list(list(needed))):
+                        out_line = need.qualified(qualifiers=False)
+                        if out_line:
+                            req_file.write(out_line + "\n")
             except IOError as ex:
                 warning("Can not add the following to the {filename} file: {needed}\n{err}".format(
                     filename=filename, needed=repr(needed), err=str(ex)))
