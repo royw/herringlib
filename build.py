@@ -121,10 +121,12 @@ if Project.package:
                             package_name="{name}-{version}.tar.gz"
                             executable_name="{package}"
                             snakes="{snakes}"
+                            pip_options="{pip_options}"
                             """).format(name=Project.name,
                                         version=Project.version,
                                         package=Project.package,
-                                        snakes=Project.pythons_str))
+                                        snakes=Project.pythons_str,
+                                        pip_options=Project.pip_options))
                         local.run('/bin/bash build')
 
 

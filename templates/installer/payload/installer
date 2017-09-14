@@ -62,7 +62,7 @@ pip install --upgrade setuptools
 # install payload package into virtual environment
 
 pip install *.tar.gz
-pip install "$package_name"
+pip install $pip_options "$package_name"
 
 # upgrade packages
 pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U
