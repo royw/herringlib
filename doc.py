@@ -34,6 +34,7 @@ Add the following to your *doc.requirements.txt* file:
 * mock; python_version in "[doc_python_version]"
 * importlib; python_version < '2.7'
 * hieroglyph; python_version in "[doc_python_version]"
+* pyOpenSSL >= '16.2.0'; python_version == "[doc_python_version]"
 
 .. note::
 
