@@ -103,6 +103,21 @@ def doc():
 
 @task()
 @venv_decorator(attr_name='docs_venv')
+def doc_no_api():
+    """generate project documentation without the api"""
+    venvs = VirtualenvInfo('docs_venv')
+    info("venvs: {venvs}".format(venvs=repr(venvs.__dict__)))
+    if not venvs.in_virtualenv and venvs.defined:
+        for venv_info in venvs.infos():
+            venv_info.run('{herring} doc::generate_no_api --python-tag py{ver}'.format(herring=Project.herring,
+                                                                                       ver=venv_info.ver))
+    else:
+        info('Generating documentation using the current python environment')
+        task_execute('doc::generate_no_api')
+
+
+@task()
+@venv_decorator(attr_name='docs_venv')
 def slides():
     """generate project slides"""
     venvs = VirtualenvInfo('docs_venv')
@@ -237,6 +252,15 @@ with namespace('doc'):
             hack()
         run_sphinx()
 
+    @task(depends=['logo::create',
+                   'update'], private=True)
+    def sphinx_no_api():
+        """Generate sphinx HTML documents (no API)"""
+        if Project.enhanced_docs:
+            diagrams()
+            hack()
+        run_sphinx()
+
     @task()
     def run_sphinx():
         global doc_errors
@@ -332,6 +356,15 @@ with namespace('doc'):
     @task(depends=['clean', 'sphinx'], private=True)
     def generate():
         """Generate API documents"""
+        global doc_errors
+        if doc_errors:
+            error(pformat(doc_errors))
+            info("{cnt} errors.".format(cnt=len(doc_errors)))
+
+
+    @task(depends=['clean', 'sphinx_no_api'], private=True)
+    def generate_no_api():
+        """Generate API documents without the API"""
         global doc_errors
         if doc_errors:
             error(pformat(doc_errors))
