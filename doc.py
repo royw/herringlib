@@ -20,6 +20,7 @@ Add the following to your *doc.requirements.txt* file:
 * sphinxcontrib-nwdiag; python_version == "[doc_python_version]"
 * sphinxcontrib-seqdiag; python_version == "[doc_python_version]"
 * sphinxcontrib-blockdiag; python_version == "[doc_python_version]"
+* sphinxcontrib-ditaa; python_version == "[doc_python_version]"
 * sphinxcontrib-autoprogram; python_version == "[doc_python_version]" and python_version > '3.3'
 * sphinxcontrib-websupport; python_version == "[doc_python_version]"
 * git+https://github.com/cawka/sphinxcontrib-aafig.git#egg=sphinxcontrib-aafig; python_version == "[doc_python_version]"

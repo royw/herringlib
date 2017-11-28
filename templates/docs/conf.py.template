@@ -75,7 +75,6 @@ except ImportError:
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 # sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(1, os.path.abspath('..'))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '_sphinx-ditaa/sphinxext')))
 print("sys.path => %s" % sys.path)
 
 # -- Project variables
@@ -90,6 +89,7 @@ project_package = u'{package}'
 project_bugzilla_url = u'{bugzilla_url}'
 
 # -- hack that modifies autodoc to skip unwanted class methods ----------------
+
 
 # noinspection PyDocstring,PyUnusedLocal
 def skipUnwanted(app, what, name, obj, skip, options):
@@ -136,7 +136,7 @@ extensions = [
     'sphinxcontrib.seqdiag',
     # 'sphinxcontrib.autoprogram',
     'sphinxcontrib.httpdomain',
-    'ext.ditaa',
+    'sphinxcontrib.ditaa',
     'hieroglyph',
 ]
 
