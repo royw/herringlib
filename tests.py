@@ -36,6 +36,7 @@ if packages_required(required_packages):
 
         venvs = VirtualenvInfo('test_python_versions', 'wheel_python_versions')
         coverage = '--cov-report term-missing --cov={package}'.format(package=Project.package)
+        mkdir_p(Project.tests_dir)
 
         if not venvs.in_virtualenv and venvs.defined:
             for venv_info in venvs.infos():
