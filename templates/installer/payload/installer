@@ -8,6 +8,12 @@ echo "Running Installer"
 
 # Install steps go here
 
+# The HOME environment variable is required
+if [ -z "$HOME" ]; then
+    echo "Your HOME environment variable is not set and is required.  Please set and try again."
+    exit 1
+fi
+
 # if not installed, install virtualenv
 
 # find the first python in snakes that is available on the target system and place in python_path
@@ -62,7 +68,7 @@ pip install --upgrade setuptools
 # install payload package into virtual environment
 
 pip install *.tar.gz
-pip install $pip_options "$package_name"
+pip install "$package_name"
 
 # upgrade packages
 pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U
@@ -70,20 +76,33 @@ pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1
 # symbolically link package script onto path
 
 if [ -x "$venv/bin/$executable_name" ]; then
+    # try to force using $HOME/bin
+    mkdir -p "$HOME/bin"
     if [ -d "$HOME/bin" ]; then
+        # install console script into $HOME/bin
         rm -f "$HOME/bin/$executable_name"
         ln -s "$venv/bin/$executable_name" "$HOME/bin/$executable_name"
         echo "$executable_name installed to $HOME/bin"
+        if ! [[ ":$PATH:" == *":$HOME/bin:"* ]]; then
+            echo "Please add \"$HOME/bin\" to your PATH"
+        fi
     elif [ -d /usr/local/bin ]; then
-        sudo rm -f "usr/local/bin/$executable_name"
+        # should not happen, but just in case...
+        # install console script into /usr/local/bin
+        sudo rm -f "/usr/local/bin/$executable_name"
         sudo ln -s "$venv/bin/$executable_name" "/usr/local/bin/$executable_name"
         echo "$executable_name installed to /usr/local/bin"
+        if ! [[ ":$PATH:" == *":/usr/local/bin:"* ]]; then
+            echo "Please add \"/usr/local/bin\" to your PATH"
+        fi
     else
+        # should NEVER happen, but just in case...
+        # can't install console script so ask user to add it to their path.
         echo "Please symbolically link $venv/bin/$executable_name to somewhere on your path."
-        echo
     fi
 else
     echo "There was a problem with the install and the executable is not available:  $venv/bin/$executable_name"
 fi
 
+echo
 exit 0
