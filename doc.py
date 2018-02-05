@@ -657,7 +657,7 @@ with namespace('doc'):
                 with LocalShell(verbose=False) as local:
                     output = local.run("find {dir} -name \"*.py\" -exec "
                                        "egrep -H -o \"TODO:?\s+(.+)\s*\" '{{}}' \\;".format(dir=Project.package))
-                    lines = output.strip().splitline()
+                    lines = output.strip().splitlines()
                     if Project.feature_branch:
                         feature_files = get_list_of_branch_files()
                         lines = [line for line in lines if line in feature_files]
