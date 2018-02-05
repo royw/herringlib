@@ -7,6 +7,7 @@ Add the following to your *requirements.txt* file:
 * ordereddict; python_version < "3.0"
 
 """
+import collections
 
 __docformat__ = 'restructuredtext en'
 
@@ -56,3 +57,34 @@ try:
 except ImportError:
     print("ordereddict not installed!")
     exit(1)
+
+
+# noinspection PyShadowingBuiltins
+def flatten(src_list):
+    """
+    Flatten a list containing lists.
+
+    Example::
+
+        assert flatten([1, 2, [3, 4, [5]]]) == [1, 2, 3, 4, 5]
+
+    :param src_list: the list that can contain embedded list(s)
+    :type src_list: list
+    :return: flattened list
+    :rtype: list
+    """
+    try:
+        # noinspection PyUnboundLocalVariable
+        basestring = basestring
+    except NameError:
+        basestring = (str, unicode)
+
+    if src_list is None:
+        src_list = []
+
+    for item in src_list:
+        if isinstance(item, collections.Iterable) and not isinstance(item, basestring):
+            for sub in flatten(list(item)):
+                yield sub
+        else:
+            yield item

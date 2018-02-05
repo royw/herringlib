@@ -42,6 +42,7 @@ Add the following to your *doc.requirements.txt* file:
     Using pillow instead of PIL because pillow supports python2/3 while PIL is python2 only.
 
 """
+
 import ast
 import glob
 from datetime import datetime
@@ -63,21 +64,36 @@ import errno
 from herring.herring_app import task, namespace, task_execute
 import sys
 
+# noinspection PyUnresolvedReferences
 from herringlib.doc_diagrams import diagrams
+# noinspection PyUnresolvedReferences
 from herringlib.doc_hack import hack
+# noinspection PyUnresolvedReferences
 from herringlib.remote_shell import RemoteShell
+# noinspection PyUnresolvedReferences
 from herringlib.run_python import run_python
+# noinspection PyUnresolvedReferences
 from herringlib.simple_logger import info, error, debug
+# noinspection PyUnresolvedReferences
 from herringlib.project_settings import Project
+# noinspection PyUnresolvedReferences
 from herringlib.local_shell import LocalShell
+# noinspection PyUnresolvedReferences
 from herringlib.touch import touch
+# noinspection PyUnresolvedReferences
 from herringlib.venv import VirtualenvInfo, venv_decorator
+# noinspection PyUnresolvedReferences
 from herringlib.indent import indent
 
+# noinspection PyUnresolvedReferences
 from herringlib.cd import cd
+# noinspection PyUnresolvedReferences
 from herringlib.clean import clean
+# noinspection PyUnresolvedReferences
 from herringlib.executables import executables_available
+# noinspection PyUnresolvedReferences
 from herringlib.recursively_remove import recursively_remove
+# noinspection PyUnresolvedReferences
 from herringlib.safe_edit import safe_edit, quick_edit
 
 __docformat__ = 'restructuredtext en'
@@ -170,6 +186,7 @@ with namespace('doc'):
     def api():
         """Generate API sphinx source files from code"""
         global doc_errors
+        Project.docs_feature_dirs = docs_feature_dirs()
         if Project.package is not None:
             with cd(Project.docs_dir):
                 exclude = ' '.join(Project.exclude_from_docs)
@@ -212,6 +229,77 @@ with namespace('doc'):
                         outputter.write(output)
 
 
+    def get_current_branch():
+        """
+        :return: the current git branch name.
+        :rtype: str
+        """
+        with cd(Project.docs_dir):
+            with LocalShell() as local:
+                return local.system('git rev-parse --abbrev-ref HEAD')
+
+
+    def get_list_of_branch_files():
+        """
+        :return: list of files on the feature branch
+        """
+        with cd(Project.herringfile_dir):
+            with LocalShell() as local:
+                feature_branch = get_current_branch()
+                print("feature branch: " + feature_branch)
+                if feature_branch is not None:
+                    output = local.system('git diff --name-only upstream/{branch}'.format(branch=feature_branch),
+                                          verbose=False)
+                    return [f for f in output.splitlines() if f.startswith('src/')]
+                return []
+
+
+    def docs_feature_dirs():
+        """
+        :return: the directories with files from the feature branch
+        """
+        features = {}
+        for parent_dir in [os.path.dirname(directory) for directory in get_list_of_branch_files()]:
+            features[parent_dir] = 1
+        return sorted(features.keys())
+
+
+    def find_rst_ancestors(file_name):
+        """
+        given: a.b.c.d.rst
+        return a list of ancestor rst files: [a.rst, a.b.rst, a.b.c.rst]
+        :param file_name: leaf rst file
+        :return: list[str]
+        """
+        ancestors = []
+        parent = file_name.split('.')[:-2]
+        base = ''
+        for part in parent:
+            base += part + '.'
+            ancestors.append(base + 'rst')
+        return ancestors
+
+
+    def remove_non_feature_rst_files():
+        """remove file that exist on the master branch"""
+        feature_files = [f.replace('src/', '').replace('.py', '.rst').replace('/', '.').replace('.__init__.', '.')
+                         for f in get_list_of_branch_files()]
+        ancestry = {}
+        for file_name in feature_files:
+            for ancestor in find_rst_ancestors(file_name):
+                ancestry[ancestor] = 1
+
+        feature_files += ancestry.keys()
+        feature_files.append('uml')
+        # print("feature_files: ")
+        # pprint(feature_files)
+        for file_name in os.listdir(os.path.join(Project.docs_dir, '_src')):
+            if os.path.basename(file_name) == 'modules.rst':
+                continue
+            if file_name not in feature_files:
+                os.remove(os.path.join(Project.docs_dir, '_src', file_name))
+
+
     def clean_doc_log(file_name):
         """
         Removes sphinx/python 2.6 warning messages.
@@ -251,6 +339,8 @@ with namespace('doc'):
         if Project.enhanced_docs:
             diagrams()
             hack()
+        if Project.feature_branch:
+            remove_non_feature_rst_files()
         run_sphinx()
 
     @task(depends=['logo::create',
@@ -262,8 +352,11 @@ with namespace('doc'):
             hack()
         run_sphinx()
 
-    @task()
+    @task(private=True)
     def run_sphinx():
+        """
+        Run sphinx
+        """
         global doc_errors
         if os.path.isdir(Project.docs_html_dir):
             shutil.rmtree(Project.docs_html_dir)
@@ -564,7 +657,11 @@ with namespace('doc'):
                 with LocalShell(verbose=False) as local:
                     output = local.run("find {dir} -name \"*.py\" -exec "
                                        "egrep -H -o \"TODO:?\s+(.+)\s*\" '{{}}' \\;".format(dir=Project.package))
-                    for line in output.strip().split("\n"):
+                    lines = output.strip().splitline()
+                    if Project.feature_branch:
+                        feature_files = get_list_of_branch_files()
+                        lines = [line for line in lines if line in feature_files]
+                    for line in lines:
                         todo_file.write("* ")
                         todo_file.write(line.strip())
                         todo_file.write("\n")
@@ -617,8 +714,8 @@ with namespace('doc'):
                                 design_file.write("\n\n")
                                 if functions:
                                     design_file.write("Functions:\n\n")
-                                    for function in functions:
-                                        design_file.write("* {name}\n".format(name=function))
+                                    for function_name in functions:
+                                        design_file.write("* {name}\n".format(name=function_name))
                                     design_file.write("\n\n")
                                 if classes:
                                     design_file.write("Classes:\n\n")
@@ -634,6 +731,7 @@ with namespace('doc'):
             try:
                 with open('setup.py') as setup_file:
                     setup_str = setup_file.read()
+                    # noinspection RegExpRedundantEscape
                     match = re.search(r"\s*entry_points\s*=\s*(\{.+?\})",
                                       setup_str.replace('\n', ' '), re.MULTILINE)
                     if match:
@@ -642,7 +740,7 @@ with namespace('doc'):
                                            for line in entry_points['console_scripts']]
                         # info(repr(console_scripts))
                         return console_scripts
-            except:
+            except Exception:
                 pass
             return []
 
@@ -674,7 +772,7 @@ with namespace('doc'):
                                         usage_file.write("    ➤ {app} --help\n".format(app=script))
                                         usage_file.write(indent(text, indent_spaces=4))
                                         usage_file.write("\n\n")
-                except:
+                except Exception:
                     pass
 
 
@@ -889,4 +987,4 @@ with namespace('doc'):
                         shutil.rmtree(tmp_repo_path)
                     except OSError as ex:
                         if ex.errno != errno.ENOENT:
-                            raise
+                            raise ex

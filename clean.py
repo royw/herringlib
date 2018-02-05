@@ -17,8 +17,11 @@ import shutil
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task
 
+# noinspection PyUnresolvedReferences
 from herringlib.simple_logger import debug
+# noinspection PyUnresolvedReferences
 from herringlib.recursively_remove import recursively_remove
+# noinspection PyUnresolvedReferences
 from herringlib.project_settings import Project
 
 

@@ -1,5 +1,9 @@
 # coding=utf-8
 
+"""
+document diagram generation
+"""
+
 # noinspection PyCompatibility
 import fnmatch
 import os
@@ -7,13 +11,20 @@ import os
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, namespace, task_execute
 
+# noinspection PyUnresolvedReferences
 from herringlib.run_python import run_python
+# noinspection PyUnresolvedReferences
 from herringlib.is_newer import is_newer
+# noinspection PyUnresolvedReferences
 from herringlib.simple_logger import info, warning, debug
+# noinspection PyUnresolvedReferences
 from herringlib.mkdir_p import mkdir_p
+# noinspection PyUnresolvedReferences
 from herringlib.project_settings import Project
 
+# noinspection PyUnresolvedReferences
 from herringlib.cd import cd
+# noinspection PyUnresolvedReferences
 from herringlib.executables import executables_available
 
 __docformat__ = 'restructuredtext en'
@@ -21,7 +32,7 @@ __docformat__ = 'restructuredtext en'
 with namespace('doc'):
 
     # noinspection PyUnusedLocal,PyArgumentEqualDefault
-    def _create_module_diagrams(path):
+    def _create_module_diagrams(path, docs_feature_dirs):
         """
         create module UML diagrams
 
@@ -33,8 +44,13 @@ with namespace('doc'):
             warning('pyreverse not available')
             return
 
-        with open(os.path.join(Project.docs_dir, "pyreverse.log"), "w") as outputter:
-            for module_path in [root for root, dirs, files in os.walk(path) if os.path.basename(root) != '__pycache__']:
+        pyreverse_filename = os.path.join(Project.herringfile_dir, Project.docs_dir, "pyreverse.log")
+        with open(pyreverse_filename, "w") as outputter:
+            if Project.feature_branch:
+                module_paths = docs_feature_dirs
+            else:
+                module_paths = [root for root, dirs, files in os.walk(path) if os.path.basename(root) != '__pycache__']
+            for module_path in module_paths:
                 debug("module_path: {path}".format(path=module_path))
                 init_filename = os.path.join(module_path, '__init__.py')
                 if os.path.exists(init_filename):
@@ -64,7 +80,8 @@ with namespace('doc'):
                  for dir_path, dir_names, files in os.walk(path)
                  for f in fnmatch.filter(files, '*.py')]
         debug("files: {files}".format(files=repr(files)))
-        with open(os.path.join(Project.docs_dir, "pynsource.log"), "w") as outputter:
+        pynsource_filename = os.path.join(Project.herringfile_dir, Project.docs_dir, "pynsource.log")
+        with open(pynsource_filename, "w") as outputter:
             for src_file in files:
                 debug(src_file)
                 name = src_file.replace(Project.herringfile_dir + '/', '').replace('.py', '.png').replace('/', '.')
@@ -82,5 +99,5 @@ with namespace('doc'):
             path = os.path.join(Project.herringfile_dir, Project.package)
             mkdir_p(Project.uml_dir)
             with cd(Project.uml_dir, verbose=True):
-                _create_module_diagrams(path)
+                _create_module_diagrams(path, Project.docs_feature_dirs)
                 _create_class_diagrams(path)

@@ -87,10 +87,15 @@ from pprint import pformat
 # noinspection PyUnresolvedReferences
 from herring.herring_app import HerringFile, task
 
+# noinspection PyUnresolvedReferences
 from herringlib.mkdir_p import mkdir_p
+# noinspection PyUnresolvedReferences
 from herringlib.requirements import Requirements
+# noinspection PyUnresolvedReferences
 from herringlib.simple_logger import error, debug, warning
+# noinspection PyUnresolvedReferences
 from herringlib.env import env_value
+
 import sys
 
 
@@ -119,6 +124,7 @@ def get_python_path():
     if sys.platform == 'darwin':
         return '/usr/local/bin'
     return '/usr/bin'
+
 
 ATTRIBUTES = {
     'animate_logo': {
@@ -268,6 +274,9 @@ ATTRIBUTES = {
         'default': 'docs/faq.rst',
         'help': 'The frequently asked question file.  '
                 'Defaults to "{herringfile_dir}/docs/faq.rst".'},
+    'feature_branch': {
+        'default': False,
+        'help': 'Asserted when the project is a feature team project.  Default is False.'},
     'features_dir': {
         'default': 'features',
         'help': 'The directory for lettuce features relative to the herringfile_dir.  Defaults to '
@@ -535,6 +544,7 @@ class ProjectSettings(object):
         set_default_attr('title', 'name')
         set_default_attr('class_name_prefix', 'name')
 
+        # noinspection PyUnresolvedReferences
         from herringlib.version import get_project_version
 
         self.__setattr__('version', get_project_version(project_package=self.package))
@@ -589,7 +599,7 @@ class ProjectSettings(object):
             with open(self.design_header_file) as in_file:
                 # noinspection PyAttributeOutsideInit
                 self.design_header = in_file.read()
-        except:
+        except Exception:
             pass
 
         # info(str(self))
@@ -719,5 +729,6 @@ class ProjectSettings(object):
             warning("Your herringfile must set up herringfile_dir.")
             return False
         return True
+
 
 Project = ProjectSettings()
