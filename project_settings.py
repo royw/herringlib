@@ -275,8 +275,8 @@ ATTRIBUTES = {
         'help': 'The frequently asked question file.  '
                 'Defaults to "{herringfile_dir}/docs/faq.rst".'},
     'feature_branch': {
-        'default': False,
-        'help': 'Asserted when the project is a feature team project.  Default is False.'},
+        'default': None,
+        'help': 'The feature branch name.  Default is None.'},
     'features_dir': {
         'default': 'features',
         'help': 'The directory for lettuce features relative to the herringfile_dir.  Defaults to '

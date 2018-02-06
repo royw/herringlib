@@ -46,7 +46,7 @@ with namespace('doc'):
 
         pyreverse_filename = os.path.join(Project.herringfile_dir, Project.docs_dir, "pyreverse.log")
         with open(pyreverse_filename, "w") as outputter:
-            if Project.feature_branch:
+            if Project.feature_branch is not None:
                 module_paths = docs_feature_dirs
             else:
                 module_paths = [root for root, dirs, files in os.walk(path) if os.path.basename(root) != '__pycache__']
@@ -76,7 +76,7 @@ with namespace('doc'):
             warning('pynsource not available')
             return
 
-        if Project.feature_branch:
+        if Project.feature_branch is not None:
             files = docs_feature_files
         else:
             files = [os.path.join(dir_path, f)

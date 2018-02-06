@@ -230,26 +230,15 @@ with namespace('doc'):
                         outputter.write(output)
 
 
-    def get_current_branch():
-        """
-        :return: the current git branch name.
-        :rtype: str
-        """
-        with cd(Project.docs_dir):
-            with LocalShell() as local:
-                return local.system('git rev-parse --abbrev-ref HEAD')
-
-
     def get_list_of_branch_files():
         """
         :return: list of files on the feature branch
         """
         with cd(Project.herringfile_dir):
             with LocalShell() as local:
-                feature_branch = get_current_branch()
-                print("feature branch: " + feature_branch)
-                if feature_branch is not None:
-                    output = local.system('git diff --name-only upstream/{branch}'.format(branch=feature_branch),
+                print("feature branch: " + Project.feature_branch)
+                if Project.feature_branch is not None:
+                    output = local.system('git diff --name-only upstream/{branch}'.format(branch=Project.feature_branch),
                                           verbose=False)
                     return [f for f in output.splitlines() if f.startswith('src/')]
                 return []
@@ -340,7 +329,7 @@ with namespace('doc'):
         if Project.enhanced_docs:
             diagrams()
             hack()
-        if Project.feature_branch:
+        if Project.feature_branch is not None:
             remove_non_feature_rst_files()
         run_sphinx()
 
@@ -659,7 +648,7 @@ with namespace('doc'):
                     output = local.run("find {dir} -name \"*.py\" -exec "
                                        "egrep -H -o \"TODO:?\s+(.+)\s*\" '{{}}' \\;".format(dir=Project.package))
                     lines = output.strip().splitlines()
-                    if Project.feature_branch:
+                    if Project.feature_branch is not None:
                         feature_files = get_list_of_branch_files()
                         lines = [line for line in lines if line in feature_files]
                     for line in lines:
