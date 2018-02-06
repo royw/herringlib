@@ -187,6 +187,7 @@ with namespace('doc'):
         """Generate API sphinx source files from code"""
         global doc_errors
         Project.docs_feature_dirs = docs_feature_dirs()
+        Project.docs_feature_files = get_list_of_branch_files()
         if Project.package is not None:
             with cd(Project.docs_dir):
                 exclude = ' '.join(Project.exclude_from_docs)

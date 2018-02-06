@@ -64,7 +64,7 @@ with namespace('doc'):
                         info(errors)
 
     # noinspection PyArgumentEqualDefault
-    def _create_class_diagrams(path):
+    def _create_class_diagrams(path, docs_feature_files):
         """
         Create class UML diagram
 
@@ -76,9 +76,12 @@ with namespace('doc'):
             warning('pynsource not available')
             return
 
-        files = [os.path.join(dir_path, f)
-                 for dir_path, dir_names, files in os.walk(path)
-                 for f in fnmatch.filter(files, '*.py')]
+        if Project.feature_branch:
+            files = docs_feature_files
+        else:
+            files = [os.path.join(dir_path, f)
+                     for dir_path, dir_names, files in os.walk(path)
+                     for f in fnmatch.filter(files, '*.py')]
         debug("files: {files}".format(files=repr(files)))
         pynsource_filename = os.path.join(Project.herringfile_dir, Project.docs_dir, "pynsource.log")
         with open(pynsource_filename, "w") as outputter:
@@ -100,4 +103,4 @@ with namespace('doc'):
             mkdir_p(Project.uml_dir)
             with cd(Project.uml_dir, verbose=True):
                 _create_module_diagrams(path, Project.docs_feature_dirs)
-                _create_class_diagrams(path)
+                _create_class_diagrams(path, Project.docs_feature_files)
