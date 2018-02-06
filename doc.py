@@ -372,12 +372,12 @@ with namespace('doc'):
         with cd(Project.docs_dir):
             with open("sphinx-build.log", "w") as outputter:
                 if os.path.isfile('_build/doctrees/index.doctree'):
-                    output = run_python('sphinx-build -v -v -v -b html -d _build/doctrees -w docs.log {options} . '
+                    output = run_python('sphinx-build -v -b html -d _build/doctrees -w docs.log {options} . '
                                         '../{htmldir}'.format(options=' '.join(options),
                                                               htmldir=Project.docs_html_dir),
                                         doc_errors=doc_errors)
                 else:
-                    output = run_python('sphinx-build -v -v -v -b html -w docs.log {options} . '
+                    output = run_python('sphinx-build -v -b html -w docs.log {options} . '
                                         '../{htmldir}'.format(options=' '.join(options), htmldir=Project.docs_html_dir),
                                         doc_errors=doc_errors)
                 outputter.write(output)
