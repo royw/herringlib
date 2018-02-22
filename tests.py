@@ -11,11 +11,18 @@ Add the following to your *requirements.txt* file:
 """
 # noinspection PyUnresolvedReferences
 from herring.herring_app import task, task_execute
+# noinspection PyUnresolvedReferences
 from herringlib.project_settings import Project
+# noinspection PyUnresolvedReferences
 from herringlib.local_shell import LocalShell
+# noinspection PyUnresolvedReferences
 from herringlib.project_tasks import packages_required
+# noinspection PyUnresolvedReferences
 from herringlib.simple_logger import info
+# noinspection PyUnresolvedReferences
 from herringlib.venv import VirtualenvInfo, venv_decorator
+
+from mkdir_p import mkdir_p
 
 __docformat__ = 'restructuredtext en'
 
