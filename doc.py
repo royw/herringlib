@@ -238,7 +238,8 @@ with namespace('doc'):
             with LocalShell() as local:
                 print("feature branch: " + Project.feature_branch)
                 if Project.feature_branch is not None:
-                    output = local.system('git diff --name-only upstream/{branch}'.format(branch=Project.feature_branch),
+                    command_line = 'git diff --name-only upstream/{branch}'.format(branch=Project.feature_branch)
+                    output = local.system(command_line,
                                           verbose=False)
                     return [f for f in output.splitlines() if f.startswith('src/')]
                 return []
