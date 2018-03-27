@@ -13,6 +13,7 @@ Add the following to your *requirements.txt* file:
 """
 import glob
 import os
+from pprint import pprint
 from textwrap import dedent
 
 try:
@@ -171,3 +172,42 @@ if Project.package:
 
             with LocalShell() as local:
                 local.run('git tag -a v{ver} -m "version {ver}"'.format(ver=Project.version))
+
+
+        @task()
+        def check_package_names():
+            """
+            Check if package names follow best practices.
+
+            Basically say you have package tree like::
+
+                foo/
+                foo/snafu.py
+                bar/
+                bar/tango/
+                bar/tango/foo
+                bar/tango/uniform.py
+
+            now say uniform.py tries to import snafu like::
+
+                # cat bar/tango/uniform.py
+                from foo.snafu import Snafu
+                ...
+
+            what will happen is the bar/tango/foo package will be found which does not
+            contain a snafu module so an ImportError will be raised.
+
+            So it is a best practice not to reuse top level package names.
+
+            """
+            top_packages = {key: None for key in next(os.walk(Project.package))[1]}
+            for root, dirs, files in os.walk(Project.package, topdown=True):
+                for directory in dirs:
+                    if directory in top_packages.keys():
+                        if top_packages[directory] is None:
+                            top_packages[directory] = []
+                        top_packages[directory].append(os.path.join(root, directory))
+            collisions = {top: top_packages[top] for top in top_packages if len(top_packages[top]) > 1}
+            if collisions:
+                print("Potential package name collision with top level package names:")
+                pprint(collisions)
