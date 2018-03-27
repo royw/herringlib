@@ -13,7 +13,7 @@ Add the following to your *requirements.txt* file:
 """
 import glob
 import os
-from pprint import pprint
+from pprint import pformat
 from textwrap import dedent
 
 try:
@@ -85,7 +85,7 @@ if Project.package:
                 return
 
 
-        @task(private=False)
+        @task(private=False, depends=['check_package_names'])
         @venv_decorator(attr_name='sdist_python_version')
         def sdist():
             """ build source distribution"""
@@ -176,9 +176,9 @@ if Project.package:
 
         @task()
         def check_package_names():
-            """
-            Check if package names follow best practices.
+            """ Check if package names follow best practices. """
 
+            INSTRUCTIONS = dedent('''
             Basically say you have package tree like::
 
                 foo/
@@ -199,7 +199,7 @@ if Project.package:
 
             So it is a best practice not to reuse top level package names.
 
-            """
+            ''')
             top_packages = {key: None for key in next(os.walk(Project.package))[1]}
             for root, dirs, files in os.walk(Project.package, topdown=True):
                 for directory in dirs:
@@ -209,5 +209,6 @@ if Project.package:
                         top_packages[directory].append(os.path.join(root, directory))
             collisions = {top: top_packages[top] for top in top_packages if len(top_packages[top]) > 1}
             if collisions:
-                print("Potential package name collision with top level package names:")
-                pprint(collisions)
+                info(INSTRUCTIONS)
+                info("Potential package name collision with top level package names:")
+                info(pformat(collisions))
