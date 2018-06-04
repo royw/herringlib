@@ -236,8 +236,8 @@ with namespace('doc'):
         """
         with cd(Project.herringfile_dir):
             with LocalShell() as local:
-                print("feature branch: " + Project.feature_branch)
                 if Project.feature_branch is not None:
+                    print("feature branch: " + Project.feature_branch)
                     command_line = 'git diff --name-only upstream/{branch}'.format(branch=Project.feature_branch)
                     output = local.system(command_line,
                                           verbose=False)
