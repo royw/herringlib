@@ -1,8 +1,8 @@
 # coding=utf-8
 
 """
-Deploy a package to an internal pypi server using either "setup.py upload" or ssh/scp (useful if your pypi server does
-not support upload, for example pypiserver).
+Deploy a package to an internal pypi server using: twine or "setup.py upload" or ssh/scp
+(useful if your pypi server does not support upload, for example old pypiserver).
 """
 
 import os
@@ -25,10 +25,11 @@ try:
     # noinspection PyUnresolvedReferences
     from herringlib.remote_shell import RemoteShell
 except ImportError as ex:
+    # noinspection PyUnresolvedReferences
     from herringlib.simple_logger import error
-
     error("Problem importing:  {msg}".format(msg=str(ex)))
 
+# noinspection PyUnusedName
 __docformat__ = 'restructuredtext en'
 
 # noinspection PyBroadException
@@ -54,6 +55,7 @@ try:
         return dist_wheels
 
 
+    # noinspection PyUnusedFunction
     @task()
     def deploy():
         """ copy latest sdist tar ball to server """
@@ -65,12 +67,18 @@ try:
             if not venvs.in_virtualenv and venvs.defined:
                 for venv_info in venvs.infos():
                     info('Switching to deploy_python_version ({venv}) virtual environment'.format(venv=venv_info.venv))
-                    venv_info.run("python setup.py sdist upload -r {server}".format(server=Project.pypiserver),
+                    # venv_info.run("python setup.py sdist upload -r {server}".format(server=Project.pypiserver),
+                    #               verbose=True)
+                    venv_info.run("python twine upload --verbose --skip-existing "
+                                  "--repository {server}".format(server=Project.pypiserver),
                                   verbose=True)
             else:
                 with LocalShell(verbose=True) as local:
                     info("Deploying sdist using default environment")
-                    local.run("python setup.py sdist upload -r {server}".format(server=Project.pypiserver),
+                    # local.run("python setup.py sdist upload -r {server}".format(server=Project.pypiserver),
+                    #           verbose=True)
+                    local.run("python twine upload --verbose --skip-existing "
+                              "--repository {server}".format(server=Project.pypiserver),
                               verbose=True)
 
         else:

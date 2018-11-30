@@ -7,4 +7,4 @@ import pkgutil
 
 pkgutil.extend_path(__path__, __name__)
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'

@@ -22,14 +22,16 @@ try:
     # noinspection PyUnresolvedReferences
     from herringlib.prompt import query_yes_no
 except ImportError as ex:
+    # noinspection PyUnresolvedReferences
     from herringlib.simple_logger import error
-
     error("Problem importing:  {msg}".format(msg=str(ex)))
 
+# noinspection PyUnusedName
 __docformat__ = 'restructuredtext en'
 
 if Project.package:
     with namespace('release'):
+        # noinspection PyUnusedFunction
         @task()
         def changes_since_last_tag():
             """show the changes since the last tag"""
@@ -86,7 +88,7 @@ if Project.package:
                 # Next use the "Browse" button to select "{zip}" and press "Upload Documentation".
                 # """.format(name=Project.base_name))
 
-
+    # noinspection PyUnusedFunction
     @task()
     def release():
         """Releases the project to github and pypi"""
