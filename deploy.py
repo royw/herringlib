@@ -69,16 +69,16 @@ try:
                     info('Switching to deploy_python_version ({venv}) virtual environment'.format(venv=venv_info.venv))
                     # venv_info.run("python setup.py sdist upload -r {server}".format(server=Project.pypiserver),
                     #               verbose=True)
-                    venv_info.run("python twine upload --verbose --skip-existing "
-                                  "--repository {server}".format(server=Project.pypiserver),
+                    venv_info.run("twine upload --verbose --skip-existing "
+                                  "--repository {server} dist/*".format(server=Project.pypiserver),
                                   verbose=True)
             else:
                 with LocalShell(verbose=True) as local:
                     info("Deploying sdist using default environment")
                     # local.run("python setup.py sdist upload -r {server}".format(server=Project.pypiserver),
                     #           verbose=True)
-                    local.run("python twine upload --verbose --skip-existing "
-                              "--repository {server}".format(server=Project.pypiserver),
+                    local.run("twine upload --verbose --skip-existing "
+                              "--repository {server} dist/*".format(server=Project.pypiserver),
                               verbose=True)
 
         else:
