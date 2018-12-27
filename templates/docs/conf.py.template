@@ -725,16 +725,18 @@ pdf_fit_background_mode = 'scale'
 #  -- Options for intersphinx ---------------------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {{
-    'http://docs.python.org/': None,
-    'python27': ('http://docs.python.org/2.7', None),
+intersphinx_mapping = {
+    'https://docs.python.org/': None,
+    'python27': ('https://docs.python.org/2.7', None),
     'python34': ('https://docs.python.org/3.4', None),
+    'python35': ('https://docs.python.org/3.5', None),
+    'python36': ('https://docs.python.org/3.6', None),
     'FullMonty': ('https://royw.github.io/fullmonty', None),
-    'six': ('http://pythonhosted.org/six/', None),
-    'dateutil': ('https://dateutil.readthedocs.org/en/latest/', None),
-    'matplotlib': ('http://matplotlib.org/', None),
-    'pexpect': ('http://pexpect.readthedocs.org/en/latest/', None),
-}}
+    'six': ('https://pythonhosted.org/six/', None),
+    'dateutil': ('https://dateutil.readthedocs.io/en/latest/', None),
+    'matplotlib': ('https://matplotlib.org/', None),
+    'pexpect': ('https://pexpect.readthedocs.io/en/latest/', None),
+}
 
 rst_epilog = """
 .. role:: strike
