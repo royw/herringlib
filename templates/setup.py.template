@@ -106,7 +106,7 @@ try:
         # noinspection PyArgumentList
         long_description = open('README.rst', encoding='utf-8').read()
 except Exception:
-    pass
+    long_description = ""
 
 kwargs = {{}}
 if os.path.isfile('setup.json'):
