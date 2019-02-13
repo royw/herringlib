@@ -556,6 +556,13 @@ with namespace('doc'):
             return "{file}.gif".format(file=file_name)
 
 
+        def _convert(logo_image, file_name):
+            label = "convert {image} {file}.gif".format(image=logo_image, file=file_name)
+            with LocalShell() as local:
+                local.run(label)
+            return "{file}.gif".format(file=file_name)
+
+
         @task()
         def display():
             """display project logo"""
@@ -569,7 +576,11 @@ with namespace('doc'):
         def create():
             """create the logo used in the sphinx documentation"""
             if Project.logo_image:
-                logo_file = _image(Project.logo_name, Project.logo_image, Project.base_name)
+                if Project.logo_montage:
+                    logo_file = _image(logo_name=Project.logo_name, logo_image=Project.logo_image,
+                                       file_name=Project.base_name)
+                else:
+                    logo_file = _convert(logo_image=Project.logo_image, file_name=Project.base_name)
             else:
                 logo_file = _neon(Project.logo_name, Project.base_name, Project.animate_logo,
                                   Project.logo_font_size)

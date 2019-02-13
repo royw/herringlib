@@ -322,6 +322,9 @@ ATTRIBUTES = {
     'logo_image': {
         'default': None,
         'help': 'The project\'s logo image.  The default is generated from the project\'s "name".'},
+    'logo_montage': {
+        'default': True,
+        'help': 'Montage the logo with the project name.'},
     'logo_name': {
         'default': None,
         'help': 'The name used in the generated documentation logo image.  The default is the project\'s "name"'},
@@ -457,8 +460,7 @@ ATTRIBUTES = {
         'help': 'The dist_host user.  Defaults to the value of the "USER" environment variable.'},
     'venv_base': {
         'default': None,
-        'help': 'The base name for the virtual environments.  Defaults to Settings["package"].',
-    },
+        'help': 'The base name for the virtual environments.  Defaults to Settings["package"].'},
     'version': {
         'default': '0.0.1',
         'help': 'The projects current version.'},
@@ -469,8 +471,7 @@ ATTRIBUTES = {
     'virtualenv_requirements': {
         'default': {
             'python_versions': ['requirements.txt'],
-            'docs_venv': ['doc.requirements.txt']
-        },
+            'docs_venv': ['doc.requirements.txt']},
         'help': 'Specifies which requirements files to use with virtual environments.'},
     'virtualenvwrapper_script': {
         'default': env_value(name='VIRTUALENVWRAPPER_SCRIPT',
