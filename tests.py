@@ -43,18 +43,23 @@ if packages_required(required_packages):
 
         venvs = VirtualenvInfo('test_python_versions', 'wheel_python_versions')
         coverage = '--cov-report term-missing --cov={package}'.format(package=Project.package)
+        reports = '--junitxml={quality}/tests.xml'.format(quality=Project.quality_dir)
         mkdir_p(Project.tests_dir)
 
         if not venvs.in_virtualenv and venvs.defined:
             for venv_info in venvs.infos():
                 info('Running unit tests using the {venv} virtual environment.'.format(venv=venv_info.venv))
-                venv_info.run('py.test {coverage} {tests_dir}'.format(coverage=coverage,
-                                                                      tests_dir=Project.tests_dir), verbose=True)
+                venv_info.run('py.test {coverage} {reports} {tests_dir}'.format(coverage=coverage,
+                                                                                reports=reports,
+                                                                                tests_dir=Project.tests_dir),
+                              verbose=True)
         else:
             with LocalShell() as local:
                 info('Running unit tests using the current python environment')
-                local.run("py.test {coverage} {tests_dir}".format(coverage=coverage,
-                                                                  tests_dir=Project.tests_dir), verbose=True)
+                local.run("py.test {coverage} {reports} {tests_dir}".format(coverage=coverage,
+                                                                            reports=reports,
+                                                                            tests_dir=Project.tests_dir),
+                          verbose=True)
 
 
     @task()
@@ -76,6 +81,7 @@ if packages_required(required_packages):
             with LocalShell() as local:
                 info('Running features using the current python environment')
                 local.run("behave {features_dir}".format(features_dir=Project.features_dir), verbose=True)
+
 
     @task()
     def tox():
