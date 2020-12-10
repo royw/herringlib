@@ -278,8 +278,8 @@ def mkvenvs():
                         # info(pformat(requirements))
 
                 install_lines = [
-                    '{pip} install --upgrade pip',
-                    '{pip} install wheel',
+                    '{pip} install --upgrade pip'.format(pip=pip),
+                    '{pip} install wheel'.format(pip=pip),
                     '{pip} install --upgrade {pip_options} setuptools'.format(pip=pip, pip_options=pip_options),
                     '{pip} install --upgrade {pip_options} cryptography'.format(pip=pip, pip_options=pip_options),
                     '{pip} install --upgrade {pip_options} pyopenssl ndg-httpsclient pyasn1'.format(
@@ -288,7 +288,7 @@ def mkvenvs():
                                                                                       pip_options=pip_options),
                 ]
                 if os.path.isfile('/etc/ssl/certs/ca-certificates.crt'):
-                    install_lines.append('{pip} install --cert /etc/ssl/certs/ca-certificates.crt')
+                    install_lines.append('{pip} install --cert /etc/ssl/certs/ca-certificates.crt'.format(pip=pip))
                 if 'numpy' in requirements:
                     install_lines.append('{pip} install --upgrade {pip_options} numpy'.format(pip=pip,
                                                                                               pip_options=pip_options))
