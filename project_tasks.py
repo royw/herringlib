@@ -246,17 +246,18 @@ def _pip_list():
             # pip = os.path.join(os.environ['VIRTUAL_ENV'], 'bin', 'pip')
             # info("PATH={path}".format(path=os.environ['PATH']))
             # info(pip)
-            pip = local.system('which pip', verbose=False).strip()
+            pip = local.system('which pip || which pip3', verbose=False).strip()
             # info(pip)
             # info("pip version: {ver}".format(ver=local.system('{pip} --version'.format(pip=pip))))
             pip_list_output = local.run('{pip} list'.format(pip=pip))
             # info(pip_list_output)
             lines = pip_list_output.split("\n")
             names = [line.split(" ")[0].lower().encode('ascii', 'ignore') for line in lines if line.strip()]
-    except:
+    except Exception:
         pass
 
     return names
+
 
 # noinspection PyArgumentEqualDefault
 __pip_list = [pkg.decode('utf-8') for pkg in _pip_list()]
@@ -290,7 +291,7 @@ def packages_required(package_names):
                         missing_modules.append(pkg_name)
                         result = False
         return result
-    except:
+    except Exception:
         return False
 
 

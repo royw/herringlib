@@ -68,13 +68,10 @@ import re
 from operator import itemgetter
 from itertools import groupby
 
-# noinspection PyUnresolvedReferences
-from herring.herring_app import task, HerringFile, task_execute
-# noinspection PyUnresolvedReferences
+from herring.herring_app import task, task_execute
+from herring.herring_file import HerringFile
 from herringlib.comparable_mixin import ComparableMixin
-# noinspection PyUnresolvedReferences
 from herringlib.list_helper import compress_list, is_sequence, unique_list
-# noinspection PyUnresolvedReferences
 from herringlib.simple_logger import debug, warning
 
 
@@ -206,8 +203,8 @@ class Requirement(ComparableMixin):
                 # noinspection PyUnresolvedReferences
                 import sys
 
-                code = "sys.version_info {operator} {version}".format(operator=marker.operator,
-                                                                      version=str(marker.value))
+                version = marker.value[0]
+                code = "sys.version {operator} \"{version}\"".format(operator=marker.operator, version=version)
                 result = eval(code)
                 debug("{code} returned: {result}".format(code=code, result=str(result)))
                 return result
@@ -335,9 +332,9 @@ class Requirements(object):
                 for item_group in item_groups:
                     if item_group[0] == index + 1:
                         # yes we have items for the requirement file
-                        requirements[requirement_filename].extend([Requirement(re.match(self.ITEM_REGEX,
-                                                                                        lines[item_index]).group(1))
-                                                                   for item_index in item_group])
+                        requirements[requirement_filename].extend(
+                            [Requirement(re.match(self.ITEM_REGEX, lines[item_index]).group(1))
+                             for item_index in item_group])
 
         debug("requirements:\n%s" % pformat(requirements))
         return requirements

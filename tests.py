@@ -22,7 +22,7 @@ from herringlib.simple_logger import info
 # noinspection PyUnresolvedReferences
 from herringlib.venv import VirtualenvInfo, venv_decorator
 
-from mkdir_p import mkdir_p
+from herringlib.mkdir_p import mkdir_p
 
 __docformat__ = 'restructuredtext en'
 

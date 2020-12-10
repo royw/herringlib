@@ -161,7 +161,8 @@ if Project.package:
                     os.remove('install.record')
                 else:
                     # try uninstalling with pip
-                    local.run(['pip', 'uninstall', Project.herringfile_dir.split(os.path.sep)[-1]])
+                    pip = local.system('which pip || which pip3', verbose=False).strip()
+                    local.run([pip, 'uninstall', Project.herringfile_dir.split(os.path.sep)[-1]])
 
 
         @task()

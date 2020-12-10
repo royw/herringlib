@@ -129,8 +129,9 @@ Project.metadata(
 Project.required_files()
 
 if HerringFile.uninstalled_packages:
+    pip = local.system('which pip || which pip3', verbose=False).strip()
     print("You have missing packages.  You may install using the following command:")
-    print("\n  pip install %s" % ' '.join(HerringFile.uninstalled_packages))
+    print("\n  {pip} install %s".format(pip=pip) % ' '.join(HerringFile.uninstalled_packages))
 
 
 @task(depends=['build', 'doc', 'test'])

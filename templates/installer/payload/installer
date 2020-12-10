@@ -41,17 +41,19 @@ if [[ -z ${python_path} ]]; then
     exit 1
 fi
 
+pip=$(which pip || which pip3)
+
 # install virtualenv if it is not already installed
 
 if command -v virtualenv 2>/dev/null; then
     echo "virtualenv already installed"
 else
     echo "installing virtualenv"
-    if ! command -v pip 2>/dev/null 1>/dev/null; then
+    if ! command -v "${pip}" 2>/dev/null 1>/dev/null; then
         sudo easy_install pip
     fi
-    if command -v pip 2>/dev/null 1>/dev/null; then
-        sudo pip install virtualenv
+    if command -v "${pip}" 2>/dev/null 1>/dev/null; then
+        sudo "${pip}" install virtualenv
     else
         echo "This is not a supported distribution.  Please manually install virtualenv then try this install again."
         exit 1
@@ -66,16 +68,16 @@ mkdir -p "${WORKON_HOME:=${HOME}/.virtualenvs}"
 venv="${WORKON_HOME:=${HOME}/.virtualenvs}"/"${executable_name}"
 virtualenv -p ${python_path} ${venv}
 source ${venv}/bin/activate
-pip install --upgrade pip
-pip install --upgrade setuptools
+"${pip}" install --upgrade pip
+"${pip}" install --upgrade setuptools
 
 # install payload package into virtual environment
 
-pip install *.tar.gz
-pip install "${package_name}"
+"${pip}" install *.tar.gz
+"${pip}" install "${package_name}"
 
 # upgrade packages
-pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U
+"${pip}" list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U
 
 # symbolically link package script onto path
 

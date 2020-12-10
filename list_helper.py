@@ -40,7 +40,7 @@ try:
         :return: unique list
         :rtype: list
         """
-        return OrderedDict.fromkeys(src_list).keys()
+        return list(OrderedDict.fromkeys(src_list).keys())
 
     def is_sequence(item):
         """
