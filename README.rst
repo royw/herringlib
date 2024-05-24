@@ -1,6 +1,10 @@
 Herringlib
 ==========
 
+Since Herring was just retired, it is apropos that Herringlib also be retired.
+------------------------------------------------------------------------------
+
+
 This is a set of development tasks for use with the Herring make utility (a python rake).
 
 Installation
